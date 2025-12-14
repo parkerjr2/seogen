@@ -53,6 +53,66 @@ class SupabaseClient:
             # Log the error in a real application
             print(f"Error querying license: {e}")
             return None
+    
+    def deduct_credit(self, license_id: str) -> bool:
+        """
+        Deduct one credit from a license and return success status.
+        
+        Args:
+            license_id: The license ID to deduct credit from
+            
+        Returns:
+            True if credit deducted successfully, False otherwise
+        """
+        try:
+            with httpx.Client() as client:
+                # Update credits_remaining by decrementing by 1
+                response = client.patch(
+                    f"{self.url}/rest/v1/licenses?id=eq.{license_id}",
+                    headers=self.headers,
+                    json={"credits_remaining": "credits_remaining - 1"},
+                    timeout=10
+                )
+                
+                return response.status_code == 204  # Supabase returns 204 for successful updates
+                
+        except Exception as e:
+            print(f"Error deducting credit: {e}")
+            return False
+    
+    def log_usage(self, license_id: str, action: str, details: dict = None) -> bool:
+        """
+        Log usage to the usage_logs table for tracking and analytics.
+        
+        Args:
+            license_id: The license ID that performed the action
+            action: The action performed (e.g., 'page_generation')
+            details: Optional additional details about the usage
+            
+        Returns:
+            True if logged successfully, False otherwise
+        """
+        try:
+            with httpx.Client() as client:
+                log_data = {
+                    "license_id": license_id,
+                    "action": action,
+                    "details": details or {},
+                    "created_at": "now()"  # Supabase function for current timestamp
+                }
+                
+                response = client.post(
+                    f"{self.url}/rest/v1/usage_logs",
+                    headers=self.headers,
+                    json=log_data,
+                    timeout=10
+                )
+                
+                return response.status_code == 201  # Supabase returns 201 for successful inserts
+                
+        except Exception as e:
+            print(f"Error logging usage: {e}")
+            return False
 
 # Global Supabase client instance
 supabase_client = SupabaseClient()
