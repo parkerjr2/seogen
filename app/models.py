@@ -4,7 +4,7 @@ Defines the data structures used by the API endpoints.
 """
 
 from pydantic import BaseModel, Field
-from typing import List, Optional, Union
+from typing import List, Union
 
 class PageData(BaseModel):
     """Data model for page generation parameters."""
@@ -24,16 +24,39 @@ class HealthResponse(BaseModel):
     """Response model for the /health endpoint."""
     status: str
 
-class PageBlock(BaseModel):
-    """Individual content block in a generated page."""
-    type: str
-    text: Optional[str] = None
-    level: Optional[int] = None  # For heading blocks
-    question: Optional[str] = None  # For FAQ blocks
-    answer: Optional[str] = None  # For FAQ blocks
-    business_name: Optional[str] = None  # For NAP blocks
-    address: Optional[str] = None  # For NAP blocks
-    phone: Optional[str] = None  # For NAP and CTA blocks
+# Minimal schema block types - no null fields
+class HeadingBlock(BaseModel):
+    """Heading block with minimal schema."""
+    type: str = "heading"
+    level: int
+    text: str
+
+class ParagraphBlock(BaseModel):
+    """Paragraph block with minimal schema."""
+    type: str = "paragraph"
+    text: str
+
+class FAQBlock(BaseModel):
+    """FAQ block with minimal schema."""
+    type: str = "faq"
+    question: str
+    answer: str
+
+class NAPBlock(BaseModel):
+    """NAP (Name, Address, Phone) block with minimal schema."""
+    type: str = "nap"
+    business_name: str
+    address: str
+    phone: str
+
+class CTABlock(BaseModel):
+    """CTA (Call to Action) block with minimal schema."""
+    type: str = "cta"
+    text: str
+    phone: str
+
+# Union type for all block types
+PageBlock = Union[HeadingBlock, ParagraphBlock, FAQBlock, NAPBlock, CTABlock]
 
 class GeneratePageResponse(BaseModel):
     """Response model for the /generate-page endpoint."""
