@@ -134,7 +134,21 @@ Once running, visit:
 
 ## Railway Deployment
 
-This project is ready for Railway deployment. The application will automatically use environment variables set in Railway's dashboard.
+This project is ready for Railway deployment with the included `Procfile`.
+
+### Deployment Steps:
+
+1. **Connect Repository:** Link your GitHub repository to Railway
+2. **Set Environment Variables:** In Railway dashboard, add:
+   - `SUPABASE_URL` - Your Supabase project URL
+   - `SUPABASE_SECRET_KEY` - Your Supabase service role secret key
+   - `OPENAI_API_KEY` - Your OpenAI API key (for future features)
+3. **Deploy:** Railway will automatically detect the `Procfile` and deploy
+
+### Railway Configuration:
+- **Start Command:** `uvicorn app.main:app --host 0.0.0.0 --port $PORT`
+- **Port:** Uses Railway's `$PORT` environment variable
+- **Host:** Binds to `0.0.0.0` for external access
 
 ## Development Notes
 
