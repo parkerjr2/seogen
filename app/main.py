@@ -69,11 +69,11 @@ async def generate_page(request: GeneratePageRequest):
     license_id = license_data.get("id")
     
     try:
-        # Generate AI-powered content using OpenAI
-        # This enforces all SEO requirements and validates content structure
+        # Generate AI-powered content with strict validation
+        # Validation failures will raise exceptions BEFORE credit deduction
         page_content = ai_generator.generate_page_content(request.data)
         
-        # Deduct one credit from the license
+        # Only deduct credit if content generation and validation succeeded
         credit_deducted = supabase_client.deduct_credit(license_id)
         if not credit_deducted:
             # Log the error but don't fail the request since content was generated
@@ -86,12 +86,13 @@ async def generate_page(request: GeneratePageRequest):
             "state": request.data.state,
             "company_name": request.data.company_name,
             "content_blocks": len(page_content.blocks),
-            "title": page_content.title
+            "title": page_content.title,
+            "slug": page_content.slug
         }
         
         usage_logged = supabase_client.log_usage(
             license_id=license_id,
-            action="ai_page_generation",
+            action="ai_page_generation_success",
             details=usage_details
         )
         
@@ -101,10 +102,17 @@ async def generate_page(request: GeneratePageRequest):
         return page_content
         
     except Exception as e:
-        # Log the error for debugging
-        print(f"AI generation error for license {license_id}: {str(e)}")
+        # Log the validation/generation error for debugging
+        print(f"AI generation/validation error for license {license_id}: {str(e)}")
         
-        # Return descriptive error to help with debugging
+        # Log failed attempt (no credit deducted)
+        supabase_client.log_usage(
+            license_id=license_id,
+            action="ai_page_generation_failed",
+            details={"error": str(e), "service": request.data.service, "city": request.data.city}
+        )
+        
+        # Return descriptive error - validation failures return HTTP 500
         raise HTTPException(
             status_code=500,
             detail=f"AI content generation failed: {str(e)}"

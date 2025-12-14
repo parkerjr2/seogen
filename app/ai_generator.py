@@ -1,17 +1,24 @@
 """
 AI content generation module for SEO-optimized roofing service pages.
-Handles OpenAI API integration and content validation.
+Handles OpenAI API integration with strict validation and content hardening.
 """
 
 import json
 import re
-from typing import Dict, Any
+from typing import Dict, Any, List
 from openai import OpenAI
 from app.config import settings
 from app.models import PageData, GeneratePageResponse, PageBlock
 
 class AIContentGenerator:
-    """Handles AI-powered content generation with SEO optimization."""
+    """Handles AI-powered content generation with strict SEO validation and meta-language prevention."""
+    
+    # Forbidden meta-language phrases that must never appear in content
+    FORBIDDEN_PHRASES = [
+        "first 100 words", "this page", "this article", "we want to", "in this section",
+        "seo", "keyword", "word count", "structure", "writing rules", "content requirements",
+        "mandatory", "exactly one h1", "call to action", "business information"
+    ]
     
     def __init__(self):
         """Initialize OpenAI client with API key from settings."""
@@ -27,7 +34,7 @@ class AIContentGenerator:
     
     def generate_page_content(self, data: PageData) -> GeneratePageResponse:
         """
-        Generate SEO-optimized page content for roofing services.
+        Generate SEO-optimized page content for roofing services with strict validation.
         
         Args:
             data: Page generation parameters (service, city, company info)
@@ -41,231 +48,332 @@ class AIContentGenerator:
         # Ensure OpenAI client is initialized
         self._ensure_client()
         
-        # Create deterministic prompt that enforces SEO rules
-        prompt = self._build_seo_prompt(data)
+        # Create the exact specified prompt
+        user_prompt = self._build_exact_prompt(data)
         
         try:
-            # Call OpenAI API with structured output
+            # Call OpenAI API with the exact system and user prompts
             response = self.client.chat.completions.create(
                 model="gpt-4",
                 messages=[
                     {
                         "role": "system",
-                        "content": "You are an expert SEO content writer specializing in local roofing services. You must follow all SEO requirements exactly and return ONLY valid JSON with no additional text or formatting."
+                        "content": "You are a professional local SEO copywriter writing high-quality landing pages for roofing companies. Your writing must sound natural, human, and trustworthy."
                     },
                     {
                         "role": "user", 
-                        "content": prompt
+                        "content": user_prompt
                     }
                 ],
                 temperature=0.7,  # Balanced creativity and consistency
                 max_tokens=3000
             )
             
-            # Parse and validate the response
+            # Parse the JSON response
             content_json = json.loads(response.choices[0].message.content)
-            page_response = self._validate_and_structure_content(content_json, data)
+            
+            # Validate content before processing
+            self._validate_content_quality(content_json, data)
+            
+            # Generate programmatic slug (LLM must not generate this)
+            slug = self._generate_slug(data.service, data.city)
+            
+            # Structure and clean the response
+            page_response = self._structure_clean_response(content_json, slug, data)
             
             return page_response
             
+        except json.JSONDecodeError as e:
+            raise Exception(f"LLM returned invalid JSON: {str(e)}")
         except Exception as e:
             raise Exception(f"AI content generation failed: {str(e)}")
     
-    def _build_seo_prompt(self, data: PageData) -> str:
+    def _build_exact_prompt(self, data: PageData) -> str:
         """
-        Build deterministic prompt that enforces all SEO requirements.
+        Build the exact prompt as specified in requirements - no modifications allowed.
         
         Args:
             data: Page generation parameters
             
         Returns:
-            Structured prompt with SEO rules and requirements
+            The exact user prompt as specified
         """
-        return f"""
-Generate SEO-optimized content for a roofing service page. Return ONLY valid JSON.
+        return f"""Write a local service landing page for a roofing company using the following inputs:
+Service: {data.service}
+City: {data.city}
+State: {data.state}
+Company Name: {data.company_name}
+Phone Number: {data.phone}
+Business Address: {data.address}
 
-BUSINESS INFO:
-- Service: {data.service}
-- City: {data.city}
-- State: {data.state}
-- Company: {data.company_name}
-- Phone: {data.phone}
-- Address: {data.address}
+CONTENT REQUIREMENTS (MANDATORY)
+Write at least 300 words of original content.
+The page title must include the service and city near the beginning.
+Write exactly one H1 heading that includes the service and city.
+The first paragraph must mention the service and city naturally.
+Describe the service, benefits, and repair process clearly.
+Include one FAQ relevant to the service.
+Include a clear call to action referencing the city and phone number.
+Include the business name, address, and phone number exactly as provided.
 
-MANDATORY SEO RULES:
-1. Page title MUST include "{data.service}" and "{data.city}" near the beginning
-2. Meta description MUST include "{data.service}" and "{data.city}" naturally
-3. URL slug MUST be clean and keyword-focused (lowercase, hyphens only)
-4. Exactly ONE H1 heading that includes "{data.service}" and "{data.city}"
-5. First paragraph MUST mention "{data.service}" and "{data.city}" within first 100 words
-6. Use natural keyword variations (e.g., "{data.city} roofing", "roofing contractors in {data.city}")
-7. Content MUST be 100% unique - no templated phrases
-8. Total content MUST be at least 300 words across all blocks
-9. Include at least ONE FAQ about the service in {data.city}
-10. Include NAP (business name, address, phone) as structured content
-11. Include at least ONE CTA referencing {data.city} with phone number
+STRICT RULES (DO NOT VIOLATE)
+Do NOT mention SEO, keywords, word counts, structure, or writing rules.
+Do NOT say "this page", "this article", or "first 100 words".
+Do NOT use HTML, markdown, bullet points, or formatting.
+Do NOT repeat phrases excessively.
+Do NOT invent reviews, awards, or certifications.
 
-REQUIRED JSON STRUCTURE:
+OUTPUT FORMAT
+Return ONLY valid JSON using the structure below.
+Do NOT include explanations, comments, or extra text.
 {{
-  "title": "Page title with service + city",
-  "meta_description": "Meta description with service + city (150-160 chars)",
-  "slug": "service-city-slug",
+  "title": "string",
+  "meta_description": "string",
   "blocks": [
-    {{"type": "heading", "level": 1, "text": "H1 with service + city"}},
-    {{"type": "paragraph", "text": "Opening paragraph mentioning service + city early. Must be 100-150 words with detailed introduction to the service and company."}},
-    {{"type": "paragraph", "text": "Service details and benefits paragraph. Must be 100-150 words explaining what makes your service unique, materials used, and quality guarantees."}},
-    {{"type": "paragraph", "text": "Process explanation and why choose us. Must be 80-120 words detailing the step-by-step repair process and local expertise."}},
-    {{"type": "paragraph", "text": "Additional service information covering emergency services, warranties, and local knowledge. Must be 60-100 words."}},
-    {{"type": "faq", "question": "FAQ question about service costs, timeline, or process in city", "answer": "Comprehensive detailed answer that provides real value to customers. Must be 80-120 words with specific information."}},
-    {{"type": "nap", "business_name": "{data.company_name}", "address": "{data.address}", "phone": "{data.phone}"}},
-    {{"type": "cta", "text": "CTA text mentioning city", "phone": "{data.phone}"}}
+    {{ "type": "heading", "level": 1, "text": "string" }},
+    {{ "type": "paragraph", "text": "string" }},
+    {{ "type": "paragraph", "text": "string" }},
+    {{ "type": "paragraph", "text": "string" }},
+    {{ "type": "faq", "question": "string", "answer": "string" }},
+    {{ "type": "nap", "business_name": "string", "address": "string", "phone": "string" }},
+    {{ "type": "cta", "text": "string", "phone": "string" }}
   ]
-}}
-
-CONTENT RULES:
-- Write for humans first, search engines second
-- NO keyword stuffing
-- NO HTML, markdown, or inline styles
-- NO fake reviews or testimonials
-- Reference {data.city} and surrounding area naturally
-- Explain the service, benefits, and repair process clearly
-- Make content engaging and informative
-- CRITICAL: MINIMUM 400 WORDS TOTAL across all paragraph and FAQ answer blocks
-- Each paragraph must be substantial and informative, not brief summaries
-- Include detailed explanations of materials, processes, and local expertise
-- FAQ answer must be comprehensive and valuable to customers
-- Write in a professional but approachable tone
-- Use specific details about roofing techniques and local considerations
-
-CRITICAL WORD COUNT REQUIREMENT: 
-- Paragraph 1: EXACTLY 130-160 words (detailed introduction)
-- Paragraph 2: EXACTLY 130-160 words (comprehensive service details)
-- Paragraph 3: EXACTLY 110-130 words (process and expertise)
-- Paragraph 4: EXACTLY 90-110 words (additional services/warranties)
-- FAQ Answer: EXACTLY 110-130 words (comprehensive answer)
-- TOTAL MUST BE 570-690 words minimum
-
-Do NOT generate short paragraphs. Each paragraph must be detailed, comprehensive, and meet the exact word count specified above.
-
-Generate the JSON now:
-"""
+}}"""
     
-    def _validate_and_structure_content(self, content_json: Dict[str, Any], data: PageData) -> GeneratePageResponse:
+    def _generate_slug(self, service: str, city: str) -> str:
         """
-        Validate AI-generated content meets SEO requirements and structure it properly.
+        Generate programmatic slug as {service}-{city} (lowercase, hyphenated, trimmed).
+        LLM must NOT generate this - it's deterministic.
         
         Args:
-            content_json: Raw JSON response from OpenAI
-            data: Original page data for validation
+            service: Service name
+            city: City name
             
         Returns:
-            Validated and structured page response
+            Clean slug in format: service-city
+        """
+        # Clean and normalize inputs
+        clean_service = re.sub(r'[^a-zA-Z0-9\s]', '', service.strip().lower())
+        clean_city = re.sub(r'[^a-zA-Z0-9\s]', '', city.strip().lower())
+        
+        # Replace spaces with hyphens
+        service_slug = re.sub(r'\s+', '-', clean_service)
+        city_slug = re.sub(r'\s+', '-', clean_city)
+        
+        return f"{service_slug}-{city_slug}"
+    
+    def _validate_content_quality(self, content_json: Dict[str, Any], data: PageData) -> None:
+        """
+        Validate content quality and reject if validation fails.
+        This prevents credit deduction for invalid content.
+        
+        Args:
+            content_json: Raw JSON response from LLM
+            data: Original page data for validation
             
         Raises:
-            Exception: If content fails validation
+            Exception: If content fails any validation check
         """
+        # Check for forbidden meta-language phrases
+        self._check_meta_language_leaks(content_json)
+        
         # Validate required fields exist
-        required_fields = ["title", "meta_description", "slug", "blocks"]
+        required_fields = ["title", "meta_description", "blocks"]
         for field in required_fields:
             if field not in content_json:
                 raise Exception(f"Missing required field: {field}")
         
-        # Validate title includes service + city
-        title = content_json["title"]
-        if not (data.service.lower() in title.lower() and data.city.lower() in title.lower()):
-            raise Exception("Title must include both service and city")
+        # Validate blocks structure and requirements
+        self._validate_required_blocks(content_json["blocks"], data)
         
-        # Validate meta description includes service + city
-        meta_desc = content_json["meta_description"]
-        if not (data.service.lower() in meta_desc.lower() and data.city.lower() in meta_desc.lower()):
-            raise Exception("Meta description must include both service and city")
+        # Validate SEO placement rules
+        self._validate_seo_placement(content_json, data)
         
-        # Validate slug format (lowercase, hyphens only)
-        slug = content_json["slug"]
-        if not re.match(r'^[a-z0-9-]+$', slug):
-            raise Exception("Slug must be lowercase with hyphens only")
-        
-        # Validate blocks structure and content
-        blocks = content_json["blocks"]
-        self._validate_blocks(blocks, data)
-        
-        # Convert to Pydantic models
-        page_blocks = []
-        for block_data in blocks:
-            page_blocks.append(PageBlock(**block_data))
-        
-        return GeneratePageResponse(
-            title=title,
-            meta_description=meta_desc,
-            slug=slug,
-            blocks=page_blocks
-        )
+        # Validate word count requirement
+        self._validate_word_count(content_json["blocks"])
     
-    def _validate_blocks(self, blocks: list, data: PageData) -> None:
+    def _check_meta_language_leaks(self, content_json: Dict[str, Any]) -> None:
         """
-        Validate that blocks meet SEO requirements.
+        Check for forbidden meta-language phrases in all text content.
+        
+        Args:
+            content_json: JSON content to check
+            
+        Raises:
+            Exception: If forbidden phrases are found
+        """
+        # Collect all text content for checking
+        all_text = []
+        all_text.append(content_json.get("title", ""))
+        all_text.append(content_json.get("meta_description", ""))
+        
+        for block in content_json.get("blocks", []):
+            if "text" in block and block["text"]:
+                all_text.append(block["text"])
+            if "question" in block and block["question"]:
+                all_text.append(block["question"])
+            if "answer" in block and block["answer"]:
+                all_text.append(block["answer"])
+        
+        # Check for forbidden phrases (case insensitive)
+        combined_text = " ".join(all_text).lower()
+        for phrase in self.FORBIDDEN_PHRASES:
+            if phrase.lower() in combined_text:
+                raise Exception(f"Content contains forbidden meta-language: '{phrase}'")
+    
+    def _validate_required_blocks(self, blocks: List[Dict], data: PageData) -> None:
+        """
+        Validate that all required block types are present with correct counts.
         
         Args:
             blocks: List of content blocks
             data: Page data for validation
             
         Raises:
-            Exception: If blocks fail validation
+            Exception: If required blocks are missing or counts are wrong
         """
-        h1_count = 0
-        has_faq = False
-        has_nap = False
-        has_cta = False
-        total_words = 0
-        first_paragraph_found = False
-        
+        block_counts = {}
         for block in blocks:
             block_type = block.get("type", "")
-            
-            # Count H1 headings
-            if block_type == "heading" and block.get("level") == 1:
-                h1_count += 1
-                h1_text = block.get("text", "")
-                if not (data.service.lower() in h1_text.lower() and data.city.lower() in h1_text.lower()):
-                    raise Exception("H1 must include both service and city")
-            
-            # Check first paragraph for service + city mention
-            elif block_type == "paragraph" and not first_paragraph_found:
-                first_paragraph_found = True
-                paragraph_text = block.get("text", "")
-                words = paragraph_text.split()
-                if len(words) > 100:
-                    first_100_words = " ".join(words[:100])
-                else:
-                    first_100_words = paragraph_text
-                
-                if not (data.service.lower() in first_100_words.lower() and data.city.lower() in first_100_words.lower()):
-                    raise Exception("First paragraph must mention service and city within first 100 words")
-            
-            # Count words in text blocks
-            if block_type in ["paragraph", "faq"]:
-                text_content = block.get("text", "") + block.get("answer", "")
-                total_words += len(text_content.split())
-            
-            # Check for required block types
-            if block_type == "faq":
-                has_faq = True
-            elif block_type == "nap":
-                has_nap = True
-            elif block_type == "cta":
-                has_cta = True
+            block_counts[block_type] = block_counts.get(block_type, 0) + 1
         
-        # Validate requirements
-        if h1_count != 1:
-            raise Exception("Must have exactly one H1 heading")
-        if not has_faq:
-            raise Exception("Must include at least one FAQ block")
-        if not has_nap:
-            raise Exception("Must include NAP (business info) block")
-        if not has_cta:
-            raise Exception("Must include at least one CTA block")
+        # Validate exact requirements
+        if block_counts.get("heading", 0) != 1:
+            raise Exception("Must have exactly one H1 heading block")
+        
+        if block_counts.get("paragraph", 0) < 3:
+            raise Exception("Must have at least 3 paragraph blocks")
+        
+        if block_counts.get("faq", 0) < 1:
+            raise Exception("Must have at least 1 FAQ block")
+        
+        if block_counts.get("cta", 0) != 1:
+            raise Exception("Must have exactly 1 CTA block")
+        
+        if block_counts.get("nap", 0) != 1:
+            raise Exception("Must have exactly 1 NAP block")
+        
+        # Validate H1 contains service + city
+        h1_block = next((b for b in blocks if b.get("type") == "heading"), None)
+        if h1_block:
+            h1_text = h1_block.get("text", "").lower()
+            if not (data.service.lower() in h1_text and data.city.lower() in h1_text):
+                raise Exception("H1 heading must include both service and city")
+    
+    def _validate_seo_placement(self, content_json: Dict[str, Any], data: PageData) -> None:
+        """
+        Validate SEO placement rules are followed.
+        
+        Args:
+            content_json: JSON content to validate
+            data: Page data for validation
+            
+        Raises:
+            Exception: If SEO placement rules are violated
+        """
+        # Validate title includes service + city near beginning
+        title = content_json.get("title", "").lower()
+        if not (data.service.lower() in title and data.city.lower() in title):
+            raise Exception("Title must include both service and city")
+        
+        # Validate meta description includes service + city
+        meta_desc = content_json.get("meta_description", "").lower()
+        if not (data.service.lower() in meta_desc and data.city.lower() in meta_desc):
+            raise Exception("Meta description must include both service and city")
+        
+        # Validate first paragraph mentions service + city within first 100 words
+        blocks = content_json.get("blocks", [])
+        first_paragraph = next((b for b in blocks if b.get("type") == "paragraph"), None)
+        if first_paragraph:
+            paragraph_text = first_paragraph.get("text", "")
+            words = paragraph_text.split()
+            first_100_words = " ".join(words[:100]).lower()
+            
+            if not (data.service.lower() in first_100_words and data.city.lower() in first_100_words):
+                raise Exception("First paragraph must mention service and city within first 100 words")
+    
+    def _validate_word_count(self, blocks: List[Dict]) -> None:
+        """
+        Validate total word count meets minimum requirement.
+        
+        Args:
+            blocks: List of content blocks
+            
+        Raises:
+            Exception: If word count is insufficient
+        """
+        total_words = 0
+        
+        for block in blocks:
+            # Count words in text content blocks
+            if block.get("type") in ["paragraph", "faq"]:
+                text_content = block.get("text", "") + " " + block.get("answer", "")
+                total_words += len(text_content.split())
+        
         if total_words < 300:
             raise Exception(f"Content must be at least 300 words, got {total_words}")
+    
+    def _structure_clean_response(self, content_json: Dict[str, Any], slug: str, data: PageData) -> GeneratePageResponse:
+        """
+        Structure the validated content into clean response with minimal schema.
+        
+        Args:
+            content_json: Validated JSON response from LLM
+            slug: Programmatically generated slug
+            data: Original page data
+            
+        Returns:
+            Clean structured page response with no null fields
+        """
+        # Clean and structure blocks with minimal schema per type
+        clean_blocks = []
+        
+        for block_data in content_json["blocks"]:
+            block_type = block_data.get("type", "")
+            
+            # Create minimal schema based on block type - no null fields allowed
+            if block_type == "heading":
+                clean_block = PageBlock(
+                    type="heading",
+                    level=block_data.get("level", 1),
+                    text=block_data.get("text", "")
+                )
+            elif block_type == "paragraph":
+                clean_block = PageBlock(
+                    type="paragraph",
+                    text=block_data.get("text", "")
+                )
+            elif block_type == "faq":
+                clean_block = PageBlock(
+                    type="faq",
+                    question=block_data.get("question", ""),
+                    answer=block_data.get("answer", "")
+                )
+            elif block_type == "cta":
+                clean_block = PageBlock(
+                    type="cta",
+                    text=block_data.get("text", ""),
+                    phone=block_data.get("phone", "")
+                )
+            elif block_type == "nap":
+                clean_block = PageBlock(
+                    type="nap",
+                    business_name=block_data.get("business_name", ""),
+                    address=block_data.get("address", ""),
+                    phone=block_data.get("phone", "")
+                )
+            else:
+                # Skip unknown block types
+                continue
+            
+            clean_blocks.append(clean_block)
+        
+        return GeneratePageResponse(
+            title=content_json["title"],
+            meta_description=content_json["meta_description"],
+            slug=slug,  # Use programmatically generated slug, not LLM slug
+            blocks=clean_blocks
+        )
 
 # Global AI generator instance
 ai_generator = AIContentGenerator()
