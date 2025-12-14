@@ -19,6 +19,16 @@ class AIContentGenerator:
         "seo", "keyword", "word count", "structure", "first 100 words", 
         "this page", "this article", "in this section"
     ]
+
+    # Forbidden regional references and unsafe location language (case-insensitive)
+    # These must never appear unless explicitly provided as an input (not supported in MVP).
+    FORBIDDEN_REGION_PHRASES = [
+        "south florida",
+        "miami-dade",
+        "broward",
+        "salt air",
+        "coastal",
+    ]
     
     def __init__(self):
         """Initialize with OpenAI configuration."""
@@ -147,14 +157,18 @@ Return ONLY valid JSON with this exact structure:
 CONTENT REQUIREMENTS:
 4 paragraphs. Each paragraph must be at least 650 characters.
 The FIRST paragraph must include the exact service and city naturally near the beginning.
-Include one sentence referencing the broader area using ONLY safe terms like 'nearby areas', 'South Florida', or 'the greater {data.city} area'. Do NOT mention counties or specific neighborhoods.
-Include one sentence about regional weather considerations (rain, wind, salt air) as general context.
+Include one sentence referencing the broader area using ONLY safe terms like 'nearby areas' or 'the greater {data.city} area'. Do NOT mention counties, regions, or specific neighborhoods.
+Weather considerations must be generic and safe for the given state. Do NOT mention salt air.
+If state is TX, only mention weather risks like heat, hail, wind, heavy rain, and storms.
+Do NOT use Florida-specific wording unless state is FL.
 2 FAQs. Each answer must be at least 350 characters.
 Meta description must include the service and city naturally.
 CTA text must include the city and the phone number.
 Do NOT use HTML, markdown, or bullet points.
 Do NOT mention SEO, keywords, word counts, structure, "this page", "this article", or similar meta language.
 Do NOT mention any county names or specific neighborhoods.
+Do NOT mention regions (e.g., South Florida, Midwest, Pacific Northwest), coastal/salt-air considerations, or unrelated geography.
+Forbidden terms (case-insensitive): south florida, miami-dade, broward, salt air, coastal.
 Do NOT invent reviews, awards, certifications, or claim specific local projects.
 Keep wording natural and not repetitive.
 Return JSON only. No extra text."""
@@ -262,6 +276,11 @@ Return JSON only. No extra text."""
         for phrase in self.FORBIDDEN_PHRASES:
             if phrase.lower() in combined_text:
                 errors.append(f"Contains forbidden phrase: '{phrase}'")
+
+        # Validation 2b: Forbid incorrect regional references / unsafe geography
+        for phrase in self.FORBIDDEN_REGION_PHRASES:
+            if phrase.lower() in combined_text:
+                errors.append(f"Contains forbidden region phrase: '{phrase}'")
         
         # Validation 3: First paragraph includes service + city within 100 words
         if paragraph_blocks:
@@ -338,6 +357,10 @@ Rules:
 Return ONLY valid JSON in the same structure.
 Fix only the failing fields.
 Remove any forbidden meta-language terms.
+Remove any forbidden regional references and unsafe geography (south florida, miami-dade, broward, salt air, coastal).
+Do NOT mention specific regions (e.g., South Florida, Midwest, Pacific Northwest) unless explicitly provided as an input (not supported in MVP).
+Do NOT mention salt air.
+If state is TX, keep weather references limited to heat, hail, wind, heavy rain, and storms.
 Ensure paragraphs meet minimum character lengths and total content exceeds 300 words.
 Ensure meta_description includes service and city.
 Ensure first paragraph includes service and city within its first 100 words.
