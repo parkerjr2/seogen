@@ -77,6 +77,20 @@ class AIContentGenerator:
             
         except Exception as e:
             raise Exception(f"AI content generation failed: {str(e)}")
+
+    def generate_page_content_preview(self, data: PageData) -> GeneratePageResponse:
+        """Generate a fast preview response (no repair loop, reduced output)."""
+        try:
+            content_json = self._call_openai_generation_preview(data)
+            response = self._assemble_response(content_json, data)
+
+            validation_errors = self._validate_preview_output(response)
+            if validation_errors:
+                raise Exception(f"Preview generation failed validation: {validation_errors}")
+
+            return response
+        except Exception as e:
+            raise Exception(f"AI preview generation failed: {str(e)}")
     
     def slugify(self, service: str, city: str) -> str:
         """Generate clean slug as {service}-{city} (lowercase, hyphenated, max 60 chars)."""
@@ -88,7 +102,7 @@ class AIContentGenerator:
         # Cap at 60 characters
         return slug[:60].rstrip('-')
     
-    def _call_openai_json(self, system_prompt: str, user_prompt: str) -> Dict[str, Any]:
+    def _call_openai_json(self, system_prompt: str, user_prompt: str, *, max_tokens: int = 4000, timeout: int = 60) -> Dict[str, Any]:
         """Call OpenAI API via httpx and return parsed JSON."""
         headers = {
             "Authorization": f"Bearer {self.api_key}",
@@ -102,7 +116,7 @@ class AIContentGenerator:
                 {"role": "user", "content": user_prompt}
             ],
             "temperature": 0.4,
-            "max_tokens": 4000
+            "max_tokens": max_tokens
         }
         
         try:
@@ -111,7 +125,7 @@ class AIContentGenerator:
                     f"{self.base_url}/chat/completions",
                     headers=headers,
                     json=payload,
-                    timeout=60
+                    timeout=timeout
                 )
                 
                 if response.status_code != 200:
@@ -174,6 +188,74 @@ Keep wording natural and not repetitive.
 Return JSON only. No extra text."""
         
         return self._call_openai_json(system_prompt, user_prompt)
+
+    def _call_openai_generation_preview(self, data: PageData) -> Dict[str, Any]:
+        """Generate a fast preview content payload (reduced output, no repair loop)."""
+        system_prompt = "You are a professional local service copywriter. Write natural, trustworthy marketing copy. Avoid any writing-process language."
+
+        user_prompt = f"""Generate a FAST preview of content for a local roofing landing page using:
+Service: {data.service}
+City: {data.city}
+State: {data.state}
+Company Name: {data.company_name}
+Phone: {data.phone}
+Address: {data.address}
+
+Return ONLY valid JSON with this exact structure:
+{{
+"meta_description": "string",
+"paragraphs": [
+"string",
+"string",
+"string"
+],
+"faqs": [
+{{ "question": "string", "answer": "string" }}
+],
+"cta_text": "string"
+}}
+
+PREVIEW REQUIREMENTS:
+3 paragraphs. Each paragraph must be at least 300 characters.
+The FIRST paragraph must include the exact service and city naturally near the beginning.
+Include one sentence referencing the broader area using ONLY safe terms like 'nearby areas' or 'the greater {data.city} area'.
+Weather considerations must be generic and safe for the given state. Do NOT mention salt air.
+If state is TX, only mention weather risks like heat, hail, wind, heavy rain, and storms.
+Do NOT use Florida-specific wording unless state is FL.
+1 FAQ. The answer must be at least 200 characters.
+Meta description must include the service and city naturally.
+CTA text must include the city and the phone number.
+Do NOT use HTML, markdown, or bullet points.
+Do NOT mention any county names or specific neighborhoods.
+Do NOT mention regions (e.g., South Florida, Midwest, Pacific Northwest), coastal/salt-air considerations, or unrelated geography.
+Forbidden terms (case-insensitive): south florida, miami-dade, broward, salt air, coastal.
+Return JSON only. No extra text."""
+
+        return self._call_openai_json(system_prompt, user_prompt, max_tokens=1200, timeout=45)
+
+    def _validate_preview_output(self, response: GeneratePageResponse) -> List[str]:
+        """Lightweight validation for preview mode (fast, no repair)."""
+        errors = []
+
+        all_text = [response.title, response.meta_description]
+        for block in response.blocks:
+            if hasattr(block, 'text') and block.text:
+                all_text.append(block.text)
+            if hasattr(block, 'question') and block.question:
+                all_text.append(block.question)
+            if hasattr(block, 'answer') and block.answer:
+                all_text.append(block.answer)
+
+        combined_text = " ".join(all_text).lower()
+        for phrase in self.FORBIDDEN_PHRASES:
+            if phrase.lower() in combined_text:
+                errors.append(f"Contains forbidden phrase: '{phrase}'")
+
+        for phrase in self.FORBIDDEN_REGION_PHRASES:
+            if phrase.lower() in combined_text:
+                errors.append(f"Contains forbidden region phrase: '{phrase}'")
+
+        return errors
     
     def _assemble_response(self, content_json: Dict[str, Any], data: PageData) -> GeneratePageResponse:
         """Assemble complete response with programmatic fields and minimal block schemas."""

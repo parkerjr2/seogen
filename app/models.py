@@ -19,6 +19,7 @@ class GeneratePageRequest(BaseModel):
     """Request model for the /generate-page endpoint."""
     license_key: str
     data: PageData
+    preview: bool = False
 
 class HealthResponse(BaseModel):
     """Response model for the /health endpoint."""

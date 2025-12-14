@@ -57,6 +57,20 @@ async def generate_page(request: GeneratePageRequest):
             status_code=403,
             detail="License is not active"
         )
+
+    # Preview mode: fast generation, no credits deducted, no usage logs
+    if getattr(request, "preview", False):
+        license_id = license_data.get("id")
+        print(f"/generate-page PREVIEW mode: license_id={license_id} service={request.data.service} city={request.data.city} state={request.data.state}")
+        try:
+            page_content = ai_generator.generate_page_content_preview(request.data)
+            return page_content
+        except Exception as e:
+            print(f"AI preview generation error for license {license_id}: {str(e)}")
+            raise HTTPException(
+                status_code=500,
+                detail=f"AI preview generation failed: {str(e)}"
+            )
     
     # Check if credits remaining
     credits_remaining = license_data.get("credits_remaining", 0)
@@ -67,6 +81,7 @@ async def generate_page(request: GeneratePageRequest):
         )
     
     license_id = license_data.get("id")
+    print(f"/generate-page FULL mode: license_id={license_id} service={request.data.service} city={request.data.city} state={request.data.state}")
     
     try:
         # Generate AI-powered content with strict validation
