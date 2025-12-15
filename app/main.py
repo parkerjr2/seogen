@@ -3,10 +3,35 @@ FastAPI application main module.
 Defines API endpoints and application configuration.
 """
 
-from fastapi import FastAPI, HTTPException
-from app.models import GeneratePageRequest, HealthResponse, GeneratePageResponse, PageBlock
+from fastapi import FastAPI, HTTPException, Query
+from app.models import (
+    GeneratePageRequest,
+    HealthResponse,
+    GeneratePageResponse,
+    BulkJobCreateRequest,
+    BulkJobCreateResponse,
+    BulkJobStatusResponse,
+    BulkJobResultsResponse,
+    BulkJobResultItem,
+    BulkJobAckRequest,
+    BulkJobAckResponse,
+    BulkJobCancelRequest,
+)
 from app.supabase_client import supabase_client
 from app.ai_generator import ai_generator
+
+
+def _canonical_key(service: str, city: str, state: str) -> str:
+    return f"{service.strip().lower()}|{city.strip().lower()}|{state.strip().lower()}"
+
+
+def _require_active_license(license_key: str) -> dict:
+    license_data = supabase_client.get_license_by_key(license_key)
+    if not license_data:
+        raise HTTPException(status_code=403, detail="License key not found")
+    if license_data.get("status") != "active":
+        raise HTTPException(status_code=403, detail="License is not active")
+    return license_data
 
 # Create FastAPI application instance
 app = FastAPI(
@@ -42,21 +67,7 @@ async def generate_page(request: GeneratePageRequest):
         HTTPException: 500 if AI generation fails
     """
     # Look up license in Supabase
-    license_data = supabase_client.get_license_by_key(request.license_key)
-    
-    # Check if license exists
-    if not license_data:
-        raise HTTPException(
-            status_code=403,
-            detail="License key not found"
-        )
-    
-    # Check if license is active
-    if license_data.get("status") != "active":
-        raise HTTPException(
-            status_code=403,
-            detail="License is not active"
-        )
+    license_data = _require_active_license(request.license_key)
 
     # Preview mode: fast generation, no credits deducted, no usage logs
     if getattr(request, "preview", False):
@@ -132,3 +143,127 @@ async def generate_page(request: GeneratePageRequest):
             status_code=500,
             detail=f"AI content generation failed: {str(e)}"
         )
+
+
+@app.post("/bulk-jobs", response_model=BulkJobCreateResponse)
+async def create_bulk_job(request: BulkJobCreateRequest):
+    _require_active_license(request.license_key)
+    total_items = len(request.items)
+    if total_items <= 0:
+        raise HTTPException(status_code=400, detail="No items provided")
+
+    job = supabase_client.create_bulk_job(
+        license_key=request.license_key,
+        site_url=request.site_url,
+        job_name=request.job_name,
+        total_items=total_items,
+    )
+    if not job or not job.get("id"):
+        raise HTTPException(status_code=500, detail="Failed to create bulk job")
+
+    job_id = job["id"]
+    items_payload: list[dict] = []
+    for idx, item in enumerate(request.items):
+        items_payload.append(
+            {
+                "job_id": job_id,
+                "idx": idx,
+                "service": item.service,
+                "city": item.city,
+                "state": item.state,
+                "company_name": item.company_name,
+                "phone": item.phone,
+                "address": item.address,
+                "canonical_key": _canonical_key(item.service, item.city, item.state),
+                "status": "pending",
+                "attempts": 0,
+            }
+        )
+
+    ok = supabase_client.insert_bulk_job_items(items=items_payload)
+    if not ok:
+        supabase_client.cancel_bulk_job(job_id=job_id)
+        raise HTTPException(status_code=500, detail="Failed to insert bulk job items")
+
+    return BulkJobCreateResponse(job_id=str(job_id), total_items=total_items)
+
+
+@app.get("/bulk-jobs/{job_id}", response_model=BulkJobStatusResponse)
+async def get_bulk_job_status(job_id: str, license_key: str = Query(...)):
+    _require_active_license(license_key)
+    job = supabase_client.get_bulk_job(job_id)
+    if not job:
+        raise HTTPException(status_code=404, detail="Job not found")
+    if job.get("license_key") != license_key:
+        raise HTTPException(status_code=403, detail="Job does not belong to license")
+
+    counters = supabase_client.recompute_bulk_job_counters(job_id=job_id) or {}
+    return BulkJobStatusResponse(
+        job_id=str(job_id),
+        status=str(counters.get("status") or job.get("status") or ""),
+        total_items=int(counters.get("total_items") or job.get("total_items") or 0),
+        processed=int(counters.get("processed") or job.get("processed") or 0),
+        completed=int(counters.get("completed") or job.get("completed") or 0),
+        failed=int(counters.get("failed") or job.get("failed") or 0),
+    )
+
+
+@app.get("/bulk-jobs/{job_id}/results", response_model=BulkJobResultsResponse)
+async def get_bulk_job_results(
+    job_id: str,
+    license_key: str = Query(...),
+    status: str = Query("completed"),
+    limit: int = Query(20, ge=1, le=200),
+    cursor: str | None = Query(None),
+):
+    _require_active_license(license_key)
+    job = supabase_client.get_bulk_job(job_id)
+    if not job:
+        raise HTTPException(status_code=404, detail="Job not found")
+    if job.get("license_key") != license_key:
+        raise HTTPException(status_code=403, detail="Job does not belong to license")
+
+    cursor_idx = int(cursor) if cursor is not None and str(cursor).isdigit() else None
+    rows = supabase_client.get_bulk_job_results(job_id=job_id, status=status, cursor_idx=cursor_idx, limit=limit)
+    items: list[BulkJobResultItem] = []
+    next_cursor: str | None = None
+    for r in rows:
+        if r.get("result_json") is None:
+            continue
+        items.append(
+            BulkJobResultItem(
+                item_id=str(r.get("id")),
+                idx=int(r.get("idx") or 0),
+                canonical_key=str(r.get("canonical_key") or ""),
+                result_json=r.get("result_json") or {},
+            )
+        )
+        next_cursor = str(int(r.get("idx") or 0))
+    return BulkJobResultsResponse(items=items, next_cursor=next_cursor)
+
+
+@app.post("/bulk-jobs/{job_id}/ack", response_model=BulkJobAckResponse)
+async def ack_bulk_job_results(job_id: str, request: BulkJobAckRequest):
+    _require_active_license(request.license_key)
+    job = supabase_client.get_bulk_job(job_id)
+    if not job:
+        raise HTTPException(status_code=404, detail="Job not found")
+    if job.get("license_key") != request.license_key:
+        raise HTTPException(status_code=403, detail="Job does not belong to license")
+    imported = supabase_client.mark_bulk_items_imported(job_id=job_id, item_ids=request.imported_item_ids)
+    supabase_client.recompute_bulk_job_counters(job_id=job_id)
+    return BulkJobAckResponse(job_id=str(job_id), imported_count=int(imported))
+
+
+@app.post("/bulk-jobs/{job_id}/cancel")
+async def cancel_bulk_job(job_id: str, request: BulkJobCancelRequest):
+    _require_active_license(request.license_key)
+    job = supabase_client.get_bulk_job(job_id)
+    if not job:
+        raise HTTPException(status_code=404, detail="Job not found")
+    if job.get("license_key") != request.license_key:
+        raise HTTPException(status_code=403, detail="Job does not belong to license")
+    ok = supabase_client.cancel_bulk_job(job_id=job_id)
+    if not ok:
+        raise HTTPException(status_code=500, detail="Failed to cancel job")
+    return {"job_id": str(job_id), "status": "canceled"}

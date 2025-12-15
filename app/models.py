@@ -4,7 +4,7 @@ Defines the data structures used by the API endpoints.
 """
 
 from pydantic import BaseModel, Field
-from typing import List, Union
+from typing import List, Union, Optional
 
 class PageData(BaseModel):
     """Data model for page generation parameters."""
@@ -65,3 +65,59 @@ class GeneratePageResponse(BaseModel):
     meta_description: str
     slug: str
     blocks: List[PageBlock]
+
+
+class BulkJobItemInput(BaseModel):
+    service: str
+    city: str
+    state: str
+    company_name: str
+    phone: str
+    address: str
+
+
+class BulkJobCreateRequest(BaseModel):
+    license_key: str
+    site_url: Optional[str] = None
+    job_name: Optional[str] = None
+    items: List[BulkJobItemInput]
+
+
+class BulkJobCreateResponse(BaseModel):
+    job_id: str
+    total_items: int
+
+
+class BulkJobStatusResponse(BaseModel):
+    job_id: str
+    status: str
+    total_items: int
+    processed: int
+    completed: int
+    failed: int
+
+
+class BulkJobResultItem(BaseModel):
+    item_id: str
+    idx: int
+    canonical_key: str
+    result_json: dict
+
+
+class BulkJobResultsResponse(BaseModel):
+    items: List[BulkJobResultItem]
+    next_cursor: Optional[str] = None
+
+
+class BulkJobAckRequest(BaseModel):
+    license_key: str
+    imported_item_ids: List[str]
+
+
+class BulkJobAckResponse(BaseModel):
+    job_id: str
+    imported_count: int
+
+
+class BulkJobCancelRequest(BaseModel):
+    license_key: str
