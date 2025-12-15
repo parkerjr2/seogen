@@ -101,12 +101,22 @@ def _process_item(item: dict) -> None:
         )
 
     except Exception as e:
-        _log(f"error generating item_id={item_id} job_id={job_id} idx={idx} err={e}")
-        supabase_client.update_bulk_item_result(
-            item_id=item_id,
-            status="failed",
-            error=str(e),
-        )
+        _log(f"error generating item_id={item_id} job_id={job_id} idx={idx} attempts={attempts} err={e}")
+        # Retry logic: allow 1 retry (attempts 1 and 2), fail on attempt 2+
+        if attempts < 2:
+            _log(f"retrying item_id={item_id} (attempt {attempts + 1})")
+            supabase_client.update_bulk_item_result(
+                item_id=item_id,
+                status="pending",
+                error=f"Retry {attempts + 1}: {str(e)}",
+            )
+        else:
+            _log(f"permanently failing item_id={item_id} after {attempts} attempts")
+            supabase_client.update_bulk_item_result(
+                item_id=item_id,
+                status="failed",
+                error=str(e),
+            )
         try:
             supabase_client.log_usage(
                 license_id=license_id,
@@ -117,6 +127,7 @@ def _process_item(item: dict) -> None:
                     "idx": idx,
                     "canonical_key": canonical_key,
                     "error": str(e),
+                    "attempts": attempts,
                 },
             )
         except Exception:

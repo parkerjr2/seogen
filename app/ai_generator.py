@@ -364,12 +364,12 @@ Return JSON only. No extra text."""
             if phrase.lower() in combined_text:
                 errors.append(f"Contains forbidden region phrase: '{phrase}'")
         
-        # Validation 3: First paragraph includes service + city within 100 words
+        # Validation 3: First paragraph includes service + city within 150 words (relaxed from 100)
         if paragraph_blocks:
             first_para = paragraph_blocks[0].text or ""
-            first_100_words = " ".join(first_para.split()[:100]).lower()
-            if not (data.service.lower() in first_100_words and data.city.lower() in first_100_words):
-                errors.append("First paragraph missing service + city in first 100 words")
+            first_150_words = " ".join(first_para.split()[:150]).lower()
+            if not (data.service.lower() in first_150_words and data.city.lower() in first_150_words):
+                errors.append("First paragraph missing service + city in first 150 words")
         
         # Validation 4: Meta description includes service + city
         meta_desc = response.meta_description.lower()
