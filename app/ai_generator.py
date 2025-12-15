@@ -19,6 +19,37 @@ class AIContentGenerator:
         "seo", "keyword", "word count", "structure", "first 100 words", 
         "this page", "this article", "in this section"
     ]
+    
+    # Forbidden marketing filler phrases (case-insensitive)
+    FORBIDDEN_MARKETING_FILLER = [
+        "top-notch", "premier", "high-quality solutions", "trusted experts",
+        "we understand the importance of", "industry-leading", "best-in-class",
+        "cutting-edge", "state-of-the-art", "world-class"
+    ]
+    
+    # Trade vocabulary by service category (for validation)
+    TRADE_VOCABULARY = {
+        "electrical": ["breaker", "circuit", "panel", "outlet", "wiring", "voltage", "amp", "fuse", 
+                      "junction", "conduit", "ground", "neutral", "hot wire", "gfci", "afci"],
+        "gutter": ["downspout", "fascia", "pitch", "water flow", "debris", "soffit", "elbow", 
+                  "splash block", "gutter guard", "seam", "hanger", "end cap", "overflow"],
+        "roofing": ["shingles", "flashing", "underlayment", "vents", "decking", "ridge", "valley", 
+                   "eave", "rake", "drip edge", "ice dam", "membrane", "felt paper"],
+        "hvac": ["compressor", "condenser", "evaporator", "refrigerant", "ductwork", "thermostat", 
+                "filter", "blower", "coil", "heat exchanger", "airflow", "tonnage", "seer"],
+        "plumbing": ["pipe", "drain", "trap", "valve", "fixture", "water pressure", "sewer line", 
+                    "shutoff", "coupling", "elbow", "tee", "gasket", "flange"],
+        "window": ["sash", "frame", "pane", "glazing", "weatherstripping", "sill", "jamb", 
+                  "mullion", "casing", "flashing", "argon", "low-e", "u-factor"],
+        "door": ["threshold", "jamb", "weatherstripping", "deadbolt", "strike plate", "hinge", 
+                "sweep", "lockset", "frame", "sill", "casing", "astragal"],
+        "siding": ["lap", "j-channel", "soffit", "fascia", "trim", "flashing", "vapor barrier", 
+                  "starter strip", "corner post", "furring", "sheathing"],
+        "concrete": ["rebar", "aggregate", "slump", "cure", "expansion joint", "control joint", 
+                    "trowel", "float", "pour", "mix", "psi", "footing"],
+        "fence": ["post", "rail", "picket", "cap", "bracket", "gate", "latch", "hinge", 
+                 "concrete footing", "stringer", "panel", "post hole"],
+    }
 
     # Forbidden regional references and unsafe location language (case-insensitive)
     # These must never appear unless explicitly provided as an input (not supported in MVP).
@@ -177,27 +208,65 @@ Do NOT use generic "roofing" content as filler - stay 100% focused on the specif
 
 CONTENT STRUCTURE:
 4 sections, each with an H2 heading and paragraph (at least 650 characters):
+
 - Section 1: Heading about {data.service} in {data.city}. Paragraph introduces {data.service} and must include exact service '{data.service}' and city '{data.city}' naturally near the beginning.
-- Section 2: Heading about common {data.service} issues. Paragraph discusses problems specific to {data.service} and how you address them.
-- Section 3: Heading about your {data.service} process or quality. Paragraph focuses on materials, expertise, or what makes your {data.service} work high-quality.
-- Section 4: Heading about why choose your company. Paragraph emphasizes customer satisfaction and reliability for {data.service}.
+
+- Section 2: LOCAL EXPERTISE LAYER (REQUIRED) - Heading about common {data.service} issues in {data.city}. Paragraph must include 2-3 city-specific realities:
+  * Housing age or building styles common in {data.city} (e.g., "Many homes in {data.city} were built in the 1970s with...")
+  * Common service calls you see locally (e.g., "We often get calls about..." or "Most {data.city} homeowners notice...")
+  * Weather patterns that affect this service (generic for the state, e.g., TX: heat/hail/storms)
+  Write conversationally, as if a local technician is explaining what they see in the field.
+  Use first-person plural naturally: "we often see", "our team typically finds", "most calls start with"
+  This paragraph must feel semantically unique to this city/service combination.
+
+- Section 3: HOW THE JOB IS ACTUALLY DONE - Heading about your {data.service} process. Paragraph must explicitly describe:
+  * How the service is performed step-by-step
+  * What technicians inspect first
+  * What customers typically notice before and after
+  Write like a real explanation, not marketing copy. Example tone: "Most calls start with... We check... If we find... We then..."
+  Use 1-2 mild contractions naturally (we'll, it's, that's).
+
+- Section 4: Heading about why choose your company. Paragraph emphasizes reliability and customer satisfaction for {data.service}.
 
 Example headings for "Gutter Installation":
 - "Professional Gutter Installation in [City]"
-- "Common Gutter Problems We Solve"
-- "Our Gutter Installation Process"
+- "Common Gutter Issues We See in [City]"
+- "How We Install Gutters: Step by Step"
 - "Why Choose Us for Gutter Installation"
+
+TRADE VOCABULARY REQUIREMENT (CRITICAL):
+Each paragraph MUST include at least 2 service-specific technical terms. Examples:
+- Electrical: breaker, circuit, panel, outlet, wiring, voltage, amp, fuse, junction, conduit
+- Gutter: downspout, fascia, pitch, water flow, debris, soffit, elbow, hanger, seam
+- Roofing: shingles, flashing, underlayment, vents, decking, ridge, valley, eave
+- HVAC: compressor, condenser, evaporator, refrigerant, ductwork, thermostat, filter, coil
+- Plumbing: pipe, drain, trap, valve, fixture, water pressure, sewer line, shutoff
+Use these terms naturally in context. Avoid vague marketing language.
+
+WRITING STYLE:
+- Vary sentence openers (avoid starting every sentence the same way)
+- Use first-person plural naturally: "we often see", "our team typically", "most calls we get"
+- Allow 1-2 mild contractions per paragraph (we'll, it's, that's, you'll)
+- Write conversationally but professionally
+- Sound like a knowledgeable local contractor, not a template
+
+2 FAQs about {data.service}. EACH FAQ ANSWER MUST:
+- Mention a specific scenario or customer question (not generic)
+- Explain WHY something happens, not just what you do
+- Avoid generic reassurance language
+- Be at least 350 characters
+- If an FAQ answer could apply to any service, it fails - make it specific to {data.service}
 
 Include one sentence referencing the broader area using ONLY safe terms like 'nearby areas' or 'the greater {data.city} area'. Do NOT mention counties, regions, or specific neighborhoods.
 Weather considerations must be generic and safe for the given state. Do NOT mention salt air.
 If state is TX, only mention weather risks like heat, hail, wind, heavy rain, and storms.
 Do NOT use Florida-specific wording unless state is FL.
 
-2 FAQs about {data.service}. Each answer must be at least 350 characters and specifically address {data.service} topics, not other services.
 Meta description must include the service and city naturally.
 CTA text must include the city and the phone number.
 
-FORBIDDEN:
+STRICTLY FORBIDDEN PHRASES (will cause validation failure):
+Do NOT use: "top-notch", "premier", "high-quality solutions", "trusted experts", "we understand the importance of", "industry-leading", "best-in-class", "cutting-edge", "state-of-the-art", "world-class"
 Do NOT use HTML, markdown, or bullet points.
 Do NOT mention SEO, keywords, word counts, structure, "this page", "this article", or similar meta language.
 Do NOT mention any county names or specific neighborhoods.
@@ -357,6 +426,27 @@ Return JSON only. No extra text."""
         """Create CTA block with minimal schema: type, text, phone only."""
         return CTABlock(text=text, phone=phone)
     
+    def _get_trade_vocabulary_for_service(self, service: str) -> List[str]:
+        """Get relevant trade vocabulary for a service by matching keywords."""
+        service_lower = service.lower()
+        
+        # Direct category matches
+        for category, vocab in self.TRADE_VOCABULARY.items():
+            if category in service_lower:
+                return vocab
+        
+        # Fallback: return a generic set if no match
+        return []
+    
+    def _count_trade_terms_in_text(self, text: str, vocab: List[str]) -> int:
+        """Count how many trade-specific terms appear in the text."""
+        text_lower = text.lower()
+        count = 0
+        for term in vocab:
+            if term.lower() in text_lower:
+                count += 1
+        return count
+    
     def _validate_output(self, response: GeneratePageResponse, data: PageData) -> List[str]:
         """Validate output and return list of validation errors."""
         errors = []
@@ -400,6 +490,11 @@ Return JSON only. No extra text."""
             if phrase.lower() in combined_text:
                 errors.append(f"Contains forbidden region phrase: '{phrase}'")
         
+        # Validation 2c: Check for forbidden marketing filler phrases
+        for phrase in self.FORBIDDEN_MARKETING_FILLER:
+            if phrase.lower() in combined_text:
+                errors.append(f"Contains forbidden marketing filler: '{phrase}'")
+        
         # Validation 3: First paragraph includes service + city within 150 words (relaxed from 100)
         if paragraph_blocks:
             first_para = paragraph_blocks[0].text or ""
@@ -412,7 +507,16 @@ Return JSON only. No extra text."""
         if not (data.service.lower() in meta_desc and data.city.lower() in meta_desc):
             errors.append("Meta description missing service + city")
         
-        # Validation 5: Block count requirements
+        # Validation 5: Trade vocabulary density (each paragraph must have at least 2 trade terms)
+        trade_vocab = self._get_trade_vocabulary_for_service(data.service)
+        if trade_vocab:  # Only validate if we have vocabulary for this service
+            for idx, block in enumerate(paragraph_blocks):
+                if block.text:
+                    term_count = self._count_trade_terms_in_text(block.text, trade_vocab)
+                    if term_count < 2:
+                        errors.append(f"Paragraph {idx+1} has only {term_count} trade-specific terms (need at least 2)")
+        
+        # Validation 6: Block count requirements
         block_counts = {}
         for block in response.blocks:
             block_counts[block.type] = block_counts.get(block.type, 0) + 1
@@ -429,7 +533,7 @@ Return JSON only. No extra text."""
         if block_counts.get("cta", 0) != 1:
             errors.append(f"Expected 1 CTA, got {block_counts.get('cta', 0)}")
         
-        # Validation 6: Block schema validation (minimal schemas only)
+        # Validation 7: Block schema validation (minimal schemas only)
         schema_errors = self._validate_block_schemas(response.blocks)
         errors.extend(schema_errors)
         
@@ -476,17 +580,35 @@ CRITICAL: The service is {data.service}. Remove ALL content about other services
 If validation mentions "wrong service term", completely rewrite those paragraphs to focus ONLY on {data.service}.
 Do NOT mention roofing, roof repair, shingles, or any other service unless {data.service} explicitly contains those words.
 
+TRADE VOCABULARY REQUIREMENT:
+If validation mentions "trade-specific terms", rewrite that paragraph to include at least 2 technical terms for {data.service}.
+Examples by service:
+- Electrical: breaker, circuit, panel, outlet, wiring, voltage, amp, fuse, junction, conduit
+- Gutter: downspout, fascia, pitch, water flow, debris, soffit, elbow, hanger, seam
+- Roofing: shingles, flashing, underlayment, vents, decking, ridge, valley, eave
+- HVAC: compressor, condenser, evaporator, refrigerant, ductwork, thermostat, filter, coil
+- Plumbing: pipe, drain, trap, valve, fixture, water pressure, sewer line, shutoff
+Use these terms naturally in context. Avoid vague marketing language.
+
+WRITING STYLE:
+- Use first-person plural naturally: "we often see", "our team typically", "most calls we get"
+- Allow 1-2 mild contractions per paragraph (we'll, it's, that's, you'll)
+- Vary sentence openers
+- Sound like a knowledgeable local contractor, not a template
+
 Rules:
 Return ONLY valid JSON in the same structure.
 Fix only the failing fields.
 Remove any forbidden meta-language terms.
+Remove any forbidden marketing filler phrases: "top-notch", "premier", "high-quality solutions", "trusted experts", "we understand the importance of", "industry-leading", "best-in-class", "cutting-edge", "state-of-the-art", "world-class"
 Remove any forbidden regional references and unsafe geography (south florida, miami-dade, broward, salt air, coastal).
 Do NOT mention specific regions (e.g., South Florida, Midwest, Pacific Northwest) unless explicitly provided as an input (not supported in MVP).
 Do NOT mention salt air.
 If state is TX, keep weather references limited to heat, hail, wind, heavy rain, and storms.
 Ensure paragraphs meet minimum character lengths and total content exceeds 300 words.
+Ensure each paragraph includes at least 2 trade-specific technical terms.
 Ensure meta_description includes service and city.
-Ensure first paragraph includes service and city within its first 100 words.
+Ensure first paragraph includes service and city within its first 150 words.
 Ensure CTA includes city and phone number.
 Return JSON only."""
         
