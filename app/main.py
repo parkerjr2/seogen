@@ -237,14 +237,15 @@ async def get_bulk_job_results(
     items: list[BulkJobResultItem] = []
     next_cursor: str | None = None
     for r in rows:
-        if r.get("result_json") is None:
-            continue
+        item_status = str(r.get("status") or "")
         items.append(
             BulkJobResultItem(
                 item_id=str(r.get("id")),
                 idx=int(r.get("idx") or 0),
                 canonical_key=str(r.get("canonical_key") or ""),
-                result_json=r.get("result_json") or {},
+                status=item_status,
+                result_json=r.get("result_json") if item_status == "completed" else None,
+                error=str(r.get("error") or "") if item_status == "failed" and r.get("error") else None,
             )
         )
         next_cursor = str(int(r.get("idx") or 0))

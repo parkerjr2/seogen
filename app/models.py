@@ -101,7 +101,9 @@ class BulkJobResultItem(BaseModel):
     item_id: str
     idx: int
     canonical_key: str
-    result_json: dict
+    status: str
+    result_json: Optional[dict] = None
+    error: Optional[str] = None
 
 
 class BulkJobResultsResponse(BaseModel):

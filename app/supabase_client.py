@@ -220,8 +220,8 @@ class SupabaseClient:
     def get_bulk_job_results(self, *, job_id: str, status: str = "completed", cursor_idx: int | None = None, limit: int = 20) -> list[dict]:
         params: dict[str, str] = {
             "job_id": f"eq.{job_id}",
-            "status": f"eq.{status}",
-            "select": "id,idx,canonical_key,result_json",
+            "status": f"in.(completed,failed)",
+            "select": "id,idx,canonical_key,status,result_json,error",
             "order": "idx.asc",
             "limit": str(int(limit)),
         }
