@@ -136,7 +136,6 @@ def main() -> None:
             [
                 f"SUPABASE_URL={'set' if os.getenv('SUPABASE_URL') else 'missing'}",
                 f"SUPABASE_SECRET_KEY={'set' if os.getenv('SUPABASE_SECRET_KEY') else 'missing'}",
-                f"SEOGEN_TOKEN={'set' if os.getenv('SEOGEN_TOKEN') else 'missing'}",
                 f"OPENAI_API_KEY={'set' if os.getenv('OPENAI_API_KEY') else 'missing'}",
             ]
         )

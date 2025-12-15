@@ -22,9 +22,6 @@ class Settings:
         # Supabase configuration
         self.supabase_url = os.getenv("SUPABASE_URL")
         self.supabase_secret_key = os.getenv("SUPABASE_SECRET_KEY")
-
-        # Shared secret token for server-to-server calls (WordPress plugin -> API)
-        self.seogen_token = os.getenv("SEOGEN_TOKEN")
         
         # OpenAI configuration (optional for future AI features)
         self.openai_api_key = os.getenv("OPENAI_API_KEY")
@@ -34,8 +31,6 @@ class Settings:
             raise ValueError("SUPABASE_URL environment variable is required")
         if not self.supabase_secret_key:
             raise ValueError("SUPABASE_SECRET_KEY environment variable is required")
-        if not self.seogen_token:
-            raise ValueError("SEOGEN_TOKEN environment variable is required")
 
 # Global settings instance
 settings = Settings()
