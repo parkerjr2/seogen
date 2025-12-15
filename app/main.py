@@ -152,14 +152,18 @@ async def create_bulk_job(request: BulkJobCreateRequest):
     if total_items <= 0:
         raise HTTPException(status_code=400, detail="No items provided")
 
-    job = supabase_client.create_bulk_job(
-        license_key=request.license_key,
-        site_url=request.site_url,
-        job_name=request.job_name,
-        total_items=total_items,
-    )
+    try:
+        job = supabase_client.create_bulk_job(
+            license_key=request.license_key,
+            site_url=request.site_url,
+            job_name=request.job_name,
+            total_items=total_items,
+        )
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to create bulk job: {str(e)}")
+
     if not job or not job.get("id"):
-        raise HTTPException(status_code=500, detail="Failed to create bulk job")
+        raise HTTPException(status_code=500, detail="Failed to create bulk job: Supabase returned no job id")
 
     job_id = job["id"]
     items_payload: list[dict] = []
@@ -180,10 +184,15 @@ async def create_bulk_job(request: BulkJobCreateRequest):
             }
         )
 
-    ok = supabase_client.insert_bulk_job_items(items=items_payload)
+    try:
+        ok = supabase_client.insert_bulk_job_items(items=items_payload)
+    except Exception as e:
+        supabase_client.cancel_bulk_job(job_id=job_id)
+        raise HTTPException(status_code=500, detail=f"Failed to insert bulk job items: {str(e)}")
+
     if not ok:
         supabase_client.cancel_bulk_job(job_id=job_id)
-        raise HTTPException(status_code=500, detail="Failed to insert bulk job items")
+        raise HTTPException(status_code=500, detail="Failed to insert bulk job items: unknown error")
 
     return BulkJobCreateResponse(job_id=str(job_id), total_items=total_items)
 

@@ -156,45 +156,35 @@ class SupabaseClient:
             "failed": 0,
         }
         payload = {k: v for k, v in payload.items() if v is not None}
-        try:
-            resp = self._request(
-                "POST",
-                "/rest/v1/bulk_jobs",
-                json=payload,
-                extra_headers={"Prefer": "return=representation"},
-                timeout=15,
-            )
-            if resp.status_code != 201:
-                print(f"create_bulk_job HTTP {resp.status_code}: {resp.text}")
-                return None
-            data = resp.json()
-            if isinstance(data, list) and data:
-                return data[0]
-            if isinstance(data, dict):
-                return data
-            return None
-        except Exception as e:
-            print(f"Error creating bulk job: {e}")
-            return None
+        resp = self._request(
+            "POST",
+            "/rest/v1/bulk_jobs",
+            json=payload,
+            extra_headers={"Prefer": "return=representation"},
+            timeout=15,
+        )
+        if resp.status_code != 201:
+            raise RuntimeError(f"create_bulk_job HTTP {resp.status_code}: {resp.text}")
+        data = resp.json()
+        if isinstance(data, list) and data:
+            return data[0]
+        if isinstance(data, dict):
+            return data
+        return None
 
     def insert_bulk_job_items(self, *, items: list[dict]) -> bool:
         if not items:
             return True
-        try:
-            resp = self._request(
-                "POST",
-                "/rest/v1/bulk_job_items",
-                json=items,
-                extra_headers={"Prefer": "return=minimal"},
-                timeout=30,
-            )
-            if resp.status_code not in (201, 204):
-                print(f"insert_bulk_job_items HTTP {resp.status_code}: {resp.text}")
-                return False
-            return True
-        except Exception as e:
-            print(f"Error inserting bulk items: {e}")
-            return False
+        resp = self._request(
+            "POST",
+            "/rest/v1/bulk_job_items",
+            json=items,
+            extra_headers={"Prefer": "return=minimal"},
+            timeout=30,
+        )
+        if resp.status_code not in (201, 204):
+            raise RuntimeError(f"insert_bulk_job_items HTTP {resp.status_code}: {resp.text}")
+        return True
 
     def get_bulk_job(self, job_id: str) -> dict | None:
         job_id = str(job_id)
