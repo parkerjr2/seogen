@@ -3,7 +3,7 @@ FastAPI application main module.
 Defines API endpoints and application configuration.
 """
 
-from fastapi import FastAPI, HTTPException, Query
+from fastapi import FastAPI, HTTPException, Query, Header
 from app.models import (
     GeneratePageRequest,
     HealthResponse,
@@ -19,6 +19,7 @@ from app.models import (
 )
 from app.supabase_client import supabase_client
 from app.ai_generator import ai_generator
+from app.config import settings
 
 
 def _canonical_key(service: str, city: str, state: str) -> str:
@@ -32,6 +33,11 @@ def _require_active_license(license_key: str) -> dict:
     if license_data.get("status") != "active":
         raise HTTPException(status_code=403, detail="License is not active")
     return license_data
+
+
+def _require_seogen_token(x_seogen_token: str | None) -> None:
+    if not x_seogen_token or x_seogen_token != settings.seogen_token:
+        raise HTTPException(status_code=401, detail="Unauthorized")
 
 # Create FastAPI application instance
 app = FastAPI(
@@ -51,7 +57,11 @@ async def health_check():
     return HealthResponse(status="ok")
 
 @app.post("/generate-page", response_model=GeneratePageResponse)
-async def generate_page(request: GeneratePageRequest):
+async def generate_page(
+    request: GeneratePageRequest,
+    x_seogen_token: str | None = Header(default=None, alias="X-SEOGEN-TOKEN"),
+):
+    _require_seogen_token(x_seogen_token)
     """
     Generate AI-powered, SEO-optimized page content for roofing services.
     
@@ -146,7 +156,11 @@ async def generate_page(request: GeneratePageRequest):
 
 
 @app.post("/bulk-jobs", response_model=BulkJobCreateResponse)
-async def create_bulk_job(request: BulkJobCreateRequest):
+async def create_bulk_job(
+    request: BulkJobCreateRequest,
+    x_seogen_token: str | None = Header(default=None, alias="X-SEOGEN-TOKEN"),
+):
+    _require_seogen_token(x_seogen_token)
     _require_active_license(request.license_key)
     total_items = len(request.items)
     if total_items <= 0:
@@ -198,7 +212,12 @@ async def create_bulk_job(request: BulkJobCreateRequest):
 
 
 @app.get("/bulk-jobs/{job_id}", response_model=BulkJobStatusResponse)
-async def get_bulk_job_status(job_id: str, license_key: str = Query(...)):
+async def get_bulk_job_status(
+    job_id: str,
+    license_key: str = Query(...),
+    x_seogen_token: str | None = Header(default=None, alias="X-SEOGEN-TOKEN"),
+):
+    _require_seogen_token(x_seogen_token)
     _require_active_license(license_key)
     job = supabase_client.get_bulk_job(job_id)
     if not job:
@@ -224,7 +243,9 @@ async def get_bulk_job_results(
     status: str = Query("completed"),
     limit: int = Query(20, ge=1, le=200),
     cursor: str | None = Query(None),
+    x_seogen_token: str | None = Header(default=None, alias="X-SEOGEN-TOKEN"),
 ):
+    _require_seogen_token(x_seogen_token)
     _require_active_license(license_key)
     job = supabase_client.get_bulk_job(job_id)
     if not job:
@@ -252,7 +273,12 @@ async def get_bulk_job_results(
 
 
 @app.post("/bulk-jobs/{job_id}/ack", response_model=BulkJobAckResponse)
-async def ack_bulk_job_results(job_id: str, request: BulkJobAckRequest):
+async def ack_bulk_job_results(
+    job_id: str,
+    request: BulkJobAckRequest,
+    x_seogen_token: str | None = Header(default=None, alias="X-SEOGEN-TOKEN"),
+):
+    _require_seogen_token(x_seogen_token)
     _require_active_license(request.license_key)
     job = supabase_client.get_bulk_job(job_id)
     if not job:
@@ -265,7 +291,12 @@ async def ack_bulk_job_results(job_id: str, request: BulkJobAckRequest):
 
 
 @app.post("/bulk-jobs/{job_id}/cancel")
-async def cancel_bulk_job(job_id: str, request: BulkJobCancelRequest):
+async def cancel_bulk_job(
+    job_id: str,
+    request: BulkJobCancelRequest,
+    x_seogen_token: str | None = Header(default=None, alias="X-SEOGEN-TOKEN"),
+):
+    _require_seogen_token(x_seogen_token)
     _require_active_license(request.license_key)
     job = supabase_client.get_bulk_job(job_id)
     if not job:
