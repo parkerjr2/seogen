@@ -212,40 +212,46 @@ CONTENT STRUCTURE (OPTIMIZED FOR MAP PACK VISIBILITY):
 
 - Section 1: Heading about {data.service} in {data.city}. 
   Paragraph introduces {data.service} and must include exact service '{data.service}' and city '{data.city}' naturally near the beginning.
-  MANDATORY FIELD INSIGHT: Include at least 2 sentences reflecting real-world service observations:
-  * What customers notice before calling (e.g., "Homeowners typically notice this when...")
-  * What you observe in the field (e.g., "We often see this issue after the first major storm...")
-  * Common patterns in {data.city} (e.g., "In many homes around {data.city}, this usually starts when...")
+  MANDATORY FIELD INSIGHT: Include at least 2 sentences reflecting real-world service observations (but VARY the phrasing - see anti-symmetry rules below).
+  CITY DIFFERENTIATION PACK (MANDATORY): Include at least 2 "local differentiators" from these safe categories:
+  * Home style/build era WITHOUT naming neighborhoods: "older homes", "newer subdivisions", "homes built in the 80s-90s", "many slab-on-grade homes", "pier-and-beam foundations"
+  * Climate-driven mechanics (state-safe weather only - TX: heat, hail, wind, heavy rain, storms): tie weather to physical failures like "expansion", "pitch drift", "overflow points", "seam separation", "hanger loosening"
+  * Maintenance patterns: "tree debris frequency", "neglected cleanouts", "DIY extensions"
+  * Construction details: "long runs", "roofline complexity", "downspout placement" (no neighborhood references)
   Do NOT start with "At {data.company_name}, we..." - start with the problem or customer observation.
   TONE: Experienced local explanation, not marketing reassurance.
 
 - Section 2: LOCAL EXPERTISE + DECISION GUIDANCE - Heading about common {data.service} issues in {data.city}. 
   Paragraph must include:
-  * 2-3 city-specific realities (housing age, weather patterns, common service calls)
+  * CITY DIFFERENTIATION PACK (MANDATORY): At least 2 local differentiators from the safe categories above
   * DECISION GUIDANCE: Help users decide when to act (e.g., "If water is spilling behind the gutter instead of into the downspout, this needs immediate attention because...")
   * WARNING SIGNS: What escalates if ignored (e.g., "Once this starts happening, it can quickly lead to...")
   * INFORMATIONAL ASYMMETRY: Include one insight competitors often omit (common homeowner mistakes, assumptions that worsen problems, issues that look minor but aren't)
-  MANDATORY: At least 2 field insight sentences.
-  Use observational phrasing: "we often see", "most calls start with", "homeowners typically notice"
+  MANDATORY: At least 2 field insight sentences (but VARY the phrasing - see anti-symmetry rules below).
   Do NOT start with brand-first language.
-  VARY THIS CONTENT: Use different examples, emphasis, and order for each city to avoid boilerplate symmetry.
+  RANDOMIZE NARRATIVE ORDER: Do NOT always follow "downspouts first, elbows second, then outcomes" - vary the order of topics across cities.
 
 - Section 3: MICRO-NARRATIVE PROCESS + PRACTICAL GUIDANCE - Heading about your {data.service} process. 
   Paragraph must read like a walkthrough:
-  * What's checked first and why (e.g., "We start by inspecting the downspouts because that's where most blockages occur...")
-  * What problems are commonly found (e.g., "Most of the time we find debris buildup at the elbows...")
-  * DECISION GUIDANCE: When a repair is enough vs when replacement is needed
-  * What changes after the work (e.g., "Once that's corrected, water flows cleanly away from the foundation...")
-  MANDATORY: At least 2 field insight sentences.
+  * What's checked first and why
+  * What problems are commonly found
+  * FORK DECISION POINT (MANDATORY): Include 1-2 sentences explaining when a repair is enough vs when sectional replacement is needed, tied to observable conditions (seam failure, sagging, fascia rot, pitch issues)
+  * What changes after the work
+  * CITY DIFFERENTIATION PACK (MANDATORY): At least 2 local differentiators from the safe categories above
+  MANDATORY: At least 2 field insight sentences (but VARY the phrasing - see anti-symmetry rules below).
   Use calm, confident, practical explanations.
   Avoid generic "thorough and professional" language.
-  VARY THIS CONTENT: Use different problem emphasis for each city (weather vs housing age vs maintenance neglect).
+  RANDOMIZE NARRATIVE ORDER: Vary the inspection sequence and problem emphasis across cities.
 
 - Section 4: Heading about reliability and customer outcomes (NOT "why choose us"). 
-  Paragraph emphasizes what customers experience, not marketing claims.
-  MANDATORY: At least 2 field insight sentences about customer outcomes or common concerns.
+  OBSERVABLE OUTCOMES ONLY (MANDATORY): Focus on measurable/observable results:
+  * "no overflow at the end cap"
+  * "water discharges at the splash block"
+  * "no staining on fascia"
+  * "no pooling near foundation"
+  Replace emotional/social proof phrasing with concrete outcomes customers can verify.
+  MANDATORY: At least 2 field insight sentences about outcomes/concerns you hear repeatedly (but VARY the phrasing - see anti-symmetry rules below).
   Start with customer scenarios or outcomes, not company claims.
-  Include practical information that helps decision-making.
   TONE: Observational and helpful, not promotional.
   This section can be more customer-focused and doesn't require as many technical terms.
 
@@ -288,17 +294,36 @@ TONE SHIFT: From "marketing reassurance" to "experienced local explanation"
 
 2 FAQs about {data.service}. OPTIMIZED FOR MAP PACK INTENT - EACH FAQ ANSWER MUST:
 - Reference a REAL CUSTOMER SITUATION (e.g., "When you notice water pooling near your foundation...")
-- Follow CAUSE→SYMPTOM→CONSEQUENCE structure:
+- Follow CAUSE→SYMPTOM→CONSEQUENCE→RESOLUTION structure:
   * Explain the cause (e.g., "...this usually means the downspouts are clogged or disconnected...")
   * Explain the symptom/what customers see (e.g., "...you'll notice water staining on the fascia...")
   * Explain the consequence if ignored (e.g., "...which can lead to foundation damage over time...")
   * Explain how the service resolves it (e.g., "...we clear the blockage and ensure proper drainage away from the house")
 - Be at least 350 characters
 - Demonstrate EXPERIENCE, not just correctness
-- Include decision-guidance (when to act, what to watch for)
+- Include one LOCAL DIFFERENTIATOR from the City Differentiation Pack categories
+- Include one TRADE TERM beyond the minimum paragraph requirements
+- Include "WHEN TO ACT TODAY VS MONITOR" guidance (e.g., "If you're seeing active overflow during rain, address this immediately. If it's just minor staining, you can monitor it through the next storm.")
 - CRITICAL: If an FAQ could apply to any city with zero changes, rewrite it with city-specific context
 - Read like you're answering a real customer question you've heard many times
 - TONE: Calm, confident, practical explanation - not marketing reassurance
+
+ANTI-SYMMETRY RULES (CRITICAL - AVOID TEMPLATE PATTERNS):
+Do NOT reuse these generic sentence templates across cities. Keep the idea but VARY the wording and sentence structure:
+- ❌ "Homeowners typically notice..."
+- ❌ "We often see this after the first major storm..."
+- ❌ "Most issues we see start when..."
+- ❌ "In many homes around {{city}}, this usually happens when..."
+- ❌ "Once this starts happening, it can quickly lead to..."
+- ❌ "We start by inspecting..."
+
+Instead, vary your phrasing:
+- ✅ "The first sign usually shows up as...", "What brings most calls is...", "Property owners around {{city}} run into this when..."
+- ✅ "After a heavy downpour, you'll notice...", "Spring storms tend to expose...", "When hail hits, we see..."
+- ✅ "Problems build up when...", "This develops over time as...", "The issue compounds if..."
+- ✅ "Checking the attachment points first...", "Our inspection focuses on...", "The critical area to examine is..."
+
+IMPORTANT: You must still include 2 field-insight sentences per section, but phrase them differently each time. Do NOT start every field-insight sentence with the same clause structure.
 
 Include one sentence referencing the broader area using ONLY safe terms like 'nearby areas' or 'the greater {data.city} area'. Do NOT mention counties, regions, or specific neighborhoods.
 Weather considerations must be generic and safe for the given state. Do NOT mention salt air.
@@ -626,16 +651,36 @@ If validation mentions "wrong service term", completely rewrite those paragraphs
 Do NOT mention roofing, roof repair, shingles, or any other service unless {data.service} explicitly contains those words.
 
 MAP PACK OPTIMIZATION - FIELD INSIGHT REQUIREMENT (MANDATORY):
-Each paragraph must include at least 2 sentences reflecting real-world service observations:
-- What customers notice before calling: "Homeowners typically notice this when..."
-- What you observe in the field: "We often see this issue after the first major storm..."
-- Common patterns in {data.city}: "In many homes around {data.city}, this usually starts when..."
-If a paragraph reads like generic marketing copy, rewrite it to demonstrate experience.
+Each paragraph must include at least 2 sentences reflecting real-world service observations.
+ANTI-SYMMETRY: Do NOT use these template patterns:
+- ❌ "Homeowners typically notice..."
+- ❌ "We often see this after the first major storm..."
+- ❌ "Most issues we see start when..."
+- ❌ "In many homes around {data.city}, this usually happens when..."
+Instead, vary your phrasing: "The first sign usually shows up as...", "What brings most calls is...", "After a heavy downpour, you'll notice...", "Problems build up when..."
+
+CITY DIFFERENTIATION PACK (MANDATORY):
+Sections 1-3 must EACH include at least 2 "local differentiators" from these safe categories:
+- Home style/build era WITHOUT naming neighborhoods: "older homes", "newer subdivisions", "homes built in the 80s-90s", "many slab-on-grade homes", "pier-and-beam foundations"
+- Climate-driven mechanics (state-safe weather only - TX: heat, hail, wind, heavy rain, storms): tie weather to physical failures like "expansion", "pitch drift", "overflow points", "seam separation", "hanger loosening"
+- Maintenance patterns: "tree debris frequency", "neglected cleanouts", "DIY extensions"
+- Construction details: "long runs", "roofline complexity", "downspout placement" (no neighborhood references)
+
+RANDOMIZE NARRATIVE ORDER:
+Do NOT always follow "downspouts first, elbows second, then outcomes" - vary the order of topics across cities.
+Vary the inspection sequence and problem emphasis.
+
+FORK DECISION POINT (Section 3):
+Include 1-2 sentences explaining when a repair is enough vs when sectional replacement is needed, tied to observable conditions (seam failure, sagging, fascia rot, pitch issues).
+
+OBSERVABLE OUTCOMES (Section 4):
+Focus on measurable/observable results: "no overflow at the end cap", "water discharges at the splash block", "no staining on fascia", "no pooling near foundation"
+Replace emotional/social proof phrasing with concrete outcomes customers can verify.
 
 DECISION GUIDANCE (REQUIRED):
 Include content that helps users decide:
-- When to act immediately vs when to monitor (e.g., "If water is spilling behind the gutter instead of into the downspout, this needs immediate attention because...")
-- What escalates if ignored (e.g., "Once this starts happening, it can quickly lead to...")
+- When to act immediately vs when to monitor
+- What escalates if ignored
 - When a repair is enough vs when replacement is needed
 
 INFORMATIONAL ASYMMETRY (REQUIRED):
@@ -644,13 +689,6 @@ Include at least one insight competitors often omit:
 - Assumptions that make problems worse
 - Issues that look minor but aren't
 Avoid "we're dedicated / trusted / professional" filler. Teach, don't just reassure.
-
-REDUCE BOILERPLATE SYMMETRY:
-Ensure this page is meaningfully different from other cities by varying:
-- Examples used
-- Order of ideas
-- Problem emphasis (weather vs housing age vs maintenance neglect)
-Do NOT reuse paragraph patterns verbatim.
 
 REDUCE BRAND-FIRST OPENERS:
 Do NOT start paragraphs with "At {data.company_name}, we..." or "Choosing {data.company_name} means..."
@@ -675,7 +713,9 @@ Each FAQ answer must:
 - Reference a real customer situation
 - Follow CAUSE→SYMPTOM→CONSEQUENCE→RESOLUTION structure
 - Demonstrate experience, not just correctness
-- Include decision-guidance
+- Include one LOCAL DIFFERENTIATOR from the City Differentiation Pack categories
+- Include one TRADE TERM beyond the minimum paragraph requirements
+- Include "WHEN TO ACT TODAY VS MONITOR" guidance
 - If it could apply to any city with zero changes, add city-specific context
 
 TONE SHIFT (CRITICAL):
