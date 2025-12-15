@@ -207,40 +207,46 @@ If the service is "HVAC Installation", write ONLY about HVAC - never mention plu
 Section headings must be specific to {data.service}, not generic or about other services.
 Do NOT use generic "roofing" content as filler - stay 100% focused on the specified service.
 
-CONTENT STRUCTURE:
+CONTENT STRUCTURE (OPTIMIZED FOR MAP PACK VISIBILITY):
 4 sections, each with an H2 heading and paragraph (at least 650 characters):
 
 - Section 1: Heading about {data.service} in {data.city}. 
   Paragraph introduces {data.service} and must include exact service '{data.service}' and city '{data.city}' naturally near the beginning.
-  CRITICAL: Include at least one "lived experience" sentence like: "We often get calls after...", "Most issues we see start when...", "In many homes around {data.city}, this usually happens when..."
-  Do NOT start with "At {data.company_name}, we..." - start with the problem, scenario, or customer situation instead.
-  After establishing the context, you can mention the company naturally or not at all.
+  MANDATORY FIELD INSIGHT: Include at least 2 sentences reflecting real-world service observations:
+  * What customers notice before calling (e.g., "Homeowners typically notice this when...")
+  * What you observe in the field (e.g., "We often see this issue after the first major storm...")
+  * Common patterns in {data.city} (e.g., "In many homes around {data.city}, this usually starts when...")
+  Do NOT start with "At {data.company_name}, we..." - start with the problem or customer observation.
+  TONE: Experienced local explanation, not marketing reassurance.
 
-- Section 2: LOCAL EXPERTISE LAYER (REQUIRED) - Heading about common {data.service} issues in {data.city}. 
-  Paragraph must include 2-3 city-specific realities:
-  * Housing age or building styles common in {data.city} (e.g., "Many homes in {data.city} were built in the 1970s with...")
-  * Common service calls you see locally (e.g., "We often get calls about..." or "Most {data.city} homeowners notice...")
-  * Weather patterns that affect this service (generic for the state, e.g., TX: heat/hail/storms)
-  CRITICAL: Include at least one "lived experience" sentence reflecting real-world service experience.
-  Write conversationally, as if a local technician is explaining what they see in the field.
-  Use first-person plural naturally: "we often see", "our team typically finds", "most calls start with"
-  Do NOT start with brand-first language like "At {data.company_name}..." or "Choosing {data.company_name}..."
-  This paragraph must feel semantically unique to this city/service combination.
+- Section 2: LOCAL EXPERTISE + DECISION GUIDANCE - Heading about common {data.service} issues in {data.city}. 
+  Paragraph must include:
+  * 2-3 city-specific realities (housing age, weather patterns, common service calls)
+  * DECISION GUIDANCE: Help users decide when to act (e.g., "If water is spilling behind the gutter instead of into the downspout, this needs immediate attention because...")
+  * WARNING SIGNS: What escalates if ignored (e.g., "Once this starts happening, it can quickly lead to...")
+  * INFORMATIONAL ASYMMETRY: Include one insight competitors often omit (common homeowner mistakes, assumptions that worsen problems, issues that look minor but aren't)
+  MANDATORY: At least 2 field insight sentences.
+  Use observational phrasing: "we often see", "most calls start with", "homeowners typically notice"
+  Do NOT start with brand-first language.
+  VARY THIS CONTENT: Use different examples, emphasis, and order for each city to avoid boilerplate symmetry.
 
-- Section 3: MICRO-NARRATIVE PROCESS - Heading about your {data.service} process. 
-  Paragraph must read like a walkthrough with these required elements:
-  * What's checked first (e.g., "We start by inspecting...")
-  * What problems are commonly found (e.g., "If we notice... Most of the time we find...")
-  * What changes after the work is done (e.g., "Once that's corrected, you'll see...")
-  CRITICAL: Include at least one "lived experience" sentence.
-  Write like a real explanation, not marketing copy. Use phrasing like: "We start by...", "If we notice...", "Once that's corrected..."
-  Use 1-2 mild contractions naturally (we'll, it's, that's).
+- Section 3: MICRO-NARRATIVE PROCESS + PRACTICAL GUIDANCE - Heading about your {data.service} process. 
+  Paragraph must read like a walkthrough:
+  * What's checked first and why (e.g., "We start by inspecting the downspouts because that's where most blockages occur...")
+  * What problems are commonly found (e.g., "Most of the time we find debris buildup at the elbows...")
+  * DECISION GUIDANCE: When a repair is enough vs when replacement is needed
+  * What changes after the work (e.g., "Once that's corrected, water flows cleanly away from the foundation...")
+  MANDATORY: At least 2 field insight sentences.
+  Use calm, confident, practical explanations.
   Avoid generic "thorough and professional" language.
+  VARY THIS CONTENT: Use different problem emphasis for each city (weather vs housing age vs maintenance neglect).
 
-- Section 4: Heading about why choose your company. 
-  Paragraph emphasizes reliability and customer satisfaction for {data.service}.
-  CRITICAL: Include at least one "lived experience" sentence.
-  Do NOT start with "At {data.company_name}, we..." or "Choosing {data.company_name} means..." - start with customer outcomes or scenarios.
+- Section 4: Heading about reliability and customer outcomes (NOT "why choose us"). 
+  Paragraph emphasizes what customers experience, not marketing claims.
+  MANDATORY: At least 2 field insight sentences about customer outcomes or common concerns.
+  Start with customer scenarios or outcomes, not company claims.
+  Include practical information that helps decision-making.
+  TONE: Observational and helpful, not promotional.
   This section can be more customer-focused and doesn't require as many technical terms.
 
 Example headings for "Gutter Installation":
@@ -266,24 +272,33 @@ Use natural substitutes and functional descriptions:
 - Instead of repeating "HVAC Installation" → use "getting your system installed", "setting up your new unit", "installing the equipment"
 The service name must appear where required, but vary your language throughout the rest of the content.
 
-WRITING STYLE (CRITICAL):
+WRITING STYLE (MAP PACK OPTIMIZED):
+TONE SHIFT: From "marketing reassurance" to "experienced local explanation"
+- Use observational phrasing that demonstrates experience: "we often see", "most calls start with", "homeowners typically notice"
+- Use practical explanations that teach, not just reassure
+- Use calm, confident tone (not promotional or defensive)
 - Mix short and long sentences for natural rhythm
 - Vary sentence openers - avoid starting every sentence the same way
-- Use first-person plural naturally: "we often see", "our team typically", "most calls we get"
 - Allow 1-2 mild contractions per paragraph (we'll, it's, that's, you'll)
 - Write conversationally but professionally
-- Sound like a knowledgeable local contractor, not a template
+- Sound like a knowledgeable local contractor explaining real problems, not a template
 - Do NOT use slang or emojis
 - Do NOT add testimonials or opinions not grounded in service work
+- CRITICAL: Pages for the same service in different cities must NOT be interchangeable - vary examples, order, and emphasis
 
-2 FAQs about {data.service}. EACH FAQ ANSWER MUST FOLLOW CAUSE→EFFECT→RESOLUTION:
-- Reference a specific scenario or symptom (e.g., "When you notice water pooling near your foundation...")
-- Explain the cause (e.g., "...this usually means the downspouts are clogged or disconnected...")
-- Explain the effect (e.g., "...which can lead to foundation damage over time...")
-- Explain the resolution (e.g., "...we clear the blockage and ensure proper drainage away from the house")
+2 FAQs about {data.service}. OPTIMIZED FOR MAP PACK INTENT - EACH FAQ ANSWER MUST:
+- Reference a REAL CUSTOMER SITUATION (e.g., "When you notice water pooling near your foundation...")
+- Follow CAUSE→SYMPTOM→CONSEQUENCE structure:
+  * Explain the cause (e.g., "...this usually means the downspouts are clogged or disconnected...")
+  * Explain the symptom/what customers see (e.g., "...you'll notice water staining on the fascia...")
+  * Explain the consequence if ignored (e.g., "...which can lead to foundation damage over time...")
+  * Explain how the service resolves it (e.g., "...we clear the blockage and ensure proper drainage away from the house")
 - Be at least 350 characters
-- Read like you're answering a real customer question
-- If an FAQ answer could apply to any service, it fails - make it specific to {data.service}
+- Demonstrate EXPERIENCE, not just correctness
+- Include decision-guidance (when to act, what to watch for)
+- CRITICAL: If an FAQ could apply to any city with zero changes, rewrite it with city-specific context
+- Read like you're answering a real customer question you've heard many times
+- TONE: Calm, confident, practical explanation - not marketing reassurance
 
 Include one sentence referencing the broader area using ONLY safe terms like 'nearby areas' or 'the greater {data.city} area'. Do NOT mention counties, regions, or specific neighborhoods.
 Weather considerations must be generic and safe for the given state. Do NOT mention salt air.
@@ -610,17 +625,36 @@ CRITICAL: The service is {data.service}. Remove ALL content about other services
 If validation mentions "wrong service term", completely rewrite those paragraphs to focus ONLY on {data.service}.
 Do NOT mention roofing, roof repair, shingles, or any other service unless {data.service} explicitly contains those words.
 
-LIVED EXPERIENCE REQUIREMENT:
-Each paragraph must include at least one "lived experience" sentence like:
-- "We often get calls after..."
-- "Most issues we see start when..."
-- "In many homes around {data.city}, this usually happens when..."
-If a paragraph reads like generic marketing copy, rewrite it to reflect real-world service experience.
+MAP PACK OPTIMIZATION - FIELD INSIGHT REQUIREMENT (MANDATORY):
+Each paragraph must include at least 2 sentences reflecting real-world service observations:
+- What customers notice before calling: "Homeowners typically notice this when..."
+- What you observe in the field: "We often see this issue after the first major storm..."
+- Common patterns in {data.city}: "In many homes around {data.city}, this usually starts when..."
+If a paragraph reads like generic marketing copy, rewrite it to demonstrate experience.
+
+DECISION GUIDANCE (REQUIRED):
+Include content that helps users decide:
+- When to act immediately vs when to monitor (e.g., "If water is spilling behind the gutter instead of into the downspout, this needs immediate attention because...")
+- What escalates if ignored (e.g., "Once this starts happening, it can quickly lead to...")
+- When a repair is enough vs when replacement is needed
+
+INFORMATIONAL ASYMMETRY (REQUIRED):
+Include at least one insight competitors often omit:
+- Common homeowner mistakes
+- Assumptions that make problems worse
+- Issues that look minor but aren't
+Avoid "we're dedicated / trusted / professional" filler. Teach, don't just reassure.
+
+REDUCE BOILERPLATE SYMMETRY:
+Ensure this page is meaningfully different from other cities by varying:
+- Examples used
+- Order of ideas
+- Problem emphasis (weather vs housing age vs maintenance neglect)
+Do NOT reuse paragraph patterns verbatim.
 
 REDUCE BRAND-FIRST OPENERS:
 Do NOT start paragraphs with "At {data.company_name}, we..." or "Choosing {data.company_name} means..."
-Start with the problem, scenario, or customer situation instead.
-Mention the company naturally later, or not at all.
+Start with the problem, customer observation, or scenario instead.
 
 REDUCE KEYWORD REPETITION:
 Do NOT repeat '{data.service}' mechanically in every sentence.
@@ -636,16 +670,23 @@ Examples by service:
 - Plumbing: pipe, drain, trap, valve, fixture, water pressure, sewer line, shutoff
 Use these terms naturally in context. Avoid vague marketing language.
 
-FAQ CAUSE→EFFECT→RESOLUTION:
-Each FAQ answer must reference a specific scenario, explain the cause, explain the effect, and explain the resolution.
-Read like you're answering a real customer question.
+FAQ MAP PACK OPTIMIZATION:
+Each FAQ answer must:
+- Reference a real customer situation
+- Follow CAUSE→SYMPTOM→CONSEQUENCE→RESOLUTION structure
+- Demonstrate experience, not just correctness
+- Include decision-guidance
+- If it could apply to any city with zero changes, add city-specific context
 
-WRITING STYLE:
+TONE SHIFT (CRITICAL):
+From "marketing reassurance" to "experienced local explanation"
+- Use observational phrasing: "we often see", "most calls start with", "homeowners typically notice"
+- Use practical explanations that teach
+- Use calm, confident tone (not promotional)
 - Mix short and long sentences for natural rhythm
-- Vary sentence openers - avoid starting every sentence the same way
-- Use first-person plural naturally: "we often see", "our team typically", "most calls we get"
-- Allow 1-2 mild contractions per paragraph (we'll, it's, that's, you'll)
-- Sound like a knowledgeable local contractor, not a template
+- Vary sentence openers
+- Allow 1-2 mild contractions per paragraph
+- Sound like a knowledgeable local contractor explaining real problems
 
 Rules:
 Return ONLY valid JSON in the same structure.
@@ -653,7 +694,7 @@ Fix only the failing fields.
 Remove any forbidden meta-language terms.
 Remove any forbidden marketing filler phrases: "top-notch", "premier", "high-quality solutions", "trusted experts", "we understand the importance of", "industry-leading", "best-in-class", "cutting-edge", "state-of-the-art", "world-class", "best in the area", "leading provider", "your trusted", "your go-to", "number one choice"
 Remove any forbidden regional references and unsafe geography (south florida, miami-dade, broward, salt air, coastal).
-Do NOT mention specific regions (e.g., South Florida, Midwest, Pacific Northwest) unless explicitly provided as an input (not supported in MVP).
+Do NOT mention specific regions (e.g., South Florida, Midwest, Pacific Northwest).
 Do NOT mention salt air.
 If state is TX, keep weather references limited to heat, hail, wind, heavy rain, and storms.
 Ensure paragraphs meet minimum character lengths and total content exceeds 300 words.
