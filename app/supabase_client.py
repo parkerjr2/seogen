@@ -221,7 +221,7 @@ class SupabaseClient:
         params: dict[str, str] = {
             "job_id": f"eq.{job_id}",
             "status": f"in.(completed,failed)",
-            "select": "id,idx,canonical_key,status,result_json,error",
+            "select": "id,idx,canonical_key,status,attempts,result_json,error",
             "order": "idx.asc",
             "limit": str(int(limit)),
         }

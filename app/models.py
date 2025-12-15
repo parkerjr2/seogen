@@ -102,6 +102,7 @@ class BulkJobResultItem(BaseModel):
     idx: int
     canonical_key: str
     status: str
+    attempts: int = 0
     result_json: Optional[dict] = None
     error: Optional[str] = None
 

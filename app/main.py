@@ -251,6 +251,7 @@ async def get_bulk_job_results(
                 idx=int(r.get("idx") or 0),
                 canonical_key=str(r.get("canonical_key") or ""),
                 status=item_status,
+                attempts=int(r.get("attempts") or 0),
                 result_json=r.get("result_json") if item_status == "completed" else None,
                 error=str(r.get("error") or "") if item_status == "failed" and r.get("error") else None,
             )
