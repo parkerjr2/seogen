@@ -168,26 +168,40 @@ Return ONLY valid JSON with this exact structure:
 "cta_text": "string"
 }}
 
-CONTENT REQUIREMENTS:
-Write ALL content specifically about {data.service} services. Do NOT write about roofing unless the service is explicitly roof-related.
-4 paragraphs. Each paragraph must be at least 650 characters and focus on {data.service}.
-The FIRST paragraph must include the exact service '{data.service}' and city '{data.city}' naturally near the beginning.
-All paragraphs must discuss {data.service} specifically - common issues, benefits, process, materials, or expertise related to {data.service}.
+CRITICAL SERVICE FOCUS RULES:
+Write ONLY about {data.service}. Every paragraph must be exclusively about {data.service}.
+If the service is "Gutter Repair", write ONLY about gutters - never mention roofing, shingles, or roof repairs.
+If the service is "HVAC Installation", write ONLY about HVAC - never mention plumbing or electrical.
+Do NOT create section headings or content about other services.
+Do NOT create bulleted lists about other services (e.g., roofing issues when service is Gutter Repair).
+Do NOT use generic "roofing" content as filler - stay 100% focused on the specified service.
+
+CONTENT STRUCTURE:
+4 paragraphs, each at least 650 characters, structured as follows:
+- Paragraph 1: Introduction to {data.service} in {data.city}. Must include exact service '{data.service}' and city '{data.city}' naturally near the beginning.
+- Paragraph 2: Common {data.service} issues and how you address them. Discuss problems specific to {data.service}, not other services.
+- Paragraph 3: Your {data.service} process, materials, or expertise. Focus on what makes your {data.service} work high-quality.
+- Paragraph 4: Why choose your company for {data.service}. Emphasize customer satisfaction and reliability for {data.service}.
+
 Include one sentence referencing the broader area using ONLY safe terms like 'nearby areas' or 'the greater {data.city} area'. Do NOT mention counties, regions, or specific neighborhoods.
 Weather considerations must be generic and safe for the given state. Do NOT mention salt air.
 If state is TX, only mention weather risks like heat, hail, wind, heavy rain, and storms.
 Do NOT use Florida-specific wording unless state is FL.
-2 FAQs about {data.service}. Each answer must be at least 350 characters and specifically address {data.service} topics.
+
+2 FAQs about {data.service}. Each answer must be at least 350 characters and specifically address {data.service} topics, not other services.
 Meta description must include the service and city naturally.
 CTA text must include the city and the phone number.
+
+FORBIDDEN:
 Do NOT use HTML, markdown, or bullet points.
 Do NOT mention SEO, keywords, word counts, structure, "this page", "this article", or similar meta language.
 Do NOT mention any county names or specific neighborhoods.
 Do NOT mention regions (e.g., South Florida, Midwest, Pacific Northwest), coastal/salt-air considerations, or unrelated geography.
 Forbidden terms (case-insensitive): south florida, miami-dade, broward, salt air, coastal.
 Do NOT invent reviews, awards, certifications, or claim specific local projects.
+Do NOT write about services other than {data.service}.
+
 Keep wording natural and not repetitive.
-IMPORTANT: Stay focused on {data.service}. Do not drift into discussing other services like roofing unless the service IS roofing.
 Return JSON only. No extra text."""
         
         return self._call_openai_json(system_prompt, user_prompt)
@@ -218,23 +232,29 @@ Return ONLY valid JSON with this exact structure:
 "cta_text": "string"
 }}
 
+CRITICAL SERVICE FOCUS RULES:
+Write ONLY about {data.service}. Every paragraph must be exclusively about {data.service}.
+If the service is "Gutter Repair", write ONLY about gutters - never mention roofing, shingles, or roof repairs.
+Do NOT create section headings or content about other services.
+Do NOT create bulleted lists about other services.
+Do NOT use generic "roofing" content as filler - stay 100% focused on the specified service.
+
 PREVIEW REQUIREMENTS:
-Write ALL content specifically about {data.service} services. Do NOT write about roofing unless the service is explicitly roof-related.
-3 paragraphs. Each paragraph must be at least 300 characters and focus on {data.service}.
+3 paragraphs. Each paragraph must be at least 300 characters and focus exclusively on {data.service}.
 The FIRST paragraph must include the exact service '{data.service}' and city '{data.city}' naturally near the beginning.
-All paragraphs must discuss {data.service} specifically.
+All paragraphs must discuss {data.service} specifically - common issues, benefits, or expertise related to {data.service}.
 Include one sentence referencing the broader area using ONLY safe terms like 'nearby areas' or 'the greater {data.city} area'.
 Weather considerations must be generic and safe for the given state. Do NOT mention salt air.
 If state is TX, only mention weather risks like heat, hail, wind, heavy rain, and storms.
 Do NOT use Florida-specific wording unless state is FL.
-1 FAQ about {data.service}. The answer must be at least 200 characters and specifically address {data.service}.
+1 FAQ about {data.service}. The answer must be at least 200 characters and specifically address {data.service}, not other services.
 Meta description must include the service and city naturally.
 CTA text must include the city and the phone number.
 Do NOT use HTML, markdown, or bullet points.
 Do NOT mention any county names or specific neighborhoods.
 Do NOT mention regions (e.g., South Florida, Midwest, Pacific Northwest), coastal/salt-air considerations, or unrelated geography.
 Forbidden terms (case-insensitive): south florida, miami-dade, broward, salt air, coastal.
-IMPORTANT: Stay focused on {data.service}. Do not drift into discussing other services.
+Do NOT write about services other than {data.service}.
 Return JSON only. No extra text."""
 
         return self._call_openai_json(system_prompt, user_prompt, max_tokens=1200, timeout=45)
