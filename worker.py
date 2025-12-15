@@ -1,5 +1,8 @@
 import random
 import time
+import os
+import sys
+import subprocess
 from app.supabase_client import supabase_client
 from app.ai_generator import ai_generator
 from app.models import PageData
@@ -124,7 +127,34 @@ def _process_item(item: dict) -> None:
 
 def main() -> None:
     _log("worker started")
+    _log(f"argv={sys.argv}")
+    _log(f"python={sys.version.splitlines()[0]}")
+    _log(f"pid={os.getpid()}")
+    _log(
+        "env="
+        + ",".join(
+            [
+                f"SUPABASE_URL={'set' if os.getenv('SUPABASE_URL') else 'missing'}",
+                f"SUPABASE_SECRET_KEY={'set' if os.getenv('SUPABASE_SECRET_KEY') else 'missing'}",
+                f"OPENAI_API_KEY={'set' if os.getenv('OPENAI_API_KEY') else 'missing'}",
+            ]
+        )
+    )
+    try:
+        ps = subprocess.check_output(["ps", "aux"], text=True)
+        ps_lines = "\n".join(ps.splitlines()[:25])
+        _log("ps_aux_top=\n" + ps_lines)
+    except Exception as e:
+        _log(f"ps_aux_failed err={e}")
+
+    last_heartbeat = 0.0
     while True:
+        now = time.time()
+        if now - last_heartbeat > 60:
+            _log("heartbeat")
+            last_heartbeat = now
+
+        _log(f"polling limit={BATCH_LIMIT}")
         items = supabase_client.list_pending_bulk_items(limit=BATCH_LIMIT)
         if not items:
             time.sleep(random.randint(IDLE_SLEEP_SECONDS[0], IDLE_SLEEP_SECONDS[1]))
