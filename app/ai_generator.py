@@ -155,11 +155,11 @@ Address: {data.address}
 Return ONLY valid JSON with this exact structure:
 {{
 "meta_description": "string",
-"paragraphs": [
-"string",
-"string",
-"string",
-"string"
+"sections": [
+{{ "heading": "string", "paragraph": "string" }},
+{{ "heading": "string", "paragraph": "string" }},
+{{ "heading": "string", "paragraph": "string" }},
+{{ "heading": "string", "paragraph": "string" }}
 ],
 "faqs": [
 {{ "question": "string", "answer": "string" }},
@@ -169,19 +169,24 @@ Return ONLY valid JSON with this exact structure:
 }}
 
 CRITICAL SERVICE FOCUS RULES:
-Write ONLY about {data.service}. Every paragraph must be exclusively about {data.service}.
+Write ONLY about {data.service}. Every section must be exclusively about {data.service}.
 If the service is "Gutter Repair", write ONLY about gutters - never mention roofing, shingles, or roof repairs.
 If the service is "HVAC Installation", write ONLY about HVAC - never mention plumbing or electrical.
-Do NOT create section headings or content about other services.
-Do NOT create bulleted lists about other services (e.g., roofing issues when service is Gutter Repair).
+Section headings must be specific to {data.service}, not generic or about other services.
 Do NOT use generic "roofing" content as filler - stay 100% focused on the specified service.
 
 CONTENT STRUCTURE:
-4 paragraphs, each at least 650 characters, structured as follows:
-- Paragraph 1: Introduction to {data.service} in {data.city}. Must include exact service '{data.service}' and city '{data.city}' naturally near the beginning.
-- Paragraph 2: Common {data.service} issues and how you address them. Discuss problems specific to {data.service}, not other services.
-- Paragraph 3: Your {data.service} process, materials, or expertise. Focus on what makes your {data.service} work high-quality.
-- Paragraph 4: Why choose your company for {data.service}. Emphasize customer satisfaction and reliability for {data.service}.
+4 sections, each with an H2 heading and paragraph (at least 650 characters):
+- Section 1: Heading about {data.service} in {data.city}. Paragraph introduces {data.service} and must include exact service '{data.service}' and city '{data.city}' naturally near the beginning.
+- Section 2: Heading about common {data.service} issues. Paragraph discusses problems specific to {data.service} and how you address them.
+- Section 3: Heading about your {data.service} process or quality. Paragraph focuses on materials, expertise, or what makes your {data.service} work high-quality.
+- Section 4: Heading about why choose your company. Paragraph emphasizes customer satisfaction and reliability for {data.service}.
+
+Example headings for "Gutter Installation":
+- "Professional Gutter Installation in [City]"
+- "Common Gutter Problems We Solve"
+- "Our Gutter Installation Process"
+- "Why Choose Us for Gutter Installation"
 
 Include one sentence referencing the broader area using ONLY safe terms like 'nearby areas' or 'the greater {data.city} area'. Do NOT mention counties, regions, or specific neighborhoods.
 Weather considerations must be generic and safe for the given state. Do NOT mention salt air.
@@ -221,10 +226,10 @@ Address: {data.address}
 Return ONLY valid JSON with this exact structure:
 {{
 "meta_description": "string",
-"paragraphs": [
-"string",
-"string",
-"string"
+"sections": [
+{{ "heading": "string", "paragraph": "string" }},
+{{ "heading": "string", "paragraph": "string" }},
+{{ "heading": "string", "paragraph": "string" }}
 ],
 "faqs": [
 {{ "question": "string", "answer": "string" }}
@@ -233,16 +238,16 @@ Return ONLY valid JSON with this exact structure:
 }}
 
 CRITICAL SERVICE FOCUS RULES:
-Write ONLY about {data.service}. Every paragraph must be exclusively about {data.service}.
+Write ONLY about {data.service}. Every section must be exclusively about {data.service}.
 If the service is "Gutter Repair", write ONLY about gutters - never mention roofing, shingles, or roof repairs.
-Do NOT create section headings or content about other services.
-Do NOT create bulleted lists about other services.
+Section headings must be specific to {data.service}, not generic or about other services.
 Do NOT use generic "roofing" content as filler - stay 100% focused on the specified service.
 
 PREVIEW REQUIREMENTS:
-3 paragraphs. Each paragraph must be at least 300 characters and focus exclusively on {data.service}.
-The FIRST paragraph must include the exact service '{data.service}' and city '{data.city}' naturally near the beginning.
-All paragraphs must discuss {data.service} specifically - common issues, benefits, or expertise related to {data.service}.
+3 sections, each with an H2 heading and paragraph (at least 300 characters):
+- Section 1: Heading about {data.service} in {data.city}. Paragraph must include exact service '{data.service}' and city '{data.city}' naturally near the beginning.
+- Section 2: Heading about common {data.service} issues. Paragraph discusses problems specific to {data.service}.
+- Section 3: Heading about your {data.service} quality or process. Paragraph focuses on expertise related to {data.service}.
 Include one sentence referencing the broader area using ONLY safe terms like 'nearby areas' or 'the greater {data.city} area'.
 Weather considerations must be generic and safe for the given state. Do NOT mention salt air.
 If state is TX, only mention weather risks like heat, hail, wind, heavy rain, and storms.
@@ -296,9 +301,14 @@ Return JSON only. No extra text."""
         # H1 heading (programmatic) - only type, level, text
         blocks.append(self._create_heading_block(h1_text, 1))
         
-        # 4 paragraphs - only type, text
-        for paragraph in content_json.get("paragraphs", []):
-            blocks.append(self._create_paragraph_block(paragraph))
+        # 4 sections with H2 headings and paragraphs
+        for section in content_json.get("sections", []):
+            heading = section.get("heading", "")
+            paragraph = section.get("paragraph", "")
+            if heading:
+                blocks.append(self._create_heading_block(heading, 2))
+            if paragraph:
+                blocks.append(self._create_paragraph_block(paragraph))
         
         # 2 FAQs - only type, question, answer
         for faq in content_json.get("faqs", []):
@@ -407,8 +417,9 @@ Return JSON only. No extra text."""
         for block in response.blocks:
             block_counts[block.type] = block_counts.get(block.type, 0) + 1
         
-        if block_counts.get("heading", 0) != 1:
-            errors.append(f"Expected 1 heading, got {block_counts.get('heading', 0)}")
+        # Expect 1 H1 + 4 H2s = 5 headings total
+        if block_counts.get("heading", 0) != 5:
+            errors.append(f"Expected 5 headings (1 H1 + 4 H2s), got {block_counts.get('heading', 0)}")
         if block_counts.get("paragraph", 0) != 4:
             errors.append(f"Expected 4 paragraphs, got {block_counts.get('paragraph', 0)}")
         if block_counts.get("faq", 0) != 2:
