@@ -495,7 +495,10 @@ SECTION 1 (LOCAL PROOF OPEN):
 
 SECTION 2 (DECISION GUIDANCE + INFORMATIONAL ASYMMETRY):
 - MANDATORY: At least 2 local differentiators from TWO DIFFERENT categories (see list above)
+  Example: "older homes" (home_style) + "tree debris" (maintenance) = 2 categories ✓
+  Example: "older homes" + "newer subdivisions" = 1 category ✗
 - MANDATORY: At least 2 field-insight sentences (different phrasing than Section 1)
+- MANDATORY: Include at least 2 trade terms for {data.service}
 - When to act now vs monitor
 - What escalates if ignored
 - One insight competitors often omit (common homeowner mistake or misleading symptom)
@@ -504,25 +507,37 @@ SECTION 2 (DECISION GUIDANCE + INFORMATIONAL ASYMMETRY):
 SECTION 3 (WALKTHROUGH + FORK DECISION):
 - MANDATORY: At least 2 local differentiators from TWO DIFFERENT categories
 - MANDATORY: At least 2 field-insight sentences (new phrasing again)
+- MANDATORY: Include at least 2 trade terms for {data.service}
 - Read like a walkthrough: what we check first and why, what we commonly find, what changes after
 - FORK DECISION POINT: when a repair is enough vs sectional replacement (seam failure, sagging, fascia rot, pitch issues)
 
-SECTION 4 (OBSERVABLE OUTCOMES ONLY):
+SECTION 4 (OBSERVABLE OUTCOMES ONLY - CRITICAL):
 - NOT "why choose us"
-- Start with outcomes/scenarios people can verify:
-  examples: no overflow at the end cap, water discharges at the splash block, no staining on fascia, no pooling near the foundation
-- Include at least 2 field-insight sentences about outcomes/concerns you hear repeatedly
+- MANDATORY: Include at least 2 observable outcome phrases:
+  * "no overflow" or "overflow stops"
+  * "water discharges" or "water flows properly"
+  * "no staining" or "staining doesn't return"
+  * "no pooling" or "pooling eliminated"
+  * "end cap" or "splash block" or "downspout" or "fascia"
+- Include at least 1 field-insight sentence about outcomes/concerns you hear repeatedly
 - Keep it observational, not promotional
+- Focus on what customers can see/verify after the work is done
 
-TRADE VOCABULARY REQUIREMENT (CRITICAL):
+TRADE VOCABULARY REQUIREMENT (CRITICAL - WILL FAIL VALIDATION):
 Paragraphs 1–3 MUST each include at least 2 technical terms relevant to {data.service}.
-Use terms naturally.
+For gutters: downspout, fascia, pitch, water flow, debris, soffit, elbow, hanger, seam, splash block, end cap
+For electrical: breaker, circuit, panel, outlet, wiring, voltage, amp, fuse, junction, conduit
+For HVAC: compressor, condenser, evaporator, refrigerant, ductwork, thermostat, filter, coil
+For plumbing: pipe, drain, trap, valve, fixture, water pressure, sewer line, shutoff
+Use these terms naturally in context - they must appear in the paragraph text.
 
 REDUCE EXACT-MATCH REPETITION:
 Use '{data.service}' where required, but do not repeat it mechanically. Use natural substitutes.
 
-BROADER-AREA SENTENCE (MANDATORY):
-Include exactly one sentence referencing the broader area using ONLY safe terms like "nearby areas" or "the greater {data.city} area".
+BROADER-AREA SENTENCE (CRITICAL - WILL FAIL VALIDATION):
+You MUST include exactly ONE sentence using the EXACT phrase "nearby areas" OR "the greater {data.city} area".
+Example: "We also serve nearby areas with the same reliable service."
+Example: "Our team covers the greater {data.city} area for all {data.service} needs."
 No counties, regions, or neighborhood names.
 
 WEATHER SAFETY:
