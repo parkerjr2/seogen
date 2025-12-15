@@ -147,18 +147,23 @@ async def generate_page(request: GeneratePageRequest):
 
 @app.post("/bulk-jobs", response_model=BulkJobCreateResponse)
 async def create_bulk_job(request: BulkJobCreateRequest):
+    print(f"[API /bulk-jobs POST] Received request: license_key={request.license_key[:8]}... site_url={request.site_url} job_name={request.job_name} items_count={len(request.items)}")
     _require_active_license(request.license_key)
     total_items = len(request.items)
-    if total_items <= 0:
+    if not request.items:
+        print(f"[API /bulk-jobs POST] ERROR: No items provided in request")
         raise HTTPException(status_code=400, detail="No items provided")
+    print(f"[API /bulk-jobs POST] Creating bulk job with {len(request.items)} items")
 
     try:
+        print(f"[API /bulk-jobs POST] Calling supabase_client.create_bulk_job")
         job = supabase_client.create_bulk_job(
             license_key=request.license_key,
-            site_url=request.site_url,
-            job_name=request.job_name,
+            site_url=request.site_url or "",
+            job_name=request.job_name or "",
             total_items=total_items,
         )
+        print(f"[API /bulk-jobs POST] Created job_id={job['id']}")
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Failed to create bulk job: {str(e)}")
 
@@ -168,6 +173,7 @@ async def create_bulk_job(request: BulkJobCreateRequest):
     job_id = job["id"]
     items_payload: list[dict] = []
     for idx, item in enumerate(request.items):
+        print(f"[API /bulk-jobs POST] Inserting {len(request.items)} bulk job items")
         items_payload.append(
             {
                 "job_id": job_id,
@@ -183,9 +189,10 @@ async def create_bulk_job(request: BulkJobCreateRequest):
                 "attempts": 0,
             }
         )
-
     try:
+        print(f"[API /bulk-jobs POST] Calling supabase_client.insert_bulk_job_items")
         ok = supabase_client.insert_bulk_job_items(items=items_payload)
+        print(f"[API /bulk-jobs POST] Successfully inserted items")
     except Exception as e:
         supabase_client.cancel_bulk_job(job_id=job_id)
         raise HTTPException(status_code=500, detail=f"Failed to insert bulk job items: {str(e)}")
