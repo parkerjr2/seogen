@@ -461,6 +461,10 @@ Return JSON only. No extra text."""
 Here is the JSON to repair:
 {json.dumps(bad_json, indent=2)}
 
+CRITICAL: The service is {data.service}. Remove ALL content about other services.
+If validation mentions "wrong service term", completely rewrite those paragraphs to focus ONLY on {data.service}.
+Do NOT mention roofing, roof repair, shingles, or any other service unless {data.service} explicitly contains those words.
+
 Rules:
 Return ONLY valid JSON in the same structure.
 Fix only the failing fields.
