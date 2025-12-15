@@ -239,11 +239,13 @@ class AIContentGenerator:
     }
 
     # Local differentiator phrases/patterns that are "safe" (no neighborhoods/counties).
-    # We count occurrences to ensure the page isn't interchangeable across cities.
+    # We count distinct categories hit to ensure the page isn't interchangeable across cities.
     LOCAL_DIFFERENTIATORS = {
         "home_style": [
             r"\bolder homes\b",
             r"\bnewer subdivisions\b",
+            r"\bhomes built in the 80s\b",
+            r"\bhomes built in the 90s\b",
             r"\bhomes built (in|around) the (80s|90s)\b",
             r"\bslab-on-grade\b",
             r"\bslab on grade\b",
@@ -252,30 +254,33 @@ class AIContentGenerator:
         ],
         "maintenance": [
             r"\btree debris\b",
-            r"\bcleanouts?\b",
-            r"\bclog(?:ged|s|ging)\b",
-            r"\bdiy extensions?\b",
-            r"\bleaf(?:s)?\b",
+            r"\bleaves?\b",
             r"\bneedles?\b",
+            r"\bcleanouts?\b",
+            r"\bclog(?:ged|s|ging)?\b",
+            r"\bdiy\b",
+            r"\bextensions?\b",
         ],
         "construction": [
             r"\blong runs?\b",
+            r"\broofline complexity\b",
             r"\broofline\b",
             r"\bdownspout placement\b",
             r"\battachment points?\b",
             r"\bhangers?\b",
             r"\bend caps?\b",
+            r"\bseams?\b",
+            r"\bpitch\b",
+            r"\bfascia\b",
         ],
-        # Weather is state-scoped elsewhere; we still count it as a differentiator signal
         "weather": [
             r"\bheavy rain\b",
+            r"\bdownpour\b",
             r"\bstorms?\b",
             r"\bwind\b",
             r"\bhail\b",
             r"\bheat\b",
-            r"\bdownpour\b",
         ],
-        # Mechanics: ties environment -> physical failure modes (highly valuable signal)
         "mechanics": [
             r"\bexpansion\b",
             r"\bpitch drift\b",
@@ -283,6 +288,7 @@ class AIContentGenerator:
             r"\bseam separation\b",
             r"\bhanger loosening\b",
             r"\bsag(?:ging)?\b",
+            r"\bwater spilling behind\b",
         ],
     }
 
@@ -659,16 +665,46 @@ Return JSON only. No extra text.
                 total += 1
         return total
 
-    def _local_differentiator_score(self, text: str) -> int:
-        """Counts distinct local differentiator hits across safe categories."""
-        score = 0
-        for _, patterns in self.LOCAL_DIFFERENTIATORS.items():
-            score += self._count_regex_matches(text, patterns)
-        return score
+    def _count_field_insight_sentences(self, text: str) -> int:
+        """Count sentences that demonstrate field experience/observations using regex patterns."""
+        if not text:
+            return 0
+        
+        # Split into sentences
+        sentences = re.split(r'(?<=[.!?])\s+', text.strip())
+        
+        # Field insight patterns (case-insensitive)
+        patterns = [
+            r'\bwe\s+(often|usually|frequently|commonly)?\s*(see|find|run into|hear|get called|get calls)',
+            r'\bwhat brings\s+(most|a lot of)\s+(calls|people)',
+            r'\bmost calls\b',
+            r'\bthe first sign\b',
+            r'\ba common\s+(failure point|issue|problem)',
+            r'\bone of the most common\b',
+            r'\bhomeowners\s+(call|reach out|notice)\s+.*\s+when\b',
+            r"\byou('ll|\s+will)\s+notice\b",
+        ]
+        
+        count = 0
+        for sentence in sentences:
+            for pattern in patterns:
+                if re.search(pattern, sentence, flags=re.IGNORECASE):
+                    count += 1
+                    break  # Count each sentence only once
+        
+        return count
 
-    def _field_insight_score(self, text: str) -> int:
-        t = text.lower()
-        return sum(1 for m in self.FIELD_INSIGHT_MARKERS if m in t)
+    def _local_differentiator_category_hits(self, text: str) -> Dict[str, int]:
+        """Return count of matches per category."""
+        hits = {}
+        for category, patterns in self.LOCAL_DIFFERENTIATORS.items():
+            hits[category] = self._count_regex_matches(text, patterns)
+        return hits
+
+    def _local_differentiator_score(self, text: str) -> int:
+        """Return number of distinct categories with at least 1 hit."""
+        category_hits = self._local_differentiator_category_hits(text)
+        return sum(1 for count in category_hits.values() if count > 0)
 
     def _observable_outcome_score(self, text: str) -> int:
         t = text.lower()
@@ -784,7 +820,7 @@ Return JSON only. No extra text.
                         f"Paragraph {idx+1} has only {term_count} trade-specific terms (need at least 2)"
                     )
 
-        # New: local differentiators in paragraphs 1-3 (at least 2 hits each)
+        # Local differentiators in paragraphs 1-3 (at least 2 distinct categories)
         for idx, block in enumerate(paragraph_blocks[:3]):
             score = self._local_differentiator_score(block.text or "")
             if score < 2:
@@ -792,12 +828,20 @@ Return JSON only. No extra text.
                     f"Paragraph {idx+1} has weak local differentiators (score {score} < 2)"
                 )
 
-        # New: field insight markers in EACH paragraph (at least 2 markers)
-        for idx, block in enumerate(paragraph_blocks):
-            score = self._field_insight_score(block.text or "")
+        # Field insight sentences: paragraphs 1-3 need >=2, paragraph 4 needs >=1
+        for idx, block in enumerate(paragraph_blocks[:3]):
+            score = self._count_field_insight_sentences(block.text or "")
             if score < 2:
                 errors.append(
                     f"Paragraph {idx+1} lacks field-insight signals (score {score} < 2)"
+                )
+        
+        # Paragraph 4 (outcomes) only needs 1 field-insight sentence
+        if len(paragraph_blocks) >= 4:
+            score = self._count_field_insight_sentences(paragraph_blocks[3].text or "")
+            if score < 1:
+                errors.append(
+                    f"Paragraph 4 lacks field-insight signals (score {score} < 1)"
                 )
 
         # New: observable outcomes in paragraph 4 (at least 2 outcome markers)
@@ -889,23 +933,24 @@ HEADING FIXES:
 - Headings should include a concrete work term (for gutters: downspout, fascia, seam, hanger, pitch, overflow).
 
 LOCAL PROOF + DIFFERENTIATORS (MANDATORY):
-Sections 1–3 must EACH include at least 2 local differentiators from safe categories:
+For paragraphs 1–3 include at least TWO local differentiators from TWO DISTINCT categories:
 - Home style/build era (no neighborhoods): older homes, newer subdivisions, 80s–90s builds, slab-on-grade, pier-and-beam
 - Weather mechanics (state-safe): {data.state}-safe weather tied to failures (expansion, pitch drift, seam separation, hanger loosening)
 - Maintenance patterns: tree debris frequency, neglected cleanouts, DIY extensions
 - Construction details: long runs, roofline complexity, downspout placement
+Example: mention "older homes" (home_style) AND "tree debris" (maintenance) in the same paragraph.
 
 FIELD-INSIGHT SIGNALS (MANDATORY):
-Each paragraph must include at least 2 “field insight” moments (real patterns you see/hear).
-Avoid templated starters like:
-- "Homeowners typically notice..."
-- "We often see this after the first major storm..."
-- "Most issues we see start when..."
-Instead vary phrasing:
+Each of paragraphs 1–3 must include at least TWO sentences that sound like field observations.
+Paragraph 4 must include at least ONE field observation sentence.
+Examples of field observation sentences:
 - "What brings most calls is..."
 - "The first sign usually shows up as..."
-- "During a heavy downpour, you'll notice..."
-- "A quick way to tell is..."
+- "We often find..."
+- "A common failure point is..."
+- "You'll notice..."
+- "Most calls start with..."
+Vary your phrasing - don't use the same starter in every paragraph.
 
 DECISION GUIDANCE (REQUIRED):
 - When to act today vs monitor
