@@ -480,28 +480,32 @@ CONTENT STRUCTURE (MAP PACK SUPPORT):
 4 sections, each with an H2 heading and paragraph (at least 650 characters each):
 
 SECTION 1 (LOCAL PROOF OPEN):
-- Include exact service '{data.service}' and city '{data.city}' naturally near the beginning.
+- MUST include exact service '{data.service}' and city '{data.city}' in the FIRST 2-3 SENTENCES.
 - Start with a customer scenario or what you see on homes (NOT brand-first).
-- Include at least 2 field-insight sentences that sound like real patterns you encounter.
-- CITY DIFFERENTIATION PACK: include at least 2 differentiators from safe categories:
-  * Home style/build era (no neighborhoods): older homes, newer subdivisions, 80s-90s builds, slab-on-grade, pier-and-beam
-  * Weather mechanics (state-safe): tie heat/hail/wind/heavy rain/storms to physical failures (expansion, pitch drift, seam separation, hanger loosening)
-  * Maintenance patterns: tree debris frequency, neglected cleanouts, DIY extensions
-  * Construction details: long runs, roofline complexity, downspout placement
+- MANDATORY: Include at least 2 field-insight sentences using patterns like:
+  * "We often find..." or "We typically see..."
+  * "Most calls start when..." or "What brings most calls is..."
+  * "After heavy rain, you'll notice..." or "During storms, we see..."
+  * "Homeowners call when..." or "Property owners notice..."
+- MANDATORY: Include at least 2 local differentiators from TWO DIFFERENT categories:
+  * Home style: "older homes", "newer subdivisions", "homes built in the 80s", "slab-on-grade", "pier-and-beam"
+  * Weather: "after heavy rain", "during storms", "when hail hits", "heat causes expansion"
+  * Maintenance: "tree debris", "leaves clog", "neglected cleanouts", "DIY extensions"
+  * Construction: "long runs", "roofline complexity", "downspout placement", "attachment points"
 
 SECTION 2 (DECISION GUIDANCE + INFORMATIONAL ASYMMETRY):
-- At least 2 local differentiators
+- MANDATORY: At least 2 local differentiators from TWO DIFFERENT categories (see list above)
+- MANDATORY: At least 2 field-insight sentences (different phrasing than Section 1)
 - When to act now vs monitor
 - What escalates if ignored
 - One insight competitors often omit (common homeowner mistake or misleading symptom)
-- At least 2 field-insight sentences (use different phrasing than Section 1)
-- Vary narrative order (don’t always do downspouts then elbows then outcomes)
+- Vary narrative order (don't always do downspouts then elbows then outcomes)
 
 SECTION 3 (WALKTHROUGH + FORK DECISION):
+- MANDATORY: At least 2 local differentiators from TWO DIFFERENT categories
+- MANDATORY: At least 2 field-insight sentences (new phrasing again)
 - Read like a walkthrough: what we check first and why, what we commonly find, what changes after
 - FORK DECISION POINT: when a repair is enough vs sectional replacement (seam failure, sagging, fascia rot, pitch issues)
-- At least 2 local differentiators
-- At least 2 field-insight sentences (new phrasing again)
 
 SECTION 4 (OBSERVABLE OUTCOMES ONLY):
 - NOT "why choose us"
@@ -535,9 +539,10 @@ Each FAQ answer must:
 - Be at least 350 characters
 - Must NOT be city-interchangeable; add city-specific context.
 
-STRICTLY FORBIDDEN:
+STRICTLY FORBIDDEN PHRASES (WILL CAUSE VALIDATION FAILURE):
+Do NOT use these words anywhere in your content: "SEO", "keyword", "word count", "structure", "first 100 words", "this page", "this article", "in this section"
+Do NOT use: "top-notch", "premier", "high-quality solutions", "trusted experts", "industry-leading", "best-in-class", "cutting-edge", "state-of-the-art", "world-class"
 No HTML/markdown/bullets. No testimonials, awards, years-in-business, or invented projects.
-No SEO/meta writing-process language.
 No counties/neighborhoods/regions (e.g., South Florida, Midwest) and no "coastal/salt air".
 
 Meta description must include the service and city naturally.
@@ -670,23 +675,38 @@ Return JSON only. No extra text.
         if not text:
             return 0
         
-        # Split into sentences
-        sentences = re.split(r'(?<=[.!?])\s+', text.strip())
+        # Split into sentences (more robust)
+        sentences = re.split(r'[.!?]+\s+', text.strip())
         
-        # Field insight patterns (case-insensitive)
+        # Field insight patterns (case-insensitive, more flexible)
         patterns = [
-            r'\bwe\s+(often|usually|frequently|commonly)?\s*(see|find|run into|hear|get called|get calls)',
-            r'\bwhat brings\s+(most|a lot of)\s+(calls|people)',
-            r'\bmost calls\b',
-            r'\bthe first sign\b',
-            r'\ba common\s+(failure point|issue|problem)',
-            r'\bone of the most common\b',
-            r'\bhomeowners\s+(call|reach out|notice)\s+.*\s+when\b',
-            r"\byou('ll|\s+will)\s+notice\b",
+            # "we see/find/hear" variations
+            r'\bwe\s+(often|usually|frequently|commonly|typically)?\s*(see|find|run into|hear|get|notice)',
+            # "what brings" variations
+            r'\bwhat\s+(brings|causes|leads to)\s+(most|many|a lot of)?\s*(calls|issues|problems)',
+            # "most calls/issues" variations
+            r'\bmost\s+(calls|issues|problems|homeowners)',
+            # "first sign" variations
+            r'\b(the|a)\s+first\s+sign',
+            # "common" variations
+            r'\b(a|the)\s+common\s+(failure|issue|problem|call)',
+            r'\bone of the (most )?common',
+            # "homeowners/property owners" variations
+            r'\b(homeowners|property owners|residents)\s+(call|reach out|notice|contact|see)',
+            # "you'll notice" variations
+            r"\byou('ll|\s+will|\s+may|\s+might)\s+(notice|see|find|hear)",
+            # "after" weather events
+            r'\bafter\s+(heavy|major|severe)?\s*(rain|storm|hail|wind)',
+            # "during" events
+            r'\bduring\s+(heavy|major)?\s*(rain|storms|downpour)',
+            # "when" patterns
+            r'\bwhen\s+(water|debris|leaves|rain)',
         ]
         
         count = 0
         for sentence in sentences:
+            if len(sentence.strip()) < 10:  # Skip very short fragments
+                continue
             for pattern in patterns:
                 if re.search(pattern, sentence, flags=re.IGNORECASE):
                     count += 1
