@@ -156,11 +156,14 @@ def main() -> None:
 
         _log(f"polling limit={BATCH_LIMIT}")
         items = supabase_client.list_pending_bulk_items(limit=BATCH_LIMIT)
+        _log(f"found {len(items)} pending items")
         if not items:
             time.sleep(random.randint(IDLE_SLEEP_SECONDS[0], IDLE_SLEEP_SECONDS[1]))
             continue
 
+        _log(f"processing {len(items)} items")
         for item in items:
+            _log(f"processing item_id={item.get('id')} job_id={item.get('job_id')} idx={item.get('idx')}")
             _process_item(item)
 
 
