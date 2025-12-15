@@ -144,7 +144,7 @@ class AIContentGenerator:
         """Generate content payload using exact specified prompt."""
         system_prompt = "You are a professional local service copywriter. Write natural, trustworthy marketing copy. Avoid any writing-process language."
         
-        user_prompt = f"""Generate content for a local roofing landing page using:
+        user_prompt = f"""Generate content for a local service landing page about {data.service} using:
 Service: {data.service}
 City: {data.city}
 State: {data.state}
@@ -169,13 +169,15 @@ Return ONLY valid JSON with this exact structure:
 }}
 
 CONTENT REQUIREMENTS:
-4 paragraphs. Each paragraph must be at least 650 characters.
-The FIRST paragraph must include the exact service and city naturally near the beginning.
+Write ALL content specifically about {data.service} services. Do NOT write about roofing unless the service is explicitly roof-related.
+4 paragraphs. Each paragraph must be at least 650 characters and focus on {data.service}.
+The FIRST paragraph must include the exact service '{data.service}' and city '{data.city}' naturally near the beginning.
+All paragraphs must discuss {data.service} specifically - common issues, benefits, process, materials, or expertise related to {data.service}.
 Include one sentence referencing the broader area using ONLY safe terms like 'nearby areas' or 'the greater {data.city} area'. Do NOT mention counties, regions, or specific neighborhoods.
 Weather considerations must be generic and safe for the given state. Do NOT mention salt air.
 If state is TX, only mention weather risks like heat, hail, wind, heavy rain, and storms.
 Do NOT use Florida-specific wording unless state is FL.
-2 FAQs. Each answer must be at least 350 characters.
+2 FAQs about {data.service}. Each answer must be at least 350 characters and specifically address {data.service} topics.
 Meta description must include the service and city naturally.
 CTA text must include the city and the phone number.
 Do NOT use HTML, markdown, or bullet points.
@@ -185,6 +187,7 @@ Do NOT mention regions (e.g., South Florida, Midwest, Pacific Northwest), coasta
 Forbidden terms (case-insensitive): south florida, miami-dade, broward, salt air, coastal.
 Do NOT invent reviews, awards, certifications, or claim specific local projects.
 Keep wording natural and not repetitive.
+IMPORTANT: Stay focused on {data.service}. Do not drift into discussing other services like roofing unless the service IS roofing.
 Return JSON only. No extra text."""
         
         return self._call_openai_json(system_prompt, user_prompt)
@@ -193,7 +196,7 @@ Return JSON only. No extra text."""
         """Generate a fast preview content payload (reduced output, no repair loop)."""
         system_prompt = "You are a professional local service copywriter. Write natural, trustworthy marketing copy. Avoid any writing-process language."
 
-        user_prompt = f"""Generate a FAST preview of content for a local roofing landing page using:
+        user_prompt = f"""Generate a FAST preview of content for a local service landing page about {data.service} using:
 Service: {data.service}
 City: {data.city}
 State: {data.state}
@@ -216,19 +219,22 @@ Return ONLY valid JSON with this exact structure:
 }}
 
 PREVIEW REQUIREMENTS:
-3 paragraphs. Each paragraph must be at least 300 characters.
-The FIRST paragraph must include the exact service and city naturally near the beginning.
+Write ALL content specifically about {data.service} services. Do NOT write about roofing unless the service is explicitly roof-related.
+3 paragraphs. Each paragraph must be at least 300 characters and focus on {data.service}.
+The FIRST paragraph must include the exact service '{data.service}' and city '{data.city}' naturally near the beginning.
+All paragraphs must discuss {data.service} specifically.
 Include one sentence referencing the broader area using ONLY safe terms like 'nearby areas' or 'the greater {data.city} area'.
 Weather considerations must be generic and safe for the given state. Do NOT mention salt air.
 If state is TX, only mention weather risks like heat, hail, wind, heavy rain, and storms.
 Do NOT use Florida-specific wording unless state is FL.
-1 FAQ. The answer must be at least 200 characters.
+1 FAQ about {data.service}. The answer must be at least 200 characters and specifically address {data.service}.
 Meta description must include the service and city naturally.
 CTA text must include the city and the phone number.
 Do NOT use HTML, markdown, or bullet points.
 Do NOT mention any county names or specific neighborhoods.
 Do NOT mention regions (e.g., South Florida, Midwest, Pacific Northwest), coastal/salt-air considerations, or unrelated geography.
 Forbidden terms (case-insensitive): south florida, miami-dade, broward, salt air, coastal.
+IMPORTANT: Stay focused on {data.service}. Do not drift into discussing other services.
 Return JSON only. No extra text."""
 
         return self._call_openai_json(system_prompt, user_prompt, max_tokens=1200, timeout=45)
