@@ -124,3 +124,12 @@ class BulkJobAckResponse(BaseModel):
 
 class BulkJobCancelRequest(BaseModel):
     license_key: str
+
+
+class ValidateLicenseRequest(BaseModel):
+    license_key: str
+
+
+class ValidateLicenseResponse(BaseModel):
+    status: str
+    credits_remaining: int

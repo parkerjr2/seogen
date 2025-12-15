@@ -16,6 +16,8 @@ from app.models import (
     BulkJobAckRequest,
     BulkJobAckResponse,
     BulkJobCancelRequest,
+    ValidateLicenseRequest,
+    ValidateLicenseResponse,
 )
 from app.supabase_client import supabase_client
 from app.ai_generator import ai_generator
@@ -49,6 +51,29 @@ async def health_check():
         Simple status response indicating API is operational
     """
     return HealthResponse(status="ok")
+
+@app.post("/validate-license", response_model=ValidateLicenseResponse)
+async def validate_license(request: ValidateLicenseRequest):
+    """
+    Validate a license key and return its status and credits.
+    
+    Args:
+        request: Contains license_key to validate
+        
+    Returns:
+        License status and credits remaining
+        
+    Raises:
+        HTTPException: 403 if license not found
+    """
+    license_data = supabase_client.get_license_by_key(request.license_key)
+    if not license_data:
+        raise HTTPException(status_code=403, detail="License key not found")
+    
+    return ValidateLicenseResponse(
+        status=license_data.get("status", "unknown"),
+        credits_remaining=license_data.get("credits_remaining", 0)
+    )
 
 @app.post("/generate-page", response_model=GeneratePageResponse)
 async def generate_page(request: GeneratePageRequest):
