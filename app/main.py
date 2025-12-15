@@ -3,10 +3,7 @@ FastAPI application main module.
 Defines API endpoints and application configuration.
 """
 
-import logging
-import time
-
-from fastapi import FastAPI, HTTPException, Query, Request
+from fastapi import FastAPI, HTTPException, Query
 from app.models import (
     GeneratePageRequest,
     HealthResponse,
@@ -42,23 +39,6 @@ app = FastAPI(
     description="Phase 3 AI-powered API for license validation and SEO-optimized page generation",
     version="3.0.0"
 )
-
-logging.basicConfig(level=logging.INFO)
-logger = logging.getLogger("seogen")
-
-@app.middleware("http")
-async def log_requests(request: Request, call_next):
-    start = time.time()
-    response = await call_next(request)
-    duration_ms = int((time.time() - start) * 1000)
-    logger.info(
-        "http %s %s -> %s (%sms)",
-        request.method,
-        request.url.path,
-        response.status_code,
-        duration_ms,
-    )
-    return response
 
 @app.get("/health", response_model=HealthResponse)
 async def health_check():
@@ -167,12 +147,6 @@ async def generate_page(request: GeneratePageRequest):
 
 @app.post("/bulk-jobs", response_model=BulkJobCreateResponse)
 async def create_bulk_job(request: BulkJobCreateRequest):
-    logger.info(
-        "bulk-jobs create requested site_url=%s job_name=%s items=%s",
-        request.site_url,
-        request.job_name,
-        len(request.items),
-    )
     _require_active_license(request.license_key)
     total_items = len(request.items)
     if total_items <= 0:
