@@ -24,7 +24,8 @@ class AIContentGenerator:
     FORBIDDEN_MARKETING_FILLER = [
         "top-notch", "premier", "high-quality solutions", "trusted experts",
         "we understand the importance of", "industry-leading", "best-in-class",
-        "cutting-edge", "state-of-the-art", "world-class"
+        "cutting-edge", "state-of-the-art", "world-class", "best in the area",
+        "leading provider", "your trusted", "your go-to", "number one choice"
     ]
     
     # Trade vocabulary by service category (for validation)
@@ -209,24 +210,38 @@ Do NOT use generic "roofing" content as filler - stay 100% focused on the specif
 CONTENT STRUCTURE:
 4 sections, each with an H2 heading and paragraph (at least 650 characters):
 
-- Section 1: Heading about {data.service} in {data.city}. Paragraph introduces {data.service} and must include exact service '{data.service}' and city '{data.city}' naturally near the beginning.
+- Section 1: Heading about {data.service} in {data.city}. 
+  Paragraph introduces {data.service} and must include exact service '{data.service}' and city '{data.city}' naturally near the beginning.
+  CRITICAL: Include at least one "lived experience" sentence like: "We often get calls after...", "Most issues we see start when...", "In many homes around {data.city}, this usually happens when..."
+  Do NOT start with "At {data.company_name}, we..." - start with the problem, scenario, or customer situation instead.
+  After establishing the context, you can mention the company naturally or not at all.
 
-- Section 2: LOCAL EXPERTISE LAYER (REQUIRED) - Heading about common {data.service} issues in {data.city}. Paragraph must include 2-3 city-specific realities:
+- Section 2: LOCAL EXPERTISE LAYER (REQUIRED) - Heading about common {data.service} issues in {data.city}. 
+  Paragraph must include 2-3 city-specific realities:
   * Housing age or building styles common in {data.city} (e.g., "Many homes in {data.city} were built in the 1970s with...")
   * Common service calls you see locally (e.g., "We often get calls about..." or "Most {data.city} homeowners notice...")
   * Weather patterns that affect this service (generic for the state, e.g., TX: heat/hail/storms)
+  CRITICAL: Include at least one "lived experience" sentence reflecting real-world service experience.
   Write conversationally, as if a local technician is explaining what they see in the field.
   Use first-person plural naturally: "we often see", "our team typically finds", "most calls start with"
+  Do NOT start with brand-first language like "At {data.company_name}..." or "Choosing {data.company_name}..."
   This paragraph must feel semantically unique to this city/service combination.
 
-- Section 3: HOW THE JOB IS ACTUALLY DONE - Heading about your {data.service} process. Paragraph must explicitly describe:
-  * How the service is performed step-by-step
-  * What technicians inspect first
-  * What customers typically notice before and after
-  Write like a real explanation, not marketing copy. Example tone: "Most calls start with... We check... If we find... We then..."
+- Section 3: MICRO-NARRATIVE PROCESS - Heading about your {data.service} process. 
+  Paragraph must read like a walkthrough with these required elements:
+  * What's checked first (e.g., "We start by inspecting...")
+  * What problems are commonly found (e.g., "If we notice... Most of the time we find...")
+  * What changes after the work is done (e.g., "Once that's corrected, you'll see...")
+  CRITICAL: Include at least one "lived experience" sentence.
+  Write like a real explanation, not marketing copy. Use phrasing like: "We start by...", "If we notice...", "Once that's corrected..."
   Use 1-2 mild contractions naturally (we'll, it's, that's).
+  Avoid generic "thorough and professional" language.
 
-- Section 4: Heading about why choose your company. Paragraph emphasizes reliability and customer satisfaction for {data.service}.
+- Section 4: Heading about why choose your company. 
+  Paragraph emphasizes reliability and customer satisfaction for {data.service}.
+  CRITICAL: Include at least one "lived experience" sentence.
+  Do NOT start with "At {data.company_name}, we..." or "Choosing {data.company_name} means..." - start with customer outcomes or scenarios.
+  This section can be more customer-focused and doesn't require as many technical terms.
 
 Example headings for "Gutter Installation":
 - "Professional Gutter Installation in [City]"
@@ -235,7 +250,7 @@ Example headings for "Gutter Installation":
 - "Why Choose Us for Gutter Installation"
 
 TRADE VOCABULARY REQUIREMENT (CRITICAL):
-Each paragraph MUST include at least 2 service-specific technical terms. Examples:
+Paragraphs 1-3 MUST each include at least 2 service-specific technical terms. Paragraph 4 (why choose us) can focus more on customer satisfaction. Examples:
 - Electrical: breaker, circuit, panel, outlet, wiring, voltage, amp, fuse, junction, conduit
 - Gutter: downspout, fascia, pitch, water flow, debris, soffit, elbow, hanger, seam
 - Roofing: shingles, flashing, underlayment, vents, decking, ridge, valley, eave
@@ -243,18 +258,31 @@ Each paragraph MUST include at least 2 service-specific technical terms. Example
 - Plumbing: pipe, drain, trap, valve, fixture, water pressure, sewer line, shutoff
 Use these terms naturally in context. Avoid vague marketing language.
 
-WRITING STYLE:
-- Vary sentence openers (avoid starting every sentence the same way)
+REDUCE EXACT-MATCH KEYWORD REPETITION:
+The service name '{data.service}' is required where validation checks for it, but do NOT repeat it mechanically in every sentence.
+Use natural substitutes and functional descriptions:
+- Instead of repeating "Gutter Repair" → use "fixing sagging sections", "getting water flowing properly", "addressing common gutter problems"
+- Instead of repeating "Electrical Repair" → use "fixing the wiring", "getting your outlets working", "addressing circuit issues"
+- Instead of repeating "HVAC Installation" → use "getting your system installed", "setting up your new unit", "installing the equipment"
+The service name must appear where required, but vary your language throughout the rest of the content.
+
+WRITING STYLE (CRITICAL):
+- Mix short and long sentences for natural rhythm
+- Vary sentence openers - avoid starting every sentence the same way
 - Use first-person plural naturally: "we often see", "our team typically", "most calls we get"
 - Allow 1-2 mild contractions per paragraph (we'll, it's, that's, you'll)
 - Write conversationally but professionally
 - Sound like a knowledgeable local contractor, not a template
+- Do NOT use slang or emojis
+- Do NOT add testimonials or opinions not grounded in service work
 
-2 FAQs about {data.service}. EACH FAQ ANSWER MUST:
-- Mention a specific scenario or customer question (not generic)
-- Explain WHY something happens, not just what you do
-- Avoid generic reassurance language
+2 FAQs about {data.service}. EACH FAQ ANSWER MUST FOLLOW CAUSE→EFFECT→RESOLUTION:
+- Reference a specific scenario or symptom (e.g., "When you notice water pooling near your foundation...")
+- Explain the cause (e.g., "...this usually means the downspouts are clogged or disconnected...")
+- Explain the effect (e.g., "...which can lead to foundation damage over time...")
+- Explain the resolution (e.g., "...we clear the blockage and ensure proper drainage away from the house")
 - Be at least 350 characters
+- Read like you're answering a real customer question
 - If an FAQ answer could apply to any service, it fails - make it specific to {data.service}
 
 Include one sentence referencing the broader area using ONLY safe terms like 'nearby areas' or 'the greater {data.city} area'. Do NOT mention counties, regions, or specific neighborhoods.
@@ -266,13 +294,14 @@ Meta description must include the service and city naturally.
 CTA text must include the city and the phone number.
 
 STRICTLY FORBIDDEN PHRASES (will cause validation failure):
-Do NOT use: "top-notch", "premier", "high-quality solutions", "trusted experts", "we understand the importance of", "industry-leading", "best-in-class", "cutting-edge", "state-of-the-art", "world-class"
+Do NOT use: "top-notch", "premier", "high-quality solutions", "trusted experts", "we understand the importance of", "industry-leading", "best-in-class", "cutting-edge", "state-of-the-art", "world-class", "best in the area", "leading provider", "your trusted", "your go-to", "number one choice"
+Do NOT start paragraphs with: "At {{company_name}}, we...", "Choosing {{company_name}} means...", "{{company_name}} understands..."
 Do NOT use HTML, markdown, or bullet points.
 Do NOT mention SEO, keywords, word counts, structure, "this page", "this article", or similar meta language.
 Do NOT mention any county names or specific neighborhoods.
 Do NOT mention regions (e.g., South Florida, Midwest, Pacific Northwest), coastal/salt-air considerations, or unrelated geography.
 Forbidden terms (case-insensitive): south florida, miami-dade, broward, salt air, coastal.
-Do NOT invent reviews, awards, certifications, or claim specific local projects.
+Do NOT invent reviews, awards, certifications, years in business, or claim specific local projects.
 Do NOT write about services other than {data.service}.
 
 Keep wording natural and not repetitive.
@@ -507,10 +536,11 @@ Return JSON only. No extra text."""
         if not (data.service.lower() in meta_desc and data.city.lower() in meta_desc):
             errors.append("Meta description missing service + city")
         
-        # Validation 5: Trade vocabulary density (each paragraph must have at least 2 trade terms)
+        # Validation 5: Trade vocabulary density (paragraphs 1-3 must have at least 2 trade terms)
+        # Paragraph 4 is "why choose us" which naturally focuses on customer satisfaction, so we skip it
         trade_vocab = self._get_trade_vocabulary_for_service(data.service)
         if trade_vocab:  # Only validate if we have vocabulary for this service
-            for idx, block in enumerate(paragraph_blocks):
+            for idx, block in enumerate(paragraph_blocks[:3]):  # Only validate first 3 paragraphs
                 if block.text:
                     term_count = self._count_trade_terms_in_text(block.text, trade_vocab)
                     if term_count < 2:
@@ -580,6 +610,22 @@ CRITICAL: The service is {data.service}. Remove ALL content about other services
 If validation mentions "wrong service term", completely rewrite those paragraphs to focus ONLY on {data.service}.
 Do NOT mention roofing, roof repair, shingles, or any other service unless {data.service} explicitly contains those words.
 
+LIVED EXPERIENCE REQUIREMENT:
+Each paragraph must include at least one "lived experience" sentence like:
+- "We often get calls after..."
+- "Most issues we see start when..."
+- "In many homes around {data.city}, this usually happens when..."
+If a paragraph reads like generic marketing copy, rewrite it to reflect real-world service experience.
+
+REDUCE BRAND-FIRST OPENERS:
+Do NOT start paragraphs with "At {data.company_name}, we..." or "Choosing {data.company_name} means..."
+Start with the problem, scenario, or customer situation instead.
+Mention the company naturally later, or not at all.
+
+REDUCE KEYWORD REPETITION:
+Do NOT repeat '{data.service}' mechanically in every sentence.
+Use natural substitutes and functional descriptions throughout.
+
 TRADE VOCABULARY REQUIREMENT:
 If validation mentions "trade-specific terms", rewrite that paragraph to include at least 2 technical terms for {data.service}.
 Examples by service:
@@ -590,23 +636,28 @@ Examples by service:
 - Plumbing: pipe, drain, trap, valve, fixture, water pressure, sewer line, shutoff
 Use these terms naturally in context. Avoid vague marketing language.
 
+FAQ CAUSE→EFFECT→RESOLUTION:
+Each FAQ answer must reference a specific scenario, explain the cause, explain the effect, and explain the resolution.
+Read like you're answering a real customer question.
+
 WRITING STYLE:
+- Mix short and long sentences for natural rhythm
+- Vary sentence openers - avoid starting every sentence the same way
 - Use first-person plural naturally: "we often see", "our team typically", "most calls we get"
 - Allow 1-2 mild contractions per paragraph (we'll, it's, that's, you'll)
-- Vary sentence openers
 - Sound like a knowledgeable local contractor, not a template
 
 Rules:
 Return ONLY valid JSON in the same structure.
 Fix only the failing fields.
 Remove any forbidden meta-language terms.
-Remove any forbidden marketing filler phrases: "top-notch", "premier", "high-quality solutions", "trusted experts", "we understand the importance of", "industry-leading", "best-in-class", "cutting-edge", "state-of-the-art", "world-class"
+Remove any forbidden marketing filler phrases: "top-notch", "premier", "high-quality solutions", "trusted experts", "we understand the importance of", "industry-leading", "best-in-class", "cutting-edge", "state-of-the-art", "world-class", "best in the area", "leading provider", "your trusted", "your go-to", "number one choice"
 Remove any forbidden regional references and unsafe geography (south florida, miami-dade, broward, salt air, coastal).
 Do NOT mention specific regions (e.g., South Florida, Midwest, Pacific Northwest) unless explicitly provided as an input (not supported in MVP).
 Do NOT mention salt air.
 If state is TX, keep weather references limited to heat, hail, wind, heavy rain, and storms.
 Ensure paragraphs meet minimum character lengths and total content exceeds 300 words.
-Ensure each paragraph includes at least 2 trade-specific technical terms.
+Ensure paragraphs 1-3 each include at least 2 trade-specific technical terms.
 Ensure meta_description includes service and city.
 Ensure first paragraph includes service and city within its first 150 words.
 Ensure CTA includes city and phone number.
