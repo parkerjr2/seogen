@@ -10,7 +10,7 @@ class PageData(BaseModel):
     """Data model for page generation parameters."""
     service: str = Field(..., description="Service type (e.g., 'Roof Repair')")
     city: str = Field(..., description="City name (e.g., 'Austin')")
-    state: str = Field(..., description="State abbreviation (e.g., 'TX')")
+    state: str = Field(default="", description="State abbreviation (e.g., 'TX') - optional for neighborhoods")
     company_name: str = Field(..., description="Company name")
     phone: str = Field(..., description="Phone number")
     address: str = Field(..., description="Full address")
@@ -70,7 +70,7 @@ class GeneratePageResponse(BaseModel):
 class BulkJobItemInput(BaseModel):
     service: str
     city: str
-    state: str
+    state: str = ""  # Optional - empty string for city/neighborhood-only entries
     company_name: str
     phone: str
     address: str
