@@ -582,8 +582,10 @@ Return JSON only. No extra text."""
             errors.append(f"Expected 4 paragraphs, got {block_counts.get('paragraph', 0)}")
         if block_counts.get("faq", 0) != 2:
             errors.append(f"Expected 2 FAQs, got {block_counts.get('faq', 0)}")
-        if block_counts.get("nap", 0) != 1:
-            errors.append(f"Expected 1 NAP, got {block_counts.get('nap', 0)}")
+        # NAP is optional - allow 0 or 1 (0 when all optional fields are empty)
+        nap_count = block_counts.get("nap", 0)
+        if nap_count > 1:
+            errors.append(f"Expected 0 or 1 NAP, got {nap_count}")
         if block_counts.get("cta", 0) != 1:
             errors.append(f"Expected 1 CTA, got {block_counts.get('cta', 0)}")
         
