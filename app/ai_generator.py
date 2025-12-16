@@ -211,49 +211,25 @@ CONTENT STRUCTURE (OPTIMIZED FOR MAP PACK VISIBILITY):
 4 sections, each with an H2 heading and paragraph (at least 650 characters):
 
 - Section 1: Heading about {data.service} in {data.city}. 
-  Paragraph introduces {data.service} and must include exact service '{data.service}' and city '{data.city}' naturally near the beginning.
-  MANDATORY FIELD INSIGHT: Include at least 2 sentences reflecting real-world service observations (but VARY the phrasing - see anti-symmetry rules below).
-  CITY DIFFERENTIATION PACK (MANDATORY): Include at least 2 "local differentiators" from these safe categories:
-  * Home style/build era WITHOUT naming neighborhoods: "older homes", "newer subdivisions", "homes built in the 80s-90s", "many slab-on-grade homes", "pier-and-beam foundations"
-  * Climate-driven mechanics (state-safe weather only - TX: heat, hail, wind, heavy rain, storms): tie weather to physical failures like "expansion", "pitch drift", "overflow points", "seam separation", "hanger loosening"
-  * Maintenance patterns: "tree debris frequency", "neglected cleanouts", "DIY extensions"
-  * Construction details: "long runs", "roofline complexity", "downspout placement" (no neighborhood references)
-  Do NOT start with "At {data.company_name}, we..." - start with the problem or customer observation.
-  TONE: Experienced local explanation, not marketing reassurance.
+  Start by describing what you see in {data.city} homes - mention the service '{data.service}' and city '{data.city}' naturally in the first few sentences.
+  Talk about real patterns: older homes vs newer construction, weather effects (TX: heat, storms, hail), common maintenance issues, how homes are built.
+  Don't start with "In [city], electrical issues can be..." - that's AI language. Start with something specific like "Breaker trips are common in older Tulsa homes" or "Most calls we get start with flickering lights."
+  Skip phrases like "addressing your needs" or "ensuring your system is safe and reliable" - just describe what you actually see and do.
 
-- Section 2: LOCAL EXPERTISE + DECISION GUIDANCE - Heading about common {data.service} issues in {data.city}. 
-  Paragraph must include:
-  * CITY DIFFERENTIATION PACK (MANDATORY): At least 2 local differentiators from the safe categories above
-  * DECISION GUIDANCE: Help users decide when to act (e.g., "If water is spilling behind the gutter instead of into the downspout, this needs immediate attention because...")
-  * WARNING SIGNS: What escalates if ignored (e.g., "Once this starts happening, it can quickly lead to...")
-  * INFORMATIONAL ASYMMETRY: Include one insight competitors often omit (common homeowner mistakes, assumptions that worsen problems, issues that look minor but aren't)
-  MANDATORY: At least 2 field insight sentences (but VARY the phrasing - see anti-symmetry rules below).
-  Do NOT start with brand-first language.
-  RANDOMIZE NARRATIVE ORDER: Do NOT always follow "downspouts first, elbows second, then outcomes" - vary the order of topics across cities.
+- Section 2: Heading about common problems you see.
+  Talk about what actually goes wrong and when people should call. Mix in local details (older homes, weather, DIY mistakes).
+  Tell people when something's urgent vs when they can wait. Mention one thing homeowners get wrong or don't realize.
+  Don't write in the same order every time - switch up which problems you mention first.
 
-- Section 3: MICRO-NARRATIVE PROCESS + PRACTICAL GUIDANCE - Heading about your {data.service} process. 
-  Paragraph must read like a walkthrough:
-  * What's checked first and why
-  * What problems are commonly found
-  * FORK DECISION POINT (MANDATORY): Include 1-2 sentences explaining when a repair is enough vs when sectional replacement is needed, tied to observable conditions (seam failure, sagging, fascia rot, pitch issues)
-  * What changes after the work
-  * CITY DIFFERENTIATION PACK (MANDATORY): At least 2 local differentiators from the safe categories above
-  MANDATORY: At least 2 field insight sentences (but VARY the phrasing - see anti-symmetry rules below).
-  Use calm, confident, practical explanations.
-  Avoid generic "thorough and professional" language.
-  RANDOMIZE NARRATIVE ORDER: Vary the inspection sequence and problem emphasis across cities.
+- Section 3: Heading about how you do the work.
+  Walk through what you check, what you usually find, and what changes after you're done.
+  Tell people when you can just fix something vs when you need to replace it.
+  Mix in local details. Don't use phrases like "thorough and professional" - just describe what you actually do.
 
-- Section 4: Heading about reliability and customer outcomes (NOT "why choose us"). 
-  OBSERVABLE OUTCOMES ONLY (MANDATORY): Focus on measurable/observable results:
-  * "no overflow at the end cap"
-  * "water discharges at the splash block"
-  * "no staining on fascia"
-  * "no pooling near foundation"
-  Replace emotional/social proof phrasing with concrete outcomes customers can verify.
-  MANDATORY: At least 2 field insight sentences about outcomes/concerns you hear repeatedly (but VARY the phrasing - see anti-symmetry rules below).
-  Start with customer scenarios or outcomes, not company claims.
-  TONE: Observational and helpful, not promotional.
-  This section can be more customer-focused and doesn't require as many technical terms.
+- Section 4: Heading about what customers get after the work.
+  Talk about what people can actually see and verify - no more overflow, lights stop flickering, breakers stop tripping, etc.
+  Skip the "peace of mind" and "trusted service" language. Just describe what's different after you're done.
+  Mention what customers tell you or ask about.
 
 Example headings for "Gutter Installation":
 - "Professional Gutter Installation in [City]"
@@ -278,19 +254,17 @@ Use natural substitutes and functional descriptions:
 - Instead of repeating "HVAC Installation" → use "getting your system installed", "setting up your new unit", "installing the equipment"
 The service name must appear where required, but vary your language throughout the rest of the content.
 
-WRITING STYLE (MAP PACK OPTIMIZED):
-TONE SHIFT: From "marketing reassurance" to "experienced local explanation"
-- Use observational phrasing that demonstrates experience: "we often see", "most calls start with", "homeowners typically notice"
-- Use practical explanations that teach, not just reassure
-- Use calm, confident tone (not promotional or defensive)
-- Mix short and long sentences for natural rhythm
-- Vary sentence openers - avoid starting every sentence the same way
-- Allow 1-2 mild contractions per paragraph (we'll, it's, that's, you'll)
-- Write conversationally but professionally
-- Sound like a knowledgeable local contractor explaining real problems, not a template
-- Do NOT use slang or emojis
-- Do NOT add testimonials or opinions not grounded in service work
-- CRITICAL: Pages for the same service in different cities must NOT be interchangeable - vary examples, order, and emphasis
+WRITING STYLE - SOUND HUMAN, NOT AI:
+- Write like you're talking to a neighbor, not writing a brochure
+- Use short, punchy sentences mixed with longer explanatory ones
+- Start sentences different ways - not always with "Our team" or "We" or "In [city]"
+- Use 2-3 contractions per paragraph (we'll, it's, that's, you'll, can't, won't)
+- Avoid repetitive sentence patterns - if you start one sentence with "If you notice...", don't start the next one the same way
+- Skip filler phrases like "ensuring your home's electrical system is safe and reliable" - just say what you do
+- Don't list things in the same order every time (problem → solution → benefit)
+- Vary your vocabulary - don't use "issue" 5 times, mix in "problem", "trouble", "failure"
+- Sound like someone who does this work every day, not someone reading from a script
+- NO template language like "addressing your needs", "focus on providing", "here to ensure"
 
 2 FAQs about {data.service}. OPTIMIZED FOR MAP PACK INTENT - EACH FAQ ANSWER MUST:
 - Reference a REAL CUSTOMER SITUATION (e.g., "When you notice water pooling near your foundation...")
