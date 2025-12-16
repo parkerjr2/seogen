@@ -213,6 +213,8 @@ CONTENT STRUCTURE (OPTIMIZED FOR MAP PACK VISIBILITY):
 - Section 1: Heading about {data.service} in {data.city}. 
   CRITICAL: The FIRST SENTENCE must include both '{data.service}' and '{data.city}'. Example: "Breaker trips are common with electrical repair in older Tulsa homes."
   Start by describing what you see in {data.city} homes. Talk about real patterns: older homes vs newer construction, weather effects (TX: heat, storms, hail), common maintenance issues.
+  You CAN mention well-known landmarks or areas: "near downtown {data.city}", "around the university", "in the arts district", "close to [major landmark]"
+  Do NOT mention specific neighborhood names (e.g., Maple Ridge, Brookside, Cherry Street) - stick to generic landmarks only.
   Don't start with "In [city], electrical issues can be..." - start with something specific that includes the service and city immediately.
   Skip phrases like "addressing your needs" or "ensuring your system is safe and reliable".
 
@@ -364,6 +366,13 @@ Include one sentence referencing the broader area using ONLY safe terms like 'ne
 Weather considerations must be generic and safe for the given state. Do NOT mention salt air.
 If state is TX, only mention weather risks like heat, hail, wind, heavy rain, and storms.
 Do NOT use Florida-specific wording unless state is FL.
+
+LANDMARKS AND GEOGRAPHY:
+You CAN mention generic, well-known landmarks: "near downtown {data.city}", "around the university", "in the arts district", "close to the airport"
+Do NOT mention specific neighborhood names (e.g., Maple Ridge, Brookside, Cherry Street).
+Do NOT mention counties or regions (e.g., South Florida, Miami-Dade, Broward).
+Do NOT use Florida-specific wording unless state is FL.
+
 1 FAQ about {data.service}. The answer must be at least 200 characters and specifically address {data.service}, not other services.
 Meta description must include the service and city naturally.
 CTA text must include the city and the phone number.
