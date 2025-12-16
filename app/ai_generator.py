@@ -539,6 +539,26 @@ Return JSON only. No extra text."""
         if total_words < 300:
             errors.append(f"Total word count {total_words} < 300")
         
+        # Validation 2: Check for forbidden meta-language
+        all_text = [response.title, response.meta_description]
+        for block in response.blocks:
+            if hasattr(block, 'text') and block.text:
+                all_text.append(block.text)
+            if hasattr(block, 'question') and block.question:
+                all_text.append(block.question)
+            if hasattr(block, 'answer') and block.answer:
+                all_text.append(block.answer)
+        
+        combined_text = " ".join(all_text).lower()
+        for phrase in self.FORBIDDEN_PHRASES:
+            if phrase.lower() in combined_text:
+                errors.append(f"Contains forbidden phrase: '{phrase}'")
+
+        # Validation 2b: Forbid incorrect regional references / unsafe geography
+        for phrase in self.FORBIDDEN_REGION_PHRASES:
+            if phrase.lower() in combined_text:
+                errors.append(f"Contains forbidden region phrase: '{phrase}'")
+        
         # Validation 2c: Check for forbidden marketing filler phrases
         for phrase in self.FORBIDDEN_MARKETING_FILLER:
             if phrase.lower() in combined_text:
