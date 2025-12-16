@@ -211,10 +211,10 @@ CONTENT STRUCTURE (OPTIMIZED FOR MAP PACK VISIBILITY):
 4 sections, each with an H2 heading and paragraph (at least 650 characters):
 
 - Section 1: Heading about {data.service} in {data.city}. 
-  Start by describing what you see in {data.city} homes - mention the service '{data.service}' and city '{data.city}' naturally in the first few sentences.
-  Talk about real patterns: older homes vs newer construction, weather effects (TX: heat, storms, hail), common maintenance issues, how homes are built.
-  Don't start with "In [city], electrical issues can be..." - that's AI language. Start with something specific like "Breaker trips are common in older Tulsa homes" or "Most calls we get start with flickering lights."
-  Skip phrases like "addressing your needs" or "ensuring your system is safe and reliable" - just describe what you actually see and do.
+  CRITICAL: The FIRST SENTENCE must include both '{data.service}' and '{data.city}'. Example: "Breaker trips are common with electrical repair in older Tulsa homes."
+  Start by describing what you see in {data.city} homes. Talk about real patterns: older homes vs newer construction, weather effects (TX: heat, storms, hail), common maintenance issues.
+  Don't start with "In [city], electrical issues can be..." - start with something specific that includes the service and city immediately.
+  Skip phrases like "addressing your needs" or "ensuring your system is safe and reliable".
 
 - Section 2: Heading about common problems you see.
   Talk about what actually goes wrong and when people should call. Mix in local details (older homes, weather, DIY mistakes).
