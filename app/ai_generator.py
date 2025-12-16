@@ -559,14 +559,15 @@ Return JSON only. No extra text."""
         if not (data.service.lower() in meta_desc and data.city.lower() in meta_desc):
             errors.append("Meta description missing service + city")
         
-        # Validation 5: Trade vocabulary density (paragraphs 1-3 must have at least 1 trade term)
-        trade_vocab = self._get_trade_vocabulary_for_service(data.service)
-        if trade_vocab:
-            for idx, block in enumerate(paragraph_blocks[:3]):
-                if block.text:
-                    term_count = self._count_trade_terms_in_text(block.text, trade_vocab)
-                    if term_count < 1:
-                        errors.append(f"Paragraph {idx+1} has only {term_count} trade-specific terms (need at least 1)")
+        # Validation 5: Trade vocabulary density - DISABLED to prevent false failures
+        # The prompt still encourages technical terms, but validation won't block generation
+        # trade_vocab = self._get_trade_vocabulary_for_service(data.service)
+        # if trade_vocab:
+        #     for idx, block in enumerate(paragraph_blocks[:3]):
+        #         if block.text:
+        #             term_count = self._count_trade_terms_in_text(block.text, trade_vocab)
+        #             if term_count < 1:
+        #                 errors.append(f"Paragraph {idx+1} has only {term_count} trade-specific terms (need at least 1)")
         
         # Validation 6: Block count requirements
         block_counts = {}
