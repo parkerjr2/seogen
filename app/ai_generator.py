@@ -438,12 +438,13 @@ Return JSON only. No extra text."""
                 faq.get("answer", "")
             ))
         
-        # NAP block - only type, business_name, address, phone
-        blocks.append(self._create_nap_block(
-            data.company_name,
-            data.address,
-            data.phone
-        ))
+        # NAP block - only add if at least one field has a value
+        if data.company_name or data.address or data.phone:
+            blocks.append(self._create_nap_block(
+                data.company_name,
+                data.address,
+                data.phone
+            ))
         
         # CTA block - only type, text, phone
         blocks.append(self._create_cta_block(

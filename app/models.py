@@ -11,9 +11,9 @@ class PageData(BaseModel):
     service: str = Field(..., description="Service type (e.g., 'Roof Repair')")
     city: str = Field(..., description="City name (e.g., 'Austin')")
     state: str = Field(default="", description="State abbreviation (e.g., 'TX') - optional for neighborhoods")
-    company_name: str = Field(..., description="Company name")
-    phone: str = Field(..., description="Phone number")
-    address: str = Field(..., description="Full address")
+    company_name: str = Field(default="", description="Company name (optional)")
+    phone: str = Field(default="", description="Phone number (optional)")
+    address: str = Field(default="", description="Full address (optional)")
 
 class GeneratePageRequest(BaseModel):
     """Request model for the /generate-page endpoint."""
@@ -71,9 +71,9 @@ class BulkJobItemInput(BaseModel):
     service: str
     city: str
     state: str = ""  # Optional - empty string for city/neighborhood-only entries
-    company_name: str
-    phone: str
-    address: str
+    company_name: str = ""  # Optional
+    phone: str = ""  # Optional
+    address: str = ""  # Optional
 
 
 class BulkJobCreateRequest(BaseModel):
