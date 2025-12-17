@@ -8,8 +8,10 @@ import re
 import os
 from typing import Dict, Any, List, Tuple
 import httpx
+import asyncio
 from app.config import settings
 from app.models import PageData, GeneratePageResponse, PageBlock, HeadingBlock, ParagraphBlock, FAQBlock, NAPBlock, CTABlock
+from app.local_data_fetcher import local_data_fetcher
 
 class AIContentGenerator:
     """Robust content generator with programmatic enforcement and repair capabilities."""
@@ -73,7 +75,7 @@ class AIContentGenerator:
     
     def generate_page_content(self, data: PageData) -> GeneratePageResponse:
         """
-        Generate robust SEO-optimized content with validation and repair passes.
+        Generate complete page content with validation and repair.
         
         Args:
             data: Page generation parameters
@@ -85,8 +87,16 @@ class AIContentGenerator:
             Exception: If generation and repair both fail
         """
         try:
+            # Step 0: Fetch real housing age data from Census API
+            local_data = None
+            try:
+                local_data = asyncio.run(local_data_fetcher.fetch_city_data(data.city, data.state))
+            except Exception as e:
+                print(f"Warning: Could not fetch Census data for {data.city}, {data.state}: {e}")
+                local_data = None
+            
             # Step 1: Generate content via LLM (NOT title/slug/H1)
-            content_json = self._call_openai_generation(data)
+            content_json = self._call_openai_generation(data, local_data)
             
             # Step 2: Assemble complete response with programmatic fields
             response = self._assemble_response(content_json, data)
@@ -172,9 +182,15 @@ class AIContentGenerator:
         except Exception as e:
             raise Exception(f"OpenAI API call failed: {str(e)}")
     
-    def _call_openai_generation(self, data: PageData) -> Dict[str, Any]:
+    def _call_openai_generation(self, data: PageData, local_data: Dict[str, Any] = None) -> Dict[str, Any]:
         """Generate content payload using exact specified prompt."""
         system_prompt = "You are a professional local service copywriter. Write natural, trustworthy marketing copy. Avoid any writing-process language."
+        
+        # Format housing facts if available
+        housing_facts = ""
+        if local_data and local_data.get("housing_facts"):
+            housing_facts = "\n\n" + local_data_fetcher.format_for_prompt(local_data)
+            housing_facts += "\nYou MAY incorporate this fact naturally if relevant to the service (e.g., older homes and electrical/plumbing issues). Do NOT force it if it doesn't fit naturally.\n"
         
         user_prompt = f"""⚠️ CRITICAL VALIDATION REQUIREMENTS (MUST PASS OR GENERATION FAILS):
 1. First paragraph MUST include both "{data.service}" AND "{data.city}" in the first sentence
@@ -186,7 +202,7 @@ Service: {data.service}
 City: {data.city}
 State: {data.state}
 Company Name: {data.company_name}
-Phone: {data.phone}
+Phone: {data.phone}{housing_facts}
 Address: {data.address}
 
 Return ONLY valid JSON with this exact structure:
@@ -218,8 +234,8 @@ CONTENT STRUCTURE (OPTIMIZED FOR MAP PACK VISIBILITY):
 - Section 1: Heading about {data.service} in {data.city}. 
   CRITICAL: The FIRST SENTENCE must include both '{data.service}' and '{data.city}'. Example: "Breaker trips are common with electrical repair in older Tulsa homes."
   Start by describing what you see in {data.city} homes. Talk about real patterns: older homes vs newer construction, weather effects (TX: heat, storms, hail), common maintenance issues.
-  You CAN mention well-known landmarks or areas: "near downtown {data.city}", "around the university", "in the arts district", "close to [major landmark]"
-  Do NOT mention specific neighborhood names (e.g., Maple Ridge, Brookside, Cherry Street) - stick to generic landmarks only.
+  Do NOT mention specific landmarks, neighborhoods, or areas (e.g., "near downtown", "around the university", "in the arts district", specific neighborhood names).
+  Focus on general housing characteristics and patterns that apply broadly across the city.
   Don't start with "In [city], electrical issues can be..." - start with something specific that includes the service and city immediately.
   Skip phrases like "addressing your needs" or "ensuring your system is safe and reliable".
 
@@ -373,10 +389,10 @@ If state is TX, only mention weather risks like heat, hail, wind, heavy rain, an
 Do NOT use Florida-specific wording unless state is FL.
 
 LANDMARKS AND GEOGRAPHY:
-You CAN mention generic, well-known landmarks: "near downtown {data.city}", "around the university", "in the arts district", "close to the airport"
-Do NOT mention specific neighborhood names (e.g., Maple Ridge, Brookside, Cherry Street).
+Do NOT mention specific landmarks, neighborhoods, or areas (e.g., "near downtown", "around the university", "in the arts district", specific neighborhood names like Maple Ridge, Brookside, Cherry Street).
 Do NOT mention counties or regions (e.g., South Florida, Miami-Dade, Broward).
 Do NOT use Florida-specific wording unless state is FL.
+Focus on general housing characteristics and patterns that apply broadly across the city without referencing specific locations.
 
 1 FAQ about {data.service}. The answer must be at least 200 characters and specifically address {data.service}, not other services.
 Meta description must include the service and city naturally.
