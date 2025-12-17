@@ -217,6 +217,7 @@ async def create_bulk_job(request: BulkJobCreateRequest):
         )
     try:
         print(f"[API /bulk-jobs POST] Calling supabase_client.insert_bulk_job_items")
+        print(f"[API /bulk-jobs POST] DEBUG items_payload sample: {items_payload[0] if items_payload else 'empty'}")
         ok = supabase_client.insert_bulk_job_items(items=items_payload)
         print(f"[API /bulk-jobs POST] Successfully inserted items")
     except Exception as e:
