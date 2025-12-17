@@ -176,7 +176,12 @@ class AIContentGenerator:
         """Generate content payload using exact specified prompt."""
         system_prompt = "You are a professional local service copywriter. Write natural, trustworthy marketing copy. Avoid any writing-process language."
         
-        user_prompt = f"""Generate content for a local service landing page about {data.service} using:
+        user_prompt = f"""⚠️ CRITICAL VALIDATION REQUIREMENTS (MUST PASS OR GENERATION FAILS):
+1. First paragraph MUST include both "{data.service}" AND "{data.city}" in the first sentence
+2. Meta description MUST include both "{data.service}" AND "{data.city}"
+3. Do NOT use forbidden phrases: "structure", "top-notch", "premier", "trusted experts"
+
+Generate content for a local service landing page about {data.service} using:
 Service: {data.service}
 City: {data.city}
 State: {data.state}
@@ -627,7 +632,15 @@ Return JSON only. No extra text."""
         """Attempt to repair failing content with targeted LLM call."""
         system_prompt = "You are an editor fixing an existing JSON response. Keep the same structure and only change fields that fail the requirements."
         
-        user_prompt = f"""We generated JSON but it failed these validations:
+        user_prompt = f"""⚠️ CRITICAL: Fix these validation failures:
+{', '.join(validation_errors)}
+
+⚠️ MANDATORY FIXES:
+- If "First paragraph missing service + city": Rewrite the FIRST SENTENCE to include both "{data.service}" AND "{data.city}"
+- If "Meta description missing service + city": Rewrite meta_description to include both "{data.service}" AND "{data.city}"
+- If "Contains forbidden phrase": Remove ALL instances of the forbidden phrase
+
+We generated JSON but it failed these validations:
 {', '.join(validation_errors)}
 
 Here is the JSON to repair:
