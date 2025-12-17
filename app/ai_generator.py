@@ -65,7 +65,7 @@ class AIContentGenerator:
     def __init__(self):
         """Initialize with OpenAI configuration."""
         self.api_key = settings.openai_api_key
-        self.model = os.getenv("OPENAI_MODEL", "gpt-4")
+        self.model = os.getenv("OPENAI_MODEL", "gpt-4o-mini")
         self.base_url = "https://api.openai.com/v1"
         
         if not self.api_key:
