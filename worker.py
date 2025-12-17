@@ -3,6 +3,8 @@ import time
 import os
 import sys
 import subprocess
+import asyncio
+from concurrent.futures import ThreadPoolExecutor
 from app.supabase_client import supabase_client
 from app.ai_generator import ai_generator
 from app.models import PageData
@@ -10,6 +12,7 @@ from app.models import PageData
 
 MAX_ATTEMPTS = 3
 BATCH_LIMIT = 5
+CONCURRENT_WORKERS = 3  # Process 3 items simultaneously
 IDLE_SLEEP_SECONDS = (2, 5)
 
 
@@ -17,7 +20,7 @@ def _log(msg: str) -> None:
     print(f"[SEOgen Worker] {msg}")
 
 
-def _process_item(item: dict) -> None:
+async def _process_item_async(item: dict, executor: ThreadPoolExecutor) -> None:
     item_id = str(item.get("id"))
     job_id = str(item.get("job_id"))
     idx = item.get("idx")
@@ -68,11 +71,14 @@ def _process_item(item: dict) -> None:
             state=str(item.get("state") or ""),
             company_name=str(item.get("company_name") or ""),
             phone=str(item.get("phone") or ""),
+            email=str(item.get("email") or ""),
             address=str(item.get("address") or ""),
         )
 
         _log(f"generating item_id={item_id} job_id={job_id} idx={idx} key={canonical_key}")
-        result = ai_generator.generate_page_content(data)
+        # Run CPU-intensive AI generation in thread pool to avoid blocking
+        loop = asyncio.get_event_loop()
+        result = await loop.run_in_executor(executor, ai_generator.generate_page_content, data)
 
         deducted = supabase_client.deduct_credit_safe(license_id, credits_remaining)
         if not deducted:
@@ -136,7 +142,7 @@ def _process_item(item: dict) -> None:
     supabase_client.recompute_bulk_job_counters(job_id=job_id)
 
 
-def main() -> None:
+async def main_async() -> None:
     _log("worker started")
     _log(f"argv={sys.argv}")
     _log(f"python={sys.version.splitlines()[0]}")
@@ -159,23 +165,40 @@ def main() -> None:
         _log(f"ps_aux_failed err={e}")
 
     last_heartbeat = 0.0
-    while True:
-        now = time.time()
-        if now - last_heartbeat > 60:
-            _log("heartbeat")
-            last_heartbeat = now
+    # Create thread pool for CPU-intensive AI generation
+    executor = ThreadPoolExecutor(max_workers=CONCURRENT_WORKERS)
+    
+    try:
+        while True:
+            now = time.time()
+            if now - last_heartbeat > 60:
+                _log("heartbeat")
+                last_heartbeat = now
 
-        _log(f"polling limit={BATCH_LIMIT}")
-        items = supabase_client.list_pending_bulk_items(limit=BATCH_LIMIT)
-        _log(f"found {len(items)} pending items")
-        if not items:
-            time.sleep(random.randint(IDLE_SLEEP_SECONDS[0], IDLE_SLEEP_SECONDS[1]))
-            continue
+            _log(f"polling limit={BATCH_LIMIT}")
+            items = supabase_client.list_pending_bulk_items(limit=BATCH_LIMIT)
+            _log(f"found {len(items)} pending items")
+            if not items:
+                await asyncio.sleep(random.randint(IDLE_SLEEP_SECONDS[0], IDLE_SLEEP_SECONDS[1]))
+                continue
 
-        _log(f"processing {len(items)} items")
-        for item in items:
-            _log(f"processing item_id={item.get('id')} job_id={item.get('job_id')} idx={item.get('idx')}")
-            _process_item(item)
+            _log(f"processing {len(items)} items in parallel (max {CONCURRENT_WORKERS} concurrent)")
+            # Process items concurrently
+            tasks = []
+            for item in items:
+                _log(f"queuing item_id={item.get('id')} job_id={item.get('job_id')} idx={item.get('idx')}")
+                task = asyncio.create_task(_process_item_async(item, executor))
+                tasks.append(task)
+            
+            # Wait for all tasks to complete
+            await asyncio.gather(*tasks, return_exceptions=True)
+            _log(f"completed batch of {len(items)} items")
+    finally:
+        executor.shutdown(wait=True)
+
+
+def main() -> None:
+    asyncio.run(main_async())
 
 
 if __name__ == "__main__":
