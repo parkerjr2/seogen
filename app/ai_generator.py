@@ -205,7 +205,7 @@ Service: {data.service}
 City: {data.city}
 State: {data.state}
 Company Name: {data.company_name}
-Phone: {data.phone}{housing_facts}
+Phone: {data.phone}{local_facts}
 Address: {data.address}
 
 Return ONLY valid JSON with this exact structure:
