@@ -257,7 +257,7 @@ class SupabaseClient:
 
     def list_pending_bulk_items(self, *, limit: int = 5) -> list[dict]:
         params = {
-            "status": "eq.pending",
+            "status": "in.(pending,running)",
             "select": "id,job_id,idx,service,city,state,company_name,phone,email,address,canonical_key,attempts",
             "order": "created_at.asc,idx.asc",
             "limit": str(int(limit)),
