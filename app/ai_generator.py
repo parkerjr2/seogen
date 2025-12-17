@@ -186,11 +186,14 @@ class AIContentGenerator:
         """Generate content payload using exact specified prompt."""
         system_prompt = "You are a professional local service copywriter. Write natural, trustworthy marketing copy. Avoid any writing-process language."
         
-        # Format housing facts if available
-        housing_facts = ""
-        if local_data and local_data.get("housing_facts"):
-            housing_facts = "\n\n" + local_data_fetcher.format_for_prompt(local_data)
-            housing_facts += "\nYou MAY incorporate this fact naturally if relevant to the service (e.g., older homes and electrical/plumbing issues). Do NOT force it if it doesn't fit naturally.\n"
+        # Format local data if available
+        local_facts = ""
+        if local_data and (local_data.get("housing_facts") or local_data.get("landmarks")):
+            local_facts = "\n\n" + local_data_fetcher.format_for_prompt(local_data)
+            local_facts += "\nYou MAY incorporate these facts naturally if relevant:\n"
+            local_facts += "- Housing age is relevant for services like electrical, plumbing, HVAC (older homes = more issues)\n"
+            local_facts += "- Landmarks can be mentioned ONLY if they actually exist in the verified list above\n"
+            local_facts += "- Do NOT force these into the content if they don't fit naturally\n"
         
         user_prompt = f"""⚠️ CRITICAL VALIDATION REQUIREMENTS (MUST PASS OR GENERATION FAILS):
 1. First paragraph MUST include both "{data.service}" AND "{data.city}" in the first sentence

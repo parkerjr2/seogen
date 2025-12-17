@@ -1,12 +1,15 @@
 """
 Local Data Fetcher - Retrieves real facts about cities for AI content generation.
-Uses US Census API for housing age data - reliable and free.
+Uses US Census API for housing age data and GPT-4o-mini for plausible landmarks.
 """
 import httpx
 import asyncio
 from typing import Dict, List, Optional, Any
 import logging
 from datetime import datetime
+import hashlib
+import json
+from app.config import settings
 
 logger = logging.getLogger(__name__)
 
@@ -17,25 +20,37 @@ class LocalDataFetcher:
     def __init__(self):
         self.timeout = 10.0
         self.current_year = datetime.now().year
+        self._cache: Dict[str, Any] = {}  # In-memory cache for landmarks
+        self.openai_api_key = settings.openai_api_key
         
     async def fetch_city_data(self, city: str, state: str) -> Dict[str, Any]:
         """
-        Fetch housing age data for a city from US Census API.
-        Returns dict with housing facts.
+        Fetch housing age data and landmarks for a city.
+        Returns dict with housing facts and landmarks.
         """
         city_data = {
             "city": city,
             "state": state,
             "housing_facts": [],
+            "landmarks": [],
         }
         
-        # Fetch housing age data from Census API
-        try:
-            housing_data = await self._fetch_census_housing_age(city, state)
-            if housing_data:
-                city_data["housing_facts"] = housing_data
-        except Exception as e:
-            logger.warning(f"Census fetch failed for {city}, {state}: {e}")
+        # Fetch both Census and AI-generated landmarks in parallel
+        results = await asyncio.gather(
+            self._fetch_census_housing_age(city, state),
+            self._fetch_ai_landmarks(city, state),
+            return_exceptions=True
+        )
+        
+        # Process Census data
+        housing_data = results[0] if not isinstance(results[0], Exception) else []
+        if housing_data:
+            city_data["housing_facts"] = housing_data
+        
+        # Process AI-generated landmarks
+        landmarks = results[1] if not isinstance(results[1], Exception) else []
+        if landmarks:
+            city_data["landmarks"] = landmarks
         
         return city_data
     
@@ -145,17 +160,96 @@ class LocalDataFetcher:
         }
         return state_fips_map.get(state.upper())
     
+    async def _fetch_ai_landmarks(self, city: str, state: str) -> List[str]:
+        """Use GPT-4o-mini to suggest plausible landmarks for a city."""
+        # Check cache first
+        cache_key = f"{city.lower()}_{state.lower()}"
+        if cache_key in self._cache:
+            logger.info(f"Using cached landmarks for {city}, {state}")
+            return self._cache[cache_key]
+        
+        if not self.openai_api_key:
+            logger.warning("OpenAI API key not configured")
+            return []
+        
+        try:
+            async with httpx.AsyncClient(timeout=self.timeout) as client:
+                # Ask GPT-4o-mini for plausible landmarks
+                prompt = f"""List 2-3 real, well-known landmarks, institutions, or areas in {city}, {state}. 
+Examples: universities, colleges, hospitals, major parks, downtown areas, historic districts.
+Only include landmarks that actually exist and are well-known.
+Return ONLY a JSON array of landmark names, nothing else.
+Example format: ["University of Tulsa", "Woodward Park", "Tulsa Arts District"]"""
+
+                payload = {
+                    "model": "gpt-4o-mini",
+                    "messages": [
+                        {"role": "system", "content": "You are a helpful assistant that provides accurate information about US cities. Only suggest landmarks that actually exist."},
+                        {"role": "user", "content": prompt}
+                    ],
+                    "temperature": 0.3,
+                    "max_tokens": 100
+                }
+                
+                response = await client.post(
+                    "https://api.openai.com/v1/chat/completions",
+                    json=payload,
+                    headers={
+                        "Authorization": f"Bearer {self.openai_api_key}",
+                        "Content-Type": "application/json"
+                    }
+                )
+                
+                if response.status_code != 200:
+                    logger.warning(f"OpenAI API returned {response.status_code} for {city}, {state}")
+                    return []
+                
+                data = response.json()
+                content = data["choices"][0]["message"]["content"].strip()
+                
+                # Parse JSON response
+                try:
+                    landmarks = json.loads(content)
+                    if isinstance(landmarks, list):
+                        # Filter and clean
+                        landmarks = [str(l).strip() for l in landmarks if l and len(str(l)) < 60][:3]
+                        
+                        # Cache the results
+                        self._cache[cache_key] = landmarks
+                        
+                        logger.info(f"AI suggested {len(landmarks)} landmarks for {city}, {state}: {landmarks}")
+                        return landmarks
+                except json.JSONDecodeError:
+                    logger.warning(f"Failed to parse AI response as JSON: {content}")
+                    return []
+                
+                return []
+                
+        except Exception as e:
+            logger.warning(f"AI landmark fetch failed for {city}, {state}: {e}")
+            return []
     
     def format_for_prompt(self, city_data: Dict[str, Any]) -> str:
         """Format city data for inclusion in AI prompt."""
-        if not city_data or not city_data.get("housing_facts"):
+        if not city_data:
             return ""
         
-        facts = city_data["housing_facts"]
-        if not facts:
+        lines = []
+        
+        # Add housing facts
+        if city_data.get("housing_facts"):
+            for fact in city_data["housing_facts"]:
+                lines.append(f"VERIFIED LOCAL FACT: {fact}")
+        
+        # Add landmarks
+        if city_data.get("landmarks"):
+            landmarks_str = ", ".join(city_data["landmarks"][:3])  # Max 3 landmarks
+            lines.append(f"VERIFIED LANDMARKS: {landmarks_str}")
+        
+        if not lines:
             return ""
         
-        return "\n".join([f"VERIFIED LOCAL FACT: {fact}" for fact in facts])
+        return "\n".join(lines)
 
 
 # Global instance
