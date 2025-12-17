@@ -65,6 +65,9 @@ async def _process_item_async(item: dict, executor: ThreadPoolExecutor) -> None:
     license_id = str(license_data.get("id"))
 
     try:
+        # Debug: Log the item data to see what email value we're getting
+        _log(f"DEBUG item data: email='{item.get('email')}' phone='{item.get('phone')}' company='{item.get('company_name')}'")
+        
         data = PageData(
             service=str(item.get("service") or ""),
             city=str(item.get("city") or ""),
@@ -74,6 +77,8 @@ async def _process_item_async(item: dict, executor: ThreadPoolExecutor) -> None:
             email=str(item.get("email") or ""),
             address=str(item.get("address") or ""),
         )
+        
+        _log(f"DEBUG PageData created: email='{data.email}' phone='{data.phone}' company='{data.company_name}'")
 
         _log(f"generating item_id={item_id} job_id={job_id} idx={idx} key={canonical_key}")
         # Run CPU-intensive AI generation in thread pool to avoid blocking
