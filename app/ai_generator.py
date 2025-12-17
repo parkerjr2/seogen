@@ -190,10 +190,11 @@ class AIContentGenerator:
         local_facts = ""
         if local_data and (local_data.get("housing_facts") or local_data.get("landmarks")):
             local_facts = "\n\n" + local_data_fetcher.format_for_prompt(local_data)
-            local_facts += "\nYou MAY incorporate these facts naturally if relevant:\n"
+            local_facts += "\n⚠️ REQUIRED: You MUST incorporate at least ONE of these verified local facts:\n"
+            local_facts += "- If landmarks are provided, mention AT LEAST ONE landmark naturally (e.g., 'near the University of Tulsa' or 'serving homeowners around Gathering Place')\n"
             local_facts += "- Housing age is relevant for services like electrical, plumbing, HVAC (older homes = more issues)\n"
-            local_facts += "- Landmarks can be mentioned ONLY if they actually exist in the verified list above\n"
-            local_facts += "- Do NOT force these into the content if they don't fit naturally\n"
+            local_facts += "- Use landmarks to add local specificity and authenticity\n"
+            local_facts += "- ONLY mention landmarks that are in the verified list above - never make up landmarks\n"
         
         user_prompt = f"""⚠️ CRITICAL VALIDATION REQUIREMENTS (MUST PASS OR GENERATION FAILS):
 1. First paragraph MUST include both "{data.service}" AND "{data.city}" in the first sentence
