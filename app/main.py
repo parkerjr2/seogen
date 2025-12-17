@@ -208,6 +208,7 @@ async def create_bulk_job(request: BulkJobCreateRequest):
                 "state": item.state,
                 "company_name": item.company_name,
                 "phone": item.phone,
+                "email": item.email,
                 "address": item.address,
                 "canonical_key": _canonical_key(item.service, item.city, item.state),
                 "status": "pending",
