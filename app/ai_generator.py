@@ -439,11 +439,12 @@ Return JSON only. No extra text."""
             ))
         
         # NAP block - only add if at least one field has a value
-        if data.company_name or data.address or data.phone:
+        if data.company_name or data.address or data.phone or data.email:
             blocks.append(self._create_nap_block(
                 data.company_name,
-                data.address,
-                data.phone
+                data.phone,
+                data.email,
+                data.address
             ))
         
         # CTA block - only type, text, phone
@@ -471,9 +472,9 @@ Return JSON only. No extra text."""
         """Create FAQ block with minimal schema: type, question, answer only."""
         return FAQBlock(question=question, answer=answer)
     
-    def _create_nap_block(self, business_name: str, address: str, phone: str) -> NAPBlock:
-        """Create NAP block with minimal schema: type, business_name, address, phone only."""
-        return NAPBlock(business_name=business_name, address=address, phone=phone)
+    def _create_nap_block(self, business_name: str, phone: str, email: str, address: str) -> NAPBlock:
+        """Create NAP block with minimal schema: type, business_name, phone, email, address only."""
+        return NAPBlock(business_name=business_name, phone=phone, email=email, address=address)
     
     def _create_cta_block(self, text: str, phone: str) -> CTABlock:
         """Create CTA block with minimal schema: type, text, phone only."""

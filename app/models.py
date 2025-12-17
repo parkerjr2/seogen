@@ -13,6 +13,7 @@ class PageData(BaseModel):
     state: str = Field(default="", description="State abbreviation (e.g., 'TX') - optional for neighborhoods")
     company_name: str = Field(default="", description="Company name (optional)")
     phone: str = Field(default="", description="Phone number (optional)")
+    email: str = Field(default="", description="Email address (optional)")
     address: str = Field(default="", description="Full address (optional)")
 
 class GeneratePageRequest(BaseModel):
@@ -44,11 +45,12 @@ class FAQBlock(BaseModel):
     answer: str
 
 class NAPBlock(BaseModel):
-    """NAP (Name, Address, Phone) block with minimal schema."""
+    """NAP (Name, Address, Phone, Email) block with minimal schema."""
     type: str = "nap"
     business_name: str
-    address: str
     phone: str
+    email: str
+    address: str
 
 class CTABlock(BaseModel):
     """CTA (Call to Action) block with minimal schema."""
@@ -73,6 +75,7 @@ class BulkJobItemInput(BaseModel):
     state: str = ""  # Optional - empty string for city/neighborhood-only entries
     company_name: str = ""  # Optional
     phone: str = ""  # Optional
+    email: str = ""  # Optional
     address: str = ""  # Optional
 
 
