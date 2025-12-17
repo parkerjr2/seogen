@@ -225,6 +225,10 @@ class SupabaseClient:
             "order": "idx.asc",
             "limit": str(int(limit)),
         }
+        # Apply cursor to only fetch items after the cursor position
+        if cursor_idx is not None:
+            params["idx"] = f"gt.{cursor_idx}"
+        
         try:
             resp = self._request("GET", "/rest/v1/bulk_job_items", params=params, timeout=15)
             if resp.status_code != 200:
