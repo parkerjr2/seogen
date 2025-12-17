@@ -86,6 +86,15 @@ async def _process_item_async(item: dict, executor: ThreadPoolExecutor) -> None:
         # Run CPU-intensive AI generation in thread pool to avoid blocking
         loop = asyncio.get_event_loop()
         result = await loop.run_in_executor(executor, ai_generator.generate_page_content, data)
+        
+        # Save result_json immediately after successful generation
+        # Don't mark as completed yet in case subsequent operations fail
+        result_data = result.model_dump()
+        supabase_client.update_bulk_item_result(
+            item_id=item_id,
+            status="running",
+            result_json=result_data,
+        )
 
         deducted = supabase_client.deduct_credit_safe(license_id, credits_remaining)
         if not deducted:
@@ -107,10 +116,10 @@ async def _process_item_async(item: dict, executor: ThreadPoolExecutor) -> None:
             },
         )
 
+        # Only mark as completed after all operations succeed
         supabase_client.update_bulk_item_result(
             item_id=item_id,
             status="completed",
-            result_json=result.model_dump(),
         )
 
     except Exception as e:
