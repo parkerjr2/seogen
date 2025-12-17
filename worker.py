@@ -15,9 +15,11 @@ BATCH_LIMIT = 5
 CONCURRENT_WORKERS = 3  # Process 3 items simultaneously
 IDLE_SLEEP_SECONDS = (2, 5)
 
+# Get replica ID for logging
+REPLICA_ID = os.getenv("RAILWAY_REPLICA_ID", "unknown")
 
 def _log(msg: str) -> None:
-    print(f"[SEOgen Worker] {msg}")
+    print(f"[SEOgen Worker][Replica:{REPLICA_ID}] {msg}")
 
 
 async def _process_item_async(item: dict, executor: ThreadPoolExecutor) -> None:
