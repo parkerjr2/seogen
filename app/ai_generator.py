@@ -238,7 +238,7 @@ CONTENT STRUCTURE (OPTIMIZED FOR MAP PACK VISIBILITY):
 - Section 1: Heading about {data.service} in {data.city}. 
   CRITICAL: The FIRST SENTENCE must include both '{data.service}' and '{data.city}'. Example: "Breaker trips are common with electrical repair in older Tulsa homes."
   Start by describing what you see in {data.city} homes. Talk about real patterns: older homes vs newer construction, weather effects (TX: heat, storms, hail), common maintenance issues.
-  Do NOT mention specific landmarks, neighborhoods, or areas (e.g., "near downtown", "around the university", "in the arts district", specific neighborhood names).
+  {f"REQUIRED: Mention at least ONE of these verified landmarks naturally: {', '.join(local_data['landmarks'][:2])}. Example: 'from homes near {local_data['landmarks'][0]} to properties around {local_data['landmarks'][1] if len(local_data['landmarks']) > 1 else local_data['landmarks'][0]}'" if local_data and local_data.get('landmarks') else "Do NOT mention specific landmarks, neighborhoods, or areas unless they are in the verified list above."}
   Focus on general housing characteristics and patterns that apply broadly across the city.
   Don't start with "In [city], electrical issues can be..." - start with something specific that includes the service and city immediately.
   Skip phrases like "addressing your needs" or "ensuring your system is safe and reliable".
