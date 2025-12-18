@@ -182,6 +182,36 @@ class AIContentGenerator:
         except Exception as e:
             raise Exception(f"OpenAI API call failed: {str(e)}")
     
+    def _get_landmark_instruction(self, local_data: Dict[str, Any] = None) -> str:
+        """Generate varied landmark mention instructions to avoid repetitive patterns."""
+        if not local_data or not local_data.get('landmarks'):
+            return "Do NOT mention specific landmarks, neighborhoods, or areas unless they are in the verified list above."
+        
+        landmarks = local_data['landmarks'][:3]  # Use up to 3 landmarks
+        if len(landmarks) == 0:
+            return "Do NOT mention specific landmarks, neighborhoods, or areas unless they are in the verified list above."
+        
+        # Multiple varied patterns to make content seem more human-generated
+        import random
+        patterns = []
+        
+        if len(landmarks) >= 2:
+            patterns.extend([
+                f"REQUIRED: Mention at least ONE of these verified landmarks naturally: {', '.join(landmarks[:2])}. Example: 'whether you're near {landmarks[0]} or closer to {landmarks[1]}'",
+                f"REQUIRED: Mention at least ONE of these verified landmarks naturally: {', '.join(landmarks[:2])}. Example: 'especially in areas around {landmarks[0]} and {landmarks[1]}'",
+                f"REQUIRED: Mention at least ONE of these verified landmarks naturally: {', '.join(landmarks[:2])}. Example: 'homes throughout the area, including those near {landmarks[0]}'",
+                f"REQUIRED: Mention at least ONE of these verified landmarks naturally: {', '.join(landmarks[:2])}. Example: 'residents close to {landmarks[0]} often experience similar issues'",
+                f"REQUIRED: Mention at least ONE of these verified landmarks naturally: {', '.join(landmarks[:2])}. Example: 'from the {landmarks[0]} area to neighborhoods near {landmarks[1]}'",
+            ])
+        else:
+            patterns.extend([
+                f"REQUIRED: Mention this verified landmark naturally: {landmarks[0]}. Example: 'especially in areas around {landmarks[0]}'",
+                f"REQUIRED: Mention this verified landmark naturally: {landmarks[0]}. Example: 'homes near {landmarks[0]} often face these challenges'",
+                f"REQUIRED: Mention this verified landmark naturally: {landmarks[0]}. Example: 'whether you're close to {landmarks[0]} or elsewhere in the city'",
+            ])
+        
+        return random.choice(patterns)
+    
     def _call_openai_generation(self, data: PageData, local_data: Dict[str, Any] = None) -> Dict[str, Any]:
         """Generate content payload using exact specified prompt."""
         system_prompt = "You are a professional local service copywriter. Write natural, trustworthy marketing copy. Avoid any writing-process language."
@@ -238,7 +268,7 @@ CONTENT STRUCTURE (OPTIMIZED FOR MAP PACK VISIBILITY):
 - Section 1: Heading about {data.service} in {data.city}. 
   CRITICAL: The FIRST SENTENCE must include both '{data.service}' and '{data.city}'. Example: "Breaker trips are common with electrical repair in older Tulsa homes."
   Start by describing what you see in {data.city} homes. Talk about real patterns: older homes vs newer construction, weather effects (TX: heat, storms, hail), common maintenance issues.
-  {f"REQUIRED: Mention at least ONE of these verified landmarks naturally: {', '.join(local_data['landmarks'][:2])}. Example: 'from homes near {local_data['landmarks'][0]} to properties around {local_data['landmarks'][1] if len(local_data['landmarks']) > 1 else local_data['landmarks'][0]}'" if local_data and local_data.get('landmarks') else "Do NOT mention specific landmarks, neighborhoods, or areas unless they are in the verified list above."}
+  {self._get_landmark_instruction(local_data)}
   Focus on general housing characteristics and patterns that apply broadly across the city.
   Don't start with "In [city], electrical issues can be..." - start with something specific that includes the service and city immediately.
   Skip phrases like "addressing your needs" or "ensuring your system is safe and reliable".
