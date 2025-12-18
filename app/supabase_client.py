@@ -218,24 +218,50 @@ class SupabaseClient:
             return False
 
     def get_bulk_job_results(self, *, job_id: str, status: str = "completed", cursor_idx: int | None = None, limit: int = 20) -> list[dict]:
-        params: dict[str, str] = {
-            "job_id": f"eq.{job_id}",
-            # Fetch completed and failed items that haven't been imported yet
-            "status": f"in.(completed,failed)",
-            "select": "id,idx,canonical_key,status,attempts,result_json,error",
-            "order": "idx.asc",
-            "limit": str(int(limit)),
-        }
-        # Don't use cursor - fetch ALL unimported items regardless of idx
-        # This ensures items that completed out of order aren't skipped
-        # The cursor was causing items with lower idx to be missed if they completed after higher idx items
+        # Fetch completed/failed items that haven't been imported yet
+        # For efficiency with large jobs, we use the cursor but ALSO check for any
+        # items before the cursor that might have completed out of order
         
         try:
-            resp = self._request("GET", "/rest/v1/bulk_job_items", params=params, timeout=15)
+            # First, get items after the cursor (normal progression)
+            params_after: dict[str, str] = {
+                "job_id": f"eq.{job_id}",
+                "status": f"in.(completed,failed)",
+                "select": "id,idx,canonical_key,status,attempts,result_json,error",
+                "order": "idx.asc",
+                "limit": str(int(limit)),
+            }
+            if cursor_idx is not None:
+                params_after["idx"] = f"gt.{cursor_idx}"
+            
+            resp = self._request("GET", "/rest/v1/bulk_job_items", params=params_after, timeout=15)
             if resp.status_code != 200:
                 return []
-            data = resp.json()
-            return data if isinstance(data, list) else []
+            items_after = resp.json() if resp.status_code == 200 else []
+            items_after = items_after if isinstance(items_after, list) else []
+            
+            # Also check for any completed items BEFORE the cursor (out-of-order completions)
+            # Only do this if we have a cursor and didn't get a full batch
+            items_before = []
+            if cursor_idx is not None and len(items_after) < limit:
+                params_before: dict[str, str] = {
+                    "job_id": f"eq.{job_id}",
+                    "status": f"in.(completed,failed)",
+                    "idx": f"lt.{cursor_idx}",
+                    "select": "id,idx,canonical_key,status,attempts,result_json,error",
+                    "order": "idx.asc",
+                    "limit": str(int(limit - len(items_after))),
+                }
+                resp_before = self._request("GET", "/rest/v1/bulk_job_items", params=params_before, timeout=15)
+                if resp_before.status_code == 200:
+                    items_before = resp_before.json()
+                    items_before = items_before if isinstance(items_before, list) else []
+            
+            # Combine and sort by idx
+            all_items = items_before + items_after
+            all_items.sort(key=lambda x: x.get('idx', 0))
+            return all_items[:limit]
+            
         except Exception:
             return []
 
