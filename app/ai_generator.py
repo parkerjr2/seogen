@@ -254,7 +254,7 @@ class AIContentGenerator:
         import random
         
         # Randomize structure to avoid template-like appearance
-        num_faqs = random.randint(1, 3)  # Variable FAQ count
+        num_faqs = random.randint(3, 5)  # Variable FAQ count (3-5 for substantial content)
         headings = self._get_random_headings(data.service, data.city)
         
         system_prompt = "You are a professional local service copywriter. Write natural, trustworthy marketing copy that genuinely helps potential customers understand the service and make informed decisions. Focus on practical, actionable information rather than marketing fluff."
@@ -685,10 +685,10 @@ Return JSON only. No extra text."""
             errors.append(f"Expected 5 headings (1 H1 + 4 H2s), got {block_counts.get('heading', 0)}")
         if block_counts.get("paragraph", 0) != 4:
             errors.append(f"Expected 4 paragraphs, got {block_counts.get('paragraph', 0)}")
-        # Accept 1-3 FAQs for variation
+        # Accept 3-5 FAQs for variation
         faq_count = block_counts.get("faq", 0)
-        if faq_count < 1 or faq_count > 3:
-            errors.append(f"Expected 1-3 FAQs, got {faq_count}")
+        if faq_count < 3 or faq_count > 5:
+            errors.append(f"Expected 3-5 FAQs, got {faq_count}")
         # NAP is optional - allow 0 or 1 (0 when all optional fields are empty)
         nap_count = block_counts.get("nap", 0)
         if nap_count > 1:
