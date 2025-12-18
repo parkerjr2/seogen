@@ -162,22 +162,25 @@ class SupabaseClient:
             True if logged successfully, False otherwise
         """
         try:
-            with httpx.Client() as client:
-                log_data = {
-                    "license_id": license_id,
-                    "action": action,
-                    "details": details or {},
-                    "created_at": "now()"  # Supabase function for current timestamp
-                }
-                
-                response = client.post(
-                    f"{self.url}/rest/v1/usage_logs",
-                    headers=self.headers,
-                    json=log_data,
-                    timeout=10
-                )
-                
-                return response.status_code == 201  # Supabase returns 201 for successful inserts
+            # Don't include created_at - let database default handle it
+            log_data = {
+                "license_id": license_id,
+                "action": action,
+                "details": details or {}
+            }
+            
+            response = self._request(
+                "POST",
+                "/rest/v1/usage_logs",
+                json=log_data,
+                timeout=10
+            )
+            
+            if response.status_code == 201:
+                return True
+            else:
+                print(f"Error logging usage: {response.status_code} {response.text}")
+                return False
                 
         except Exception as e:
             print(f"Error logging usage: {e}")
