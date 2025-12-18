@@ -59,13 +59,15 @@ async def _process_item_async(item: dict, executor: ThreadPoolExecutor) -> None:
         supabase_client.recompute_bulk_job_counters(job_id=job_id)
         return
 
-    credits_remaining = int(license_data.get("credits_remaining") or 0)
-    if credits_remaining <= 0:
-        supabase_client.update_bulk_item_result(item_id=item_id, status="failed", error="Insufficient credits")
+    license_id = str(license_data.get("id"))
+    
+    # Check if license can generate more pages (dual-limit validation)
+    can_generate, reason, stats = supabase_client.check_can_generate(license_id)
+    if not can_generate:
+        _log(f"Cannot generate: {reason} - stats={stats}")
+        supabase_client.update_bulk_item_result(item_id=item_id, status="failed", error=reason)
         supabase_client.recompute_bulk_job_counters(job_id=job_id)
         return
-
-    license_id = str(license_data.get("id"))
 
     try:
         # Debug: Log the item data to see what email value we're getting
@@ -97,10 +99,7 @@ async def _process_item_async(item: dict, executor: ThreadPoolExecutor) -> None:
             result_json=result_data,
         )
 
-        deducted = supabase_client.deduct_credit(license_id)
-        if not deducted:
-            _log(f"warning: failed to deduct credit license_id={license_id} item_id={item_id}")
-
+        # Log usage (no credit deduction needed - tracked via usage_logs)
         supabase_client.log_usage(
             license_id=license_id,
             action="bulk_item_generation_success",

@@ -108,27 +108,22 @@ async def generate_page(request: GeneratePageRequest):
                 detail=f"AI preview generation failed: {str(e)}"
             )
     
-    # Check if credits remaining
-    credits_remaining = license_data.get("credits_remaining", 0)
-    if credits_remaining <= 0:
+    license_id = license_data.get("id")
+    
+    # Check if license can generate more pages (dual-limit validation)
+    can_generate, reason, stats = supabase_client.check_can_generate(license_id)
+    if not can_generate:
+        print(f"/generate-page BLOCKED: license_id={license_id} reason={reason} stats={stats}")
         raise HTTPException(
             status_code=402,
-            detail="No credits remaining"
+            detail=reason
         )
     
-    license_id = license_data.get("id")
-    print(f"/generate-page FULL mode: license_id={license_id} service={request.data.service} city={request.data.city} state={request.data.state}")
+    print(f"/generate-page FULL mode: license_id={license_id} service={request.data.service} city={request.data.city} state={request.data.state} stats={stats}")
     
     try:
         # Generate AI-powered content with strict validation
-        # Validation failures will raise exceptions BEFORE credit deduction
         page_content = ai_generator.generate_page_content(request.data)
-        
-        # Only deduct credit if content generation and validation succeeded
-        credit_deducted = supabase_client.deduct_credit(license_id)
-        if not credit_deducted:
-            # Log the error but don't fail the request since content was generated
-            print(f"Warning: Failed to deduct credit for license {license_id}")
         
         # Log usage for analytics and tracking
         usage_details = {

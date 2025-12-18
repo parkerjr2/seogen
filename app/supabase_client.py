@@ -69,46 +69,85 @@ class SupabaseClient:
             print(f"Error querying license: {e}")
             return None
     
-    def deduct_credit(self, license_id: str) -> bool:
+    def check_can_generate(self, license_id: str) -> tuple[bool, str, dict]:
         """
-        Deduct one credit from a license and return success status.
+        Check if license can generate more pages based on dual limits:
+        1. Total pages must be < page_limit (capacity)
+        2. Pages generated this month must be < monthly_generation_limit
         
         Args:
-            license_id: The license ID to deduct credit from
+            license_id: The license ID to check
             
         Returns:
-            True if credit deducted successfully, False otherwise
+            Tuple of (can_generate: bool, reason: str, stats: dict)
         """
         try:
-            with httpx.Client() as client:
-                # Update credits_remaining by decrementing by 1
-                response = client.patch(
-                    f"{self.url}/rest/v1/licenses?id=eq.{license_id}",
-                    headers=self.headers,
-                    json={"credits_remaining": "credits_remaining - 1"},
-                    timeout=10
-                )
-                
-                return response.status_code == 204  # Supabase returns 204 for successful updates
-                
+            # Get license data
+            response = self._request(
+                "GET",
+                f"/rest/v1/licenses?id=eq.{license_id}&select=*",
+                timeout=10
+            )
+            if response.status_code != 200:
+                return False, "License not found", {}
+            
+            licenses = response.json()
+            if not licenses:
+                return False, "License not found", {}
+            
+            license_data = licenses[0]
+            page_limit = int(license_data.get("page_limit", 500))
+            monthly_limit = int(license_data.get("monthly_generation_limit", 500))
+            period_start = license_data.get("current_period_start")
+            
+            # Count total pages generated (all time)
+            total_response = self._request(
+                "GET",
+                f"/rest/v1/usage_logs?license_id=eq.{license_id}&action=in.(ai_page_generation_success,bulk_item_generation_success)&select=id",
+                timeout=10
+            )
+            total_pages = len(total_response.json()) if total_response.status_code == 200 else 0
+            
+            # Count pages generated this period
+            period_response = self._request(
+                "GET",
+                f"/rest/v1/usage_logs?license_id=eq.{license_id}&action=in.(ai_page_generation_success,bulk_item_generation_success)&created_at=gte.{period_start}&select=id",
+                timeout=10
+            )
+            period_pages = len(period_response.json()) if period_response.status_code == 200 else 0
+            
+            stats = {
+                "total_pages": total_pages,
+                "page_limit": page_limit,
+                "pages_remaining_capacity": page_limit - total_pages,
+                "period_pages": period_pages,
+                "monthly_limit": monthly_limit,
+                "pages_remaining_this_month": monthly_limit - period_pages
+            }
+            
+            # Check both limits
+            if total_pages >= page_limit:
+                return False, f"Page limit reached ({total_pages}/{page_limit}). Delete pages to generate more.", stats
+            
+            if period_pages >= monthly_limit:
+                return False, f"Monthly generation limit reached ({period_pages}/{monthly_limit}). Resets next month.", stats
+            
+            return True, "Can generate", stats
+            
         except Exception as e:
-            print(f"Error deducting credit: {e}")
-            return False
+            print(f"Error checking generation limits: {e}")
+            return False, f"Error: {str(e)}", {}
+    
+    # DEPRECATED: Keep for backward compatibility but no longer used
+    def deduct_credit(self, license_id: str) -> bool:
+        """DEPRECATED: Credits are now tracked via usage_logs, not deducted from balance."""
+        # No-op: we now track via usage_logs instead of deducting
+        return True
 
     def deduct_credit_safe(self, license_id: str, current_credits: int) -> bool:
-        """Best-effort credit deduction with optimistic concurrency."""
-        try:
-            new_credits = max(0, int(current_credits) - 1)
-            response = self._request(
-                "PATCH",
-                f"/rest/v1/licenses?id=eq.{license_id}&credits_remaining=eq.{int(current_credits)}",
-                json={"credits_remaining": new_credits},
-                timeout=10,
-            )
-            return response.status_code == 204
-        except Exception as e:
-            print(f"Error deducting credit safely: {e}")
-            return False
+        """DEPRECATED: Credits are now tracked via usage_logs, not deducted from balance."""
+        # No-op: we now track via usage_logs instead of deducting
+        return True
     
     def log_usage(self, license_id: str, action: str, details: dict = None) -> bool:
         """
