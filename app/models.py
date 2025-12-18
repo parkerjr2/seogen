@@ -135,4 +135,11 @@ class ValidateLicenseRequest(BaseModel):
 
 class ValidateLicenseResponse(BaseModel):
     status: str
-    credits_remaining: int
+    credits_remaining: int  # Deprecated - kept for backward compatibility
+    page_limit: int
+    monthly_generation_limit: int
+    total_pages_generated: int
+    pages_generated_this_month: int
+    pages_remaining_capacity: int
+    pages_remaining_this_month: int
+    current_period_start: str

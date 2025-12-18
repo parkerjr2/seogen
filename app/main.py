@@ -55,13 +55,13 @@ async def health_check():
 @app.post("/validate-license", response_model=ValidateLicenseResponse)
 async def validate_license(request: ValidateLicenseRequest):
     """
-    Validate a license key and return its status and credits.
+    Validate a license key and return its status and dual-limit credit information.
     
     Args:
         request: Contains license_key to validate
         
     Returns:
-        License status and credits remaining
+        License status, page limits, and usage statistics
         
     Raises:
         HTTPException: 403 if license not found
@@ -70,9 +70,21 @@ async def validate_license(request: ValidateLicenseRequest):
     if not license_data:
         raise HTTPException(status_code=403, detail="License key not found")
     
+    license_id = license_data.get("id")
+    
+    # Get dual-limit stats
+    can_generate, reason, stats = supabase_client.check_can_generate(license_id)
+    
     return ValidateLicenseResponse(
         status=license_data.get("status", "unknown"),
-        credits_remaining=license_data.get("credits_remaining", 0)
+        credits_remaining=license_data.get("credits_remaining", 0),  # Deprecated
+        page_limit=stats.get("page_limit", 500),
+        monthly_generation_limit=stats.get("monthly_limit", 500),
+        total_pages_generated=stats.get("total_pages", 0),
+        pages_generated_this_month=stats.get("period_pages", 0),
+        pages_remaining_capacity=stats.get("pages_remaining_capacity", 0),
+        pages_remaining_this_month=stats.get("pages_remaining_this_month", 0),
+        current_period_start=license_data.get("current_period_start", "")
     )
 
 @app.post("/generate-page", response_model=GeneratePageResponse)
