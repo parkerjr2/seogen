@@ -220,14 +220,15 @@ class SupabaseClient:
     def get_bulk_job_results(self, *, job_id: str, status: str = "completed", cursor_idx: int | None = None, limit: int = 20) -> list[dict]:
         params: dict[str, str] = {
             "job_id": f"eq.{job_id}",
+            # Fetch completed and failed items that haven't been imported yet
             "status": f"in.(completed,failed)",
             "select": "id,idx,canonical_key,status,attempts,result_json,error",
             "order": "idx.asc",
             "limit": str(int(limit)),
         }
-        # Apply cursor to only fetch items after the cursor position
-        if cursor_idx is not None:
-            params["idx"] = f"gt.{cursor_idx}"
+        # Don't use cursor - fetch ALL unimported items regardless of idx
+        # This ensures items that completed out of order aren't skipped
+        # The cursor was causing items with lower idx to be missed if they completed after higher idx items
         
         try:
             resp = self._request("GET", "/rest/v1/bulk_job_items", params=params, timeout=15)
