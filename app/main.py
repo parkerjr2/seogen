@@ -307,3 +307,56 @@ async def cancel_bulk_job(job_id: str, request: BulkJobCancelRequest):
     if not ok:
         raise HTTPException(status_code=500, detail="Failed to cancel job")
     return {"job_id": str(job_id), "status": "canceled"}
+
+
+@app.post("/admin/reset-monthly-periods")
+async def reset_monthly_periods(secret: str = Query(...)):
+    """
+    Admin endpoint to reset monthly generation periods.
+    Called by external cron service (e.g., cron-job.org) once per month.
+    
+    Args:
+        secret: Admin secret for authentication
+        
+    Returns:
+        Success message if reset completed
+        
+    Raises:
+        HTTPException: 403 if secret is invalid, 500 if reset fails
+    """
+    import os
+    
+    # Validate admin secret
+    admin_secret = os.getenv("ADMIN_SECRET")
+    if not admin_secret or secret != admin_secret:
+        print(f"[ADMIN] Invalid secret attempt")
+        raise HTTPException(status_code=403, detail="Invalid admin secret")
+    
+    print(f"[ADMIN] Monthly period reset requested")
+    
+    try:
+        # Call Supabase stored procedure to reset monthly periods
+        response = supabase_client._request(
+            "POST",
+            "/rest/v1/rpc/reset_monthly_generation_periods",
+            timeout=30
+        )
+        
+        if response.status_code == 200 or response.status_code == 204:
+            print(f"[ADMIN] Monthly periods reset successfully")
+            return {
+                "status": "success",
+                "message": "Monthly generation periods reset successfully"
+            }
+        else:
+            print(f"[ADMIN] Failed to reset: {response.status_code} {response.text}")
+            raise HTTPException(
+                status_code=500,
+                detail=f"Failed to reset periods: {response.status_code}"
+            )
+            
+    except HTTPException:
+        raise
+    except Exception as e:
+        print(f"[ADMIN] Error resetting periods: {e}")
+        raise HTTPException(status_code=500, detail=f"Error: {str(e)}")
