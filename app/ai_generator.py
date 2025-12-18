@@ -242,6 +242,12 @@ class AIContentGenerator:
                 f"What Changes After We Complete {service}",
                 f"What Customers Notice After {service}",
             ],
+            'why_section': [
+                f"Why {service} Matters",
+                f"Understanding {service}",
+                f"What Makes {service} Important",
+                f"The Reality of {service}",
+            ],
         }
         
         return {
@@ -256,6 +262,13 @@ class AIContentGenerator:
         # Randomize structure to avoid template-like appearance
         num_faqs = random.randint(3, 5)  # Variable FAQ count (3-5 for substantial content)
         headings = self._get_random_headings(data.service, data.city)
+        
+        # Structural variance: randomize "Why This Service" section placement (after section 2 or 3)
+        why_section_position = random.choice([2, 3])  # Insert after section 2 or 3
+        
+        # Structural variance: randomize CTA placement and contact card order
+        cta_after_section = random.choice([4, 5])  # CTA after section 4 or 5 (why section)
+        contact_order = random.choice(['phone_first', 'email_first'])
         
         system_prompt = "You are a professional local service copywriter. Write natural, trustworthy marketing copy that genuinely helps potential customers understand the service and make informed decisions. Focus on practical, actionable information rather than marketing fluff."
         
@@ -289,12 +302,18 @@ Return ONLY valid JSON with this exact structure:
 {{ "heading": "string", "paragraph": "string" }},
 {{ "heading": "string", "paragraph": "string" }},
 {{ "heading": "string", "paragraph": "string" }},
+{{ "heading": "string", "paragraph": "string" }},
 {{ "heading": "string", "paragraph": "string" }}
 ],
 "faqs": [
 {', '.join(['{ "question": "string", "answer": "string" }'] * num_faqs)}
 ],
-"cta_text": "string"
+"cta_text": "string",
+"structural_variance": {{
+  "why_section_position": {why_section_position},
+  "cta_after_section": {cta_after_section},
+  "contact_order": "{contact_order}"
+}}
 }}
 
 CRITICAL SERVICE FOCUS RULES:
@@ -305,18 +324,23 @@ Section headings must be specific to {data.service}, not generic or about other 
 Do NOT use generic "roofing" content as filler - stay 100% focused on the specified service.
 
 CONTENT STRUCTURE - GENUINELY HELPFUL FOR CUSTOMERS:
-4 sections, each with an H2 heading and paragraph (at least 650 characters):
+5 sections total, each with an H2 heading and paragraph (at least 650 characters):
 
 Your goal is to help potential customers understand:
 1. What this service involves in their specific city
 2. What problems indicate they need this service
 3. What to expect when they hire someone
 4. What results they'll see after the work is done
+5. Why this service matters (safety, permits, costs, common failures)
 
 Write content that YOU would want to read if you were a homeowner researching this service.
 
 - Section 1: Use heading "{headings['section1']}"
   CRITICAL: The FIRST SENTENCE must include both '{data.service}' and '{data.city}'. Example: "Breaker trips are common with electrical repair in older Tulsa homes."
+  SERVICE-SPECIFIC LOCAL SIGNALS (CRITICAL): Include at least 2 service+city combinations that show local expertise:
+  * "[Service] in [City] homes built before [year]..."
+  * "[City] [building type] often require [service-specific work]..."
+  * "We regularly handle [service] in [City area type] properties..."
   Help customers understand what makes {data.service} different in {data.city} specifically. Talk about real patterns they'll recognize: older homes vs newer construction, weather effects (TX: heat, storms, hail), common maintenance issues.
   {self._get_landmark_instruction(local_data)}
   Focus on information that helps them understand their situation, not marketing language.
@@ -326,6 +350,7 @@ Write content that YOU would want to read if you were a homeowner researching th
   Help customers recognize when they need this service. Talk about what actually goes wrong and when people should call.
   Most importantly: Tell people when something's urgent vs when they can wait. Explain one thing homeowners get wrong or don't realize.
   Give them practical knowledge they can use to make decisions.
+  SERVICE-SPECIFIC LOCAL SIGNAL: Include 1 service+city pattern (e.g., "After {{city}} storms, we see {{service-specific problem}}...")
 
 - Section 3: Use heading "{headings['section3']}"
   Help customers understand what to expect when they hire someone for this work.
@@ -336,6 +361,15 @@ Write content that YOU would want to read if you were a homeowner researching th
   Help customers know what results to expect and how to verify the work was done properly.
   Talk about what people can actually see and verify - no more overflow, lights stop flickering, breakers stop tripping, etc.
   This helps them know if they got good service or if they need to follow up with the contractor.
+
+- Section 5 ("Why This Service" - INSERT AFTER SECTION {why_section_position}): Use heading "{headings['why_section']}"
+  UNIQUE CONTENT - NOT REUSABLE ACROSS SERVICES. Cover 3-4 of these topics specific to {data.service}:
+  * Safety implications: What happens if this goes wrong? What risks exist?
+  * Permit requirements: Does this need permits? What code compliance matters?
+  * Cost drivers: What makes this expensive or affordable? What affects pricing?
+  * Common failure points: What typically breaks? What wears out first?
+  * Long-term consequences: What happens if you delay this work?
+  This section must be SPECIFIC to {data.service} - not generic advice that applies to any service.
 
 Example headings for "Gutter Installation":
 - "Professional Gutter Installation in [City]"
@@ -515,10 +549,17 @@ Return JSON only. No extra text."""
     
     def _assemble_response(self, content_json: Dict[str, Any], data: PageData) -> GeneratePageResponse:
         """Assemble complete response with programmatic fields and minimal block schemas."""
+        import random
+        
         # Programmatic fields (NOT generated by LLM)
         slug = self.slugify(data.service, data.city)
         title = f"{data.service} in {data.city} | {data.company_name}"
         h1_text = f"Expert {data.service} in {data.city}"
+        
+        # Get structural variance settings from AI response (or use defaults)
+        variance = content_json.get("structural_variance", {})
+        cta_after_section = variance.get("cta_after_section", 5)
+        contact_order = variance.get("contact_order", "phone_first")
         
         # Build blocks with minimal schemas - NO null fields
         blocks = []
@@ -526,36 +567,49 @@ Return JSON only. No extra text."""
         # H1 heading (programmatic) - only type, level, text
         blocks.append(self._create_heading_block(h1_text, 1))
         
-        # 4 sections with H2 headings and paragraphs
-        for section in content_json.get("sections", []):
+        # 5 sections with H2 headings and paragraphs
+        sections = content_json.get("sections", [])
+        for idx, section in enumerate(sections, start=1):
             heading = section.get("heading", "")
             paragraph = section.get("paragraph", "")
             if heading:
                 blocks.append(self._create_heading_block(heading, 2))
             if paragraph:
                 blocks.append(self._create_paragraph_block(paragraph))
+            
+            # Insert CTA after specified section (structural variance)
+            if idx == cta_after_section:
+                blocks.append(self._create_cta_block(
+                    content_json.get("cta_text", ""),
+                    data.phone
+                ))
         
-        # 2 FAQs - only type, question, answer
+        # FAQs - only type, question, answer
+        # Structural variance: randomly use details format or h3+p format
+        faq_format = random.choice(['details', 'h3'])
         for faq in content_json.get("faqs", []):
             blocks.append(self._create_faq_block(
                 faq.get("question", ""),
-                faq.get("answer", "")
+                faq.get("answer", ""),
+                format_style=faq_format
             ))
         
-        # NAP block - only add if at least one field has a value
+        # NAP block with contact order variance
         if data.company_name or data.address or data.phone or data.email:
             blocks.append(self._create_nap_block(
                 data.company_name,
                 data.phone,
                 data.email,
-                data.address
+                data.address,
+                contact_order=contact_order
             ))
         
-        # CTA block - only type, text, phone
-        blocks.append(self._create_cta_block(
-            content_json.get("cta_text", ""),
-            data.phone
-        ))
+        # Add CTA at end if it wasn't inserted earlier
+        if cta_after_section > len(sections):
+            blocks.append(self._create_cta_block(
+                content_json.get("cta_text", ""),
+                data.phone
+            ))
         
         return GeneratePageResponse(
             title=title,
@@ -572,12 +626,16 @@ Return JSON only. No extra text."""
         """Create paragraph block with minimal schema: type, text only."""
         return ParagraphBlock(text=text)
     
-    def _create_faq_block(self, question: str, answer: str) -> FAQBlock:
+    def _create_faq_block(self, question: str, answer: str, format_style: str = 'details') -> FAQBlock:
         """Create FAQ block with minimal schema: type, question, answer only."""
+        # Note: format_style is for future WordPress rendering variance
+        # The block itself remains the same, but WordPress can render differently
         return FAQBlock(question=question, answer=answer)
     
-    def _create_nap_block(self, business_name: str, phone: str, email: str, address: str) -> NAPBlock:
+    def _create_nap_block(self, business_name: str, phone: str, email: str, address: str, contact_order: str = 'phone_first') -> NAPBlock:
         """Create NAP block with minimal schema: type, business_name, phone, email, address only."""
+        # Note: contact_order is for future WordPress rendering variance
+        # The block itself remains the same, but WordPress can render phone or email first
         return NAPBlock(business_name=business_name, phone=phone, email=email, address=address)
     
     def _create_cta_block(self, text: str, phone: str) -> CTABlock:
@@ -680,15 +738,20 @@ Return JSON only. No extra text."""
         for block in response.blocks:
             block_counts[block.type] = block_counts.get(block.type, 0) + 1
         
-        # Expect 1 H1 + 4 H2s = 5 headings total
-        if block_counts.get("heading", 0) != 5:
-            errors.append(f"Expected 5 headings (1 H1 + 4 H2s), got {block_counts.get('heading', 0)}")
-        if block_counts.get("paragraph", 0) != 4:
-            errors.append(f"Expected 4 paragraphs, got {block_counts.get('paragraph', 0)}")
+        # Expect 1 H1 + 5 H2s = 6 headings total (including "Why This Service" section)
+        if block_counts.get("heading", 0) != 6:
+            errors.append(f"Expected 6 headings (1 H1 + 5 H2s), got {block_counts.get('heading', 0)}")
+        if block_counts.get("paragraph", 0) != 5:
+            errors.append(f"Expected 5 paragraphs, got {block_counts.get('paragraph', 0)}")
         # Accept 3-5 FAQs for variation
         faq_count = block_counts.get("faq", 0)
         if faq_count < 3 or faq_count > 5:
             errors.append(f"Expected 3-5 FAQs, got {faq_count}")
+        
+        # Validate we have 5 H2 sections (including "Why This Service" section)
+        section_count = sum(1 for b in response.blocks if b.type == "heading" and b.level == 2)
+        if section_count != 5:
+            errors.append(f"Expected 5 H2 sections (including Why This Service), got {section_count}")
         # NAP is optional - allow 0 or 1 (0 when all optional fields are empty)
         nap_count = block_counts.get("nap", 0)
         if nap_count > 1:
