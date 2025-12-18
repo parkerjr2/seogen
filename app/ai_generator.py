@@ -188,18 +188,18 @@ class AIContentGenerator:
         
         # Format local data if available
         local_facts = ""
+        landmark_requirement = ""
         if local_data and (local_data.get("housing_facts") or local_data.get("landmarks")):
             local_facts = "\n\n" + local_data_fetcher.format_for_prompt(local_data)
-            local_facts += "\n⚠️ REQUIRED: You MUST incorporate at least ONE of these verified local facts:\n"
-            local_facts += "- If landmarks are provided, mention AT LEAST ONE landmark naturally (e.g., 'near the University of Tulsa' or 'serving homeowners around Gathering Place')\n"
-            local_facts += "- Housing age is relevant for services like electrical, plumbing, HVAC (older homes = more issues)\n"
-            local_facts += "- Use landmarks to add local specificity and authenticity\n"
-            local_facts += "- ONLY mention landmarks that are in the verified list above - never make up landmarks\n"
+            
+            # Add landmark requirement to critical validation if landmarks exist
+            if local_data.get("landmarks"):
+                landmark_requirement = f"\n4. MUST mention at least ONE landmark from the verified list above (e.g., 'near {local_data['landmarks'][0]}' or 'around {local_data['landmarks'][0]}')"
         
         user_prompt = f"""⚠️ CRITICAL VALIDATION REQUIREMENTS (MUST PASS OR GENERATION FAILS):
 1. First paragraph MUST include both "{data.service}" AND "{data.city}" in the first sentence
 2. Meta description MUST include both "{data.service}" AND "{data.city}"
-3. Do NOT use forbidden phrases: "structure", "top-notch", "premier", "trusted experts"
+3. Do NOT use forbidden phrases: "structure", "top-notch", "premier", "trusted experts"{landmark_requirement}
 
 Generate content for a local service landing page about {data.service} using:
 Service: {data.service}
