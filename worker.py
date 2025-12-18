@@ -97,7 +97,7 @@ async def _process_item_async(item: dict, executor: ThreadPoolExecutor) -> None:
             result_json=result_data,
         )
 
-        deducted = supabase_client.deduct_credit_safe(license_id, credits_remaining)
+        deducted = supabase_client.deduct_credit(license_id)
         if not deducted:
             _log(f"warning: failed to deduct credit license_id={license_id} item_id={item_id}")
 
