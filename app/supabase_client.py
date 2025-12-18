@@ -109,9 +109,12 @@ class SupabaseClient:
             total_pages = len(total_response.json()) if total_response.status_code == 200 else 0
             
             # Count pages generated this period
+            # URL encode the timestamp for the query
+            from urllib.parse import quote
+            encoded_period_start = quote(str(period_start))
             period_response = self._request(
                 "GET",
-                f"/rest/v1/usage_logs?license_id=eq.{license_id}&action=in.(ai_page_generation_success,bulk_item_generation_success)&created_at=gte.{period_start}&select=id",
+                f"/rest/v1/usage_logs?license_id=eq.{license_id}&action=in.(ai_page_generation_success,bulk_item_generation_success)&created_at=gte.{encoded_period_start}&select=id",
                 timeout=10
             )
             period_pages = len(period_response.json()) if period_response.status_code == 200 else 0
