@@ -212,9 +212,52 @@ class AIContentGenerator:
         
         return random.choice(patterns)
     
+    def _get_random_headings(self, service: str, city: str) -> Dict[str, str]:
+        """Generate random heading variations for each section to avoid template-like appearance."""
+        import random
+        
+        section_variations = {
+            'section1': [
+                f"{service} in {city}",
+                f"Professional {service} in {city}",
+                f"Expert {service} in {city}",
+                f"{service} Services in {city}",
+            ],
+            'section2': [
+                f"Common Problems with {service}",
+                f"What Can Go Wrong with {service}",
+                f"Typical {service} Issues",
+                f"When to Call for {service}",
+                f"{service} Problems You Might Face",
+            ],
+            'section3': [
+                f"How We Handle {service}",
+                f"Our {service} Process",
+                f"What We Do for {service}",
+                f"Our Approach to {service}",
+            ],
+            'section4': [
+                f"What You'll Experience After {service}",
+                f"Results You Can Expect",
+                f"What Changes After We Complete {service}",
+                f"What Customers Notice After {service}",
+            ],
+        }
+        
+        return {
+            section: random.choice(options)
+            for section, options in section_variations.items()
+        }
+    
     def _call_openai_generation(self, data: PageData, local_data: Dict[str, Any] = None) -> Dict[str, Any]:
         """Generate content payload using exact specified prompt."""
-        system_prompt = "You are a professional local service copywriter. Write natural, trustworthy marketing copy. Avoid any writing-process language."
+        import random
+        
+        # Randomize structure to avoid template-like appearance
+        num_faqs = random.randint(1, 3)  # Variable FAQ count
+        headings = self._get_random_headings(data.service, data.city)
+        
+        system_prompt = "You are a professional local service copywriter. Write natural, trustworthy marketing copy that genuinely helps potential customers understand the service and make informed decisions. Focus on practical, actionable information rather than marketing fluff."
         
         # Format local data if available
         local_facts = ""
@@ -249,8 +292,7 @@ Return ONLY valid JSON with this exact structure:
 {{ "heading": "string", "paragraph": "string" }}
 ],
 "faqs": [
-{{ "question": "string", "answer": "string" }},
-{{ "question": "string", "answer": "string" }}
+{', '.join(['{ "question": "string", "answer": "string" }'] * num_faqs)}
 ],
 "cta_text": "string"
 }}
@@ -262,31 +304,38 @@ If the service is "HVAC Installation", write ONLY about HVAC - never mention plu
 Section headings must be specific to {data.service}, not generic or about other services.
 Do NOT use generic "roofing" content as filler - stay 100% focused on the specified service.
 
-CONTENT STRUCTURE (OPTIMIZED FOR MAP PACK VISIBILITY):
+CONTENT STRUCTURE - GENUINELY HELPFUL FOR CUSTOMERS:
 4 sections, each with an H2 heading and paragraph (at least 650 characters):
 
-- Section 1: Heading about {data.service} in {data.city}. 
+Your goal is to help potential customers understand:
+1. What this service involves in their specific city
+2. What problems indicate they need this service
+3. What to expect when they hire someone
+4. What results they'll see after the work is done
+
+Write content that YOU would want to read if you were a homeowner researching this service.
+
+- Section 1: Use heading "{headings['section1']}"
   CRITICAL: The FIRST SENTENCE must include both '{data.service}' and '{data.city}'. Example: "Breaker trips are common with electrical repair in older Tulsa homes."
-  Start by describing what you see in {data.city} homes. Talk about real patterns: older homes vs newer construction, weather effects (TX: heat, storms, hail), common maintenance issues.
+  Help customers understand what makes {data.service} different in {data.city} specifically. Talk about real patterns they'll recognize: older homes vs newer construction, weather effects (TX: heat, storms, hail), common maintenance issues.
   {self._get_landmark_instruction(local_data)}
-  Focus on general housing characteristics and patterns that apply broadly across the city.
+  Focus on information that helps them understand their situation, not marketing language.
   Don't start with "In [city], electrical issues can be..." - start with something specific that includes the service and city immediately.
-  Skip phrases like "addressing your needs" or "ensuring your system is safe and reliable".
 
-- Section 2: Heading about common problems you see.
-  Talk about what actually goes wrong and when people should call. Mix in local details (older homes, weather, DIY mistakes).
-  Tell people when something's urgent vs when they can wait. Mention one thing homeowners get wrong or don't realize.
-  Don't write in the same order every time - switch up which problems you mention first.
+- Section 2: Use heading "{headings['section2']}"
+  Help customers recognize when they need this service. Talk about what actually goes wrong and when people should call.
+  Most importantly: Tell people when something's urgent vs when they can wait. Explain one thing homeowners get wrong or don't realize.
+  Give them practical knowledge they can use to make decisions.
 
-- Section 3: Heading about how you do the work.
-  Walk through what you check, what you usually find, and what changes after you're done.
-  Tell people when you can just fix something vs when you need to replace it.
-  Mix in local details. Don't use phrases like "thorough and professional" - just describe what you actually do.
+- Section 3: Use heading "{headings['section3']}"
+  Help customers understand what to expect when they hire someone for this work.
+  Walk through what gets checked, what usually gets found, and what changes after the work is done.
+  Explain when you can just fix something vs when you need to replace it. This helps them understand quotes they receive.
 
-- Section 4: Heading about what customers get after the work.
+- Section 4: Use heading "{headings['section4']}"
+  Help customers know what results to expect and how to verify the work was done properly.
   Talk about what people can actually see and verify - no more overflow, lights stop flickering, breakers stop tripping, etc.
-  Skip the "peace of mind" and "trusted service" language. Just describe what's different after you're done.
-  Mention what customers tell you or ask about.
+  This helps them know if they got good service or if they need to follow up with the contractor.
 
 Example headings for "Gutter Installation":
 - "Professional Gutter Installation in [City]"
@@ -323,7 +372,7 @@ WRITING STYLE - SOUND HUMAN, NOT AI:
 - Sound like someone who does this work every day, not someone reading from a script
 - NO template language like "addressing your needs", "focus on providing", "here to ensure"
 
-2 FAQs about {data.service}. OPTIMIZED FOR MAP PACK INTENT - EACH FAQ ANSWER MUST:
+{num_faqs} FAQs about {data.service}. GENUINELY HELPFUL FOR CUSTOMERS - EACH FAQ ANSWER MUST:
 - Reference a REAL CUSTOMER SITUATION (e.g., "When you notice water pooling near your foundation...")
 - Follow CAUSE→SYMPTOM→CONSEQUENCE→RESOLUTION structure:
   * Explain the cause (e.g., "...this usually means the downspouts are clogged or disconnected...")
@@ -636,8 +685,10 @@ Return JSON only. No extra text."""
             errors.append(f"Expected 5 headings (1 H1 + 4 H2s), got {block_counts.get('heading', 0)}")
         if block_counts.get("paragraph", 0) != 4:
             errors.append(f"Expected 4 paragraphs, got {block_counts.get('paragraph', 0)}")
-        if block_counts.get("faq", 0) != 2:
-            errors.append(f"Expected 2 FAQs, got {block_counts.get('faq', 0)}")
+        # Accept 1-3 FAQs for variation
+        faq_count = block_counts.get("faq", 0)
+        if faq_count < 1 or faq_count > 3:
+            errors.append(f"Expected 1-3 FAQs, got {faq_count}")
         # NAP is optional - allow 0 or 1 (0 when all optional fields are empty)
         nap_count = block_counts.get("nap", 0)
         if nap_count > 1:
