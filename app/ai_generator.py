@@ -248,6 +248,12 @@ class AIContentGenerator:
                 f"What Makes {service} Important",
                 f"The Reality of {service}",
             ],
+            'when_section': [
+                f"When to Choose {service}",
+                f"Is {service} Right for Your Situation?",
+                f"{service} vs Other Options",
+                f"Knowing When You Need {service}",
+            ],
         }
         
         return {
@@ -266,8 +272,11 @@ class AIContentGenerator:
         # Structural variance: randomize "Why This Service" section placement (after section 2 or 3)
         why_section_position = random.choice([2, 3])  # Insert after section 2 or 3
         
+        # Structural variance: randomize "When to Choose This Service" section placement (after section 2, 3, or 4)
+        when_section_position = random.choice([2, 3, 4])  # Insert after section 2, 3, or 4
+        
         # Structural variance: randomize CTA placement and contact card order
-        cta_after_section = random.choice([4, 5])  # CTA after section 4 or 5 (why section)
+        cta_after_section = random.choice([5, 6])  # CTA after section 5 or 6 (after both special sections)
         contact_order = random.choice(['phone_first', 'email_first'])
         
         system_prompt = "You are a professional local service copywriter. Write natural, trustworthy marketing copy that genuinely helps potential customers understand the service and make informed decisions. Focus on practical, actionable information rather than marketing fluff."
@@ -303,6 +312,7 @@ Return ONLY valid JSON with this exact structure:
 {{ "heading": "string", "paragraph": "string" }},
 {{ "heading": "string", "paragraph": "string" }},
 {{ "heading": "string", "paragraph": "string" }},
+{{ "heading": "string", "paragraph": "string" }},
 {{ "heading": "string", "paragraph": "string" }}
 ],
 "faqs": [
@@ -311,6 +321,7 @@ Return ONLY valid JSON with this exact structure:
 "cta_text": "string",
 "structural_variance": {{
   "why_section_position": {why_section_position},
+  "when_section_position": {when_section_position},
   "cta_after_section": {cta_after_section},
   "contact_order": "{contact_order}"
 }}
@@ -324,7 +335,7 @@ Section headings must be specific to {data.service}, not generic or about other 
 Do NOT use generic "roofing" content as filler - stay 100% focused on the specified service.
 
 CONTENT STRUCTURE - GENUINELY HELPFUL FOR CUSTOMERS:
-5 sections total, each with an H2 heading and paragraph (at least 650 characters):
+6 sections total, each with an H2 heading and paragraph (at least 650 characters for main sections, 400+ for comparison section):
 
 Your goal is to help potential customers understand:
 1. What this service involves in their specific city
@@ -332,6 +343,7 @@ Your goal is to help potential customers understand:
 3. What to expect when they hire someone
 4. What results they'll see after the work is done
 5. Why this service matters (safety, permits, costs, common failures)
+6. When to choose this service vs related services
 
 Write content that YOU would want to read if you were a homeowner researching this service.
 
@@ -370,6 +382,17 @@ Write content that YOU would want to read if you were a homeowner researching th
   * Common failure points: What typically breaks? What wears out first?
   * Long-term consequences: What happens if you delay this work?
   This section must be SPECIFIC to {data.service} - not generic advice that applies to any service.
+
+- Section 6 ("When to Choose This Service" - INSERT AFTER SECTION {when_section_position}): Use heading "{headings['when_section']}"
+  ALGORITHM-PROOFING SECTION - HIGHLY SERVICE-SPECIFIC COMPARISON (400-500 characters minimum).
+  Help customers understand when they need THIS service vs related services:
+  * Compare {data.service} with 2-3 related/similar services
+  * Explain the key differences: "You need X when... but Y when..."
+  * Give decision criteria: "If you're seeing [symptom], you need [this service]. If [different symptom], you need [other service]."
+  * Examples for Electrical Repair: "vs Full Rewiring", "vs Panel Upgrade", "vs Outlet Installation"
+  * Examples for Gutter Cleaning: "vs Gutter Repair", "vs Gutter Replacement", "vs Downspout Extension"
+  This section CANNOT be reused across services - it's unique to {data.service}.
+  Focus on practical decision-making, not marketing.
 
 Example headings for "Gutter Installation":
 - "Professional Gutter Installation in [City]"
@@ -738,20 +761,20 @@ Return JSON only. No extra text."""
         for block in response.blocks:
             block_counts[block.type] = block_counts.get(block.type, 0) + 1
         
-        # Expect 1 H1 + 5 H2s = 6 headings total (including "Why This Service" section)
-        if block_counts.get("heading", 0) != 6:
-            errors.append(f"Expected 6 headings (1 H1 + 5 H2s), got {block_counts.get('heading', 0)}")
-        if block_counts.get("paragraph", 0) != 5:
-            errors.append(f"Expected 5 paragraphs, got {block_counts.get('paragraph', 0)}")
+        # Expect 1 H1 + 6 H2s = 7 headings total (including "Why This Service" and "When to Choose" sections)
+        if block_counts.get("heading", 0) != 7:
+            errors.append(f"Expected 7 headings (1 H1 + 6 H2s), got {block_counts.get('heading', 0)}")
+        if block_counts.get("paragraph", 0) != 6:
+            errors.append(f"Expected 6 paragraphs, got {block_counts.get('paragraph', 0)}")
         # Accept 3-5 FAQs for variation
         faq_count = block_counts.get("faq", 0)
         if faq_count < 3 or faq_count > 5:
             errors.append(f"Expected 3-5 FAQs, got {faq_count}")
         
-        # Validate we have 5 H2 sections (including "Why This Service" section)
+        # Validate we have 6 H2 sections (including "Why This Service" and "When to Choose" sections)
         section_count = sum(1 for b in response.blocks if b.type == "heading" and b.level == 2)
-        if section_count != 5:
-            errors.append(f"Expected 5 H2 sections (including Why This Service), got {section_count}")
+        if section_count != 6:
+            errors.append(f"Expected 6 H2 sections (including Why This Service and When to Choose), got {section_count}")
         # NAP is optional - allow 0 or 1 (0 when all optional fields are empty)
         nap_count = block_counts.get("nap", 0)
         if nap_count > 1:
