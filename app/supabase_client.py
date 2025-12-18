@@ -272,12 +272,13 @@ class SupabaseClient:
         try:
             for chunk in _chunk_list(item_ids, 100):
                 ids = ",".join(chunk)
-                # Only mark as imported if status is "completed"
-                # Don't overwrite "failed" status
+                # Mark as imported regardless of current status (completed or failed)
+                # If an item was successfully imported to WordPress, it should be marked imported
+                # even if it had status='failed' in Supabase (e.g., from retry attempts)
                 resp = self._request(
                     "PATCH",
                     "/rest/v1/bulk_job_items",
-                    params={"job_id": f"eq.{job_id}", "id": f"in.({ids})", "status": "eq.completed"},
+                    params={"job_id": f"eq.{job_id}", "id": f"in.({ids})"},
                     json={"status": "imported"},
                     timeout=20,
                 )
