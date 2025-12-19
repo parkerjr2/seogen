@@ -182,6 +182,7 @@ class SupabaseClient:
     def log_usage(self, api_key_id: str, action: str, details: dict = None) -> bool:
         """
         Log usage to the usage_logs table for tracking and analytics.
+        Prevents duplicate logging for bulk items by checking canonical_key.
         
         Args:
             api_key_id: The API key ID that performed the action
@@ -192,11 +193,31 @@ class SupabaseClient:
             True if logged successfully, False otherwise
         """
         try:
-            # Don't include created_at - let database default handle it
+            details = details or {}
+            
+            # For bulk items, check if already logged to prevent duplicates
+            if action == "bulk_item_generation_success" and "canonical_key" in details:
+                canonical_key = details["canonical_key"]
+                job_id = details.get("job_id", "")
+                
+                # Check if this exact item was already logged
+                check_response = self._request(
+                    "GET",
+                    f"/rest/v1/usage_logs?api_key_id=eq.{api_key_id}&action=eq.{action}&details->>canonical_key=eq.{canonical_key}&details->>job_id=eq.{job_id}&select=id",
+                    timeout=5
+                )
+                
+                if check_response.status_code == 200:
+                    existing = check_response.json()
+                    if existing and len(existing) > 0:
+                        print(f"Skipping duplicate usage log for {canonical_key}")
+                        return True  # Already logged, return success
+            
+            # Log the usage
             log_data = {
                 "api_key_id": api_key_id,
                 "action": action,
-                "details": details or {}
+                "details": details
             }
             
             response = self._request(
