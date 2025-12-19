@@ -37,87 +37,114 @@ class SupabaseClient:
     
     def get_license_by_key(self, license_key: str) -> dict | None:
         """
-        Retrieve license information by license key using HTTP API.
+        Retrieve API key and subscription information by license key.
         
         Args:
-            license_key: The license key to look up
+            license_key: The API key to look up
             
         Returns:
-            License data as dict if found, None if not found
+            Combined API key + subscription data as dict if found, None if not found
         """
         try:
             with httpx.Client() as client:
+                # Query api_keys and join with subscriptions to get limits
                 response = client.get(
-                    f"{self.url}/rest/v1/licenses?license_key=eq.{license_key}&select=*",
+                    f"{self.url}/rest/v1/api_keys?key=eq.{license_key}&select=*,subscription:subscriptions(*)",
                     headers=self.headers,
                     timeout=10
                 )
                 
                 if response.status_code == 200:
                     data = response.json()
-                    # Return first result if found, None if no results
                     if data and len(data) > 0:
-                        return data[0]
+                        api_key_data = data[0]
+                        subscription = api_key_data.get('subscription')
+                        
+                        # Flatten subscription data into api_key_data for backward compatibility
+                        if subscription:
+                            api_key_data['page_limit'] = subscription.get('page_limit', 500)
+                            api_key_data['monthly_generation_limit'] = subscription.get('monthly_generation_limit', 500)
+                            api_key_data['current_period_start'] = subscription.get('current_period_start')
+                            api_key_data['subscription_status'] = subscription.get('status')
+                        
+                        return api_key_data
                     return None
                 else:
-                    # Log the error in a real application
                     print(f"HTTP Error {response.status_code}: {response.text}")
                     return None
                     
         except Exception as e:
-            # Log the error in a real application
-            print(f"Error querying license: {e}")
+            print(f"Error querying API key: {e}")
             return None
     
-    def check_can_generate(self, license_id: str) -> tuple[bool, str, dict]:
+    def check_can_generate(self, api_key_id: str) -> tuple[bool, str, dict]:
         """
-        Check if license can generate more pages based on dual limits:
+        Check if API key can generate more pages based on dual limits:
         1. Total pages must be < page_limit (capacity)
         2. Pages generated this month must be < monthly_generation_limit
         
         Args:
-            license_id: The license ID to check
+            api_key_id: The API key ID to check
             
         Returns:
             Tuple of (can_generate: bool, reason: str, stats: dict)
         """
         try:
-            # Get license data
+            # Get API key and subscription data
             response = self._request(
                 "GET",
-                f"/rest/v1/licenses?id=eq.{license_id}&select=*",
+                f"/rest/v1/api_keys?id=eq.{api_key_id}&select=*,subscription:subscriptions(*)",
                 timeout=10
             )
             if response.status_code != 200:
-                return False, "License not found", {}
+                return False, "API key not found", {}
             
-            licenses = response.json()
-            if not licenses:
-                return False, "License not found", {}
+            api_keys = response.json()
+            if not api_keys:
+                return False, "API key not found", {}
             
-            license_data = licenses[0]
-            page_limit = int(license_data.get("page_limit", 500))
-            monthly_limit = int(license_data.get("monthly_generation_limit", 500))
-            period_start = license_data.get("current_period_start")
+            api_key_data = api_keys[0]
+            subscription = api_key_data.get('subscription')
             
-            # Count total pages generated (all time)
-            total_response = self._request(
+            if not subscription:
+                return False, "No active subscription", {}
+            
+            page_limit = int(subscription.get("page_limit", 500))
+            monthly_limit = int(subscription.get("monthly_generation_limit", 500))
+            period_start = subscription.get("current_period_start")
+            subscription_id = subscription.get("id")
+            
+            # Count total pages generated across ALL API keys in this subscription
+            # Get all api_keys for this subscription
+            sub_keys_response = self._request(
                 "GET",
-                f"/rest/v1/usage_logs?license_id=eq.{license_id}&action=in.(ai_page_generation_success,bulk_item_generation_success)&select=id",
+                f"/rest/v1/api_keys?subscription_id=eq.{subscription_id}&select=id",
                 timeout=10
             )
-            total_pages = len(total_response.json()) if total_response.status_code == 200 else 0
+            api_key_ids = [k['id'] for k in sub_keys_response.json()] if sub_keys_response.status_code == 200 else [api_key_id]
             
-            # Count pages generated this period
-            # URL encode the timestamp for the query
-            from urllib.parse import quote
-            encoded_period_start = quote(str(period_start))
-            period_response = self._request(
-                "GET",
-                f"/rest/v1/usage_logs?license_id=eq.{license_id}&action=in.(ai_page_generation_success,bulk_item_generation_success)&created_at=gte.{encoded_period_start}&select=id",
-                timeout=10
-            )
-            period_pages = len(period_response.json()) if period_response.status_code == 200 else 0
+            # Count usage across all API keys in this subscription
+            total_pages = 0
+            period_pages = 0
+            
+            for key_id in api_key_ids:
+                # Count total pages for this API key
+                total_response = self._request(
+                    "GET",
+                    f"/rest/v1/usage_logs?api_key_id=eq.{key_id}&action=in.(ai_page_generation_success,bulk_item_generation_success)&select=id",
+                    timeout=10
+                )
+                total_pages += len(total_response.json()) if total_response.status_code == 200 else 0
+                
+                # Count pages this period for this API key
+                from urllib.parse import quote
+                encoded_period_start = quote(str(period_start))
+                period_response = self._request(
+                    "GET",
+                    f"/rest/v1/usage_logs?api_key_id=eq.{key_id}&action=in.(ai_page_generation_success,bulk_item_generation_success)&created_at=gte.{encoded_period_start}&select=id",
+                    timeout=10
+                )
+                period_pages += len(period_response.json()) if period_response.status_code == 200 else 0
             
             stats = {
                 "total_pages": total_pages,
@@ -152,13 +179,13 @@ class SupabaseClient:
         # No-op: we now track via usage_logs instead of deducting
         return True
     
-    def log_usage(self, license_id: str, action: str, details: dict = None) -> bool:
+    def log_usage(self, api_key_id: str, action: str, details: dict = None) -> bool:
         """
         Log usage to the usage_logs table for tracking and analytics.
         
         Args:
-            license_id: The license ID that performed the action
-            action: The action performed (e.g., 'page_generation')
+            api_key_id: The API key ID that performed the action
+            action: The action performed (e.g., 'ai_page_generation_success')
             details: Optional additional details about the usage
             
         Returns:
@@ -167,7 +194,7 @@ class SupabaseClient:
         try:
             # Don't include created_at - let database default handle it
             log_data = {
-                "license_id": license_id,
+                "api_key_id": api_key_id,
                 "action": action,
                 "details": details or {}
             }

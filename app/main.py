@@ -108,30 +108,30 @@ async def generate_page(request: GeneratePageRequest):
 
     # Preview mode: fast generation, no credits deducted, no usage logs
     if getattr(request, "preview", False):
-        license_id = license_data.get("id")
-        print(f"/generate-page PREVIEW mode: license_id={license_id} service={request.data.service} city={request.data.city} state={request.data.state}")
+        api_key_id = license_data.get("id")
+        print(f"/generate-page PREVIEW mode: api_key_id={api_key_id} service={request.data.service} city={request.data.city} state={request.data.state}")
         try:
             page_content = ai_generator.generate_page_content_preview(request.data)
             return page_content
         except Exception as e:
-            print(f"AI preview generation error for license {license_id}: {str(e)}")
+            print(f"AI preview generation error for api_key {api_key_id}: {str(e)}")
             raise HTTPException(
                 status_code=500,
                 detail=f"AI preview generation failed: {str(e)}"
             )
     
-    license_id = license_data.get("id")
+    api_key_id = license_data.get("id")
     
-    # Check if license can generate more pages (dual-limit validation)
-    can_generate, reason, stats = supabase_client.check_can_generate(license_id)
+    # Check if API key can generate more pages (dual-limit validation)
+    can_generate, reason, stats = supabase_client.check_can_generate(api_key_id)
     if not can_generate:
-        print(f"/generate-page BLOCKED: license_id={license_id} reason={reason} stats={stats}")
+        print(f"/generate-page BLOCKED: api_key_id={api_key_id} reason={reason} stats={stats}")
         raise HTTPException(
             status_code=402,
             detail=reason
         )
     
-    print(f"/generate-page FULL mode: license_id={license_id} service={request.data.service} city={request.data.city} state={request.data.state} stats={stats}")
+    print(f"/generate-page FULL mode: api_key_id={api_key_id} service={request.data.service} city={request.data.city} state={request.data.state} stats={stats}")
     
     try:
         # Generate AI-powered content with strict validation
@@ -149,23 +149,23 @@ async def generate_page(request: GeneratePageRequest):
         }
         
         usage_logged = supabase_client.log_usage(
-            license_id=license_id,
+            api_key_id=api_key_id,
             action="ai_page_generation_success",
             details=usage_details
         )
         
         if not usage_logged:
-            print(f"Warning: Failed to log usage for license {license_id}")
+            print(f"Warning: Failed to log usage for api_key {api_key_id}")
         
         return page_content
         
     except Exception as e:
         # Log the validation/generation error for debugging
-        print(f"AI generation/validation error for license {license_id}: {str(e)}")
+        print(f"AI generation/validation error for api_key {api_key_id}: {str(e)}")
         
         # Log failed attempt (no credit deducted)
         supabase_client.log_usage(
-            license_id=license_id,
+            api_key_id=api_key_id,
             action="ai_page_generation_failed",
             details={"error": str(e), "service": request.data.service, "city": request.data.city}
         )

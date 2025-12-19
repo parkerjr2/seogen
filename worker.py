@@ -59,10 +59,10 @@ async def _process_item_async(item: dict, executor: ThreadPoolExecutor) -> None:
         supabase_client.recompute_bulk_job_counters(job_id=job_id)
         return
 
-    license_id = str(license_data.get("id"))
+    api_key_id = str(license_data.get("id"))
     
-    # Check if license can generate more pages (dual-limit validation)
-    can_generate, reason, stats = supabase_client.check_can_generate(license_id)
+    # Check if API key can generate more pages (dual-limit validation)
+    can_generate, reason, stats = supabase_client.check_can_generate(api_key_id)
     if not can_generate:
         _log(f"Cannot generate: {reason} - stats={stats}")
         supabase_client.update_bulk_item_result(item_id=item_id, status="failed", error=reason)
@@ -101,7 +101,7 @@ async def _process_item_async(item: dict, executor: ThreadPoolExecutor) -> None:
 
         # Log usage (no credit deduction needed - tracked via usage_logs)
         supabase_client.log_usage(
-            license_id=license_id,
+            api_key_id=api_key_id,
             action="bulk_item_generation_success",
             details={
                 "job_id": job_id,
