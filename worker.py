@@ -91,7 +91,6 @@ async def _process_item_async(item: dict, executor: ThreadPoolExecutor) -> None:
         result = await loop.run_in_executor(executor, ai_generator.generate_page_content, data)
         
         # Save result_json immediately after successful generation
-        # Don't mark as completed yet in case subsequent operations fail
         result_data = result.model_dump()
         supabase_client.update_bulk_item_result(
             item_id=item_id,
@@ -99,8 +98,9 @@ async def _process_item_async(item: dict, executor: ThreadPoolExecutor) -> None:
             result_json=result_data,
         )
 
-        # Log usage (no credit deduction needed - tracked via usage_logs)
-        supabase_client.log_usage(
+        # Log usage immediately after saving result - this ensures usage is tracked
+        # even if subsequent operations fail (important for accurate billing/limits)
+        usage_logged = supabase_client.log_usage(
             api_key_id=api_key_id,
             action="bulk_item_generation_success",
             details={
@@ -115,8 +115,11 @@ async def _process_item_async(item: dict, executor: ThreadPoolExecutor) -> None:
                 "slug": result.slug,
             },
         )
+        
+        if not usage_logged:
+            _log(f"WARNING: Failed to log usage for item_id={item_id}")
 
-        # Only mark as completed after all operations succeed
+        # Mark as completed after all operations succeed
         supabase_client.update_bulk_item_result(
             item_id=item_id,
             status="completed",
