@@ -1,6 +1,7 @@
 """
-Robust LLM-backed API for SEO-optimized roofing service pages.
+Robust LLM-backed API for SEO-optimized home service pages.
 Implements programmatic enforcement, validation, and repair passes.
+Supports both service+city and service hub page generation.
 """
 
 import json
@@ -12,6 +13,8 @@ import asyncio
 from app.config import settings
 from app.models import PageData, GeneratePageResponse, PageBlock, HeadingBlock, ParagraphBlock, FAQBlock, NAPBlock, CTABlock
 from app.local_data_fetcher import local_data_fetcher
+from app.vertical_profiles import get_vertical_profile, get_trade_name
+from app import ai_generator_hub
 
 class AIContentGenerator:
     """Robust content generator with programmatic enforcement and repair capabilities."""
@@ -76,6 +79,7 @@ class AIContentGenerator:
     def generate_page_content(self, data: PageData) -> GeneratePageResponse:
         """
         Generate complete page content with validation and repair.
+        Routes to service_city or service_hub generation based on page_mode.
         
         Args:
             data: Page generation parameters
@@ -86,6 +90,14 @@ class AIContentGenerator:
         Raises:
             Exception: If generation and repair both fail
         """
+        # Route based on page_mode
+        if data.page_mode == "service_hub":
+            return self._generate_service_hub_content(data)
+        else:
+            return self._generate_service_city_content(data)
+    
+    def _generate_service_city_content(self, data: PageData) -> GeneratePageResponse:
+        """Generate service+city page content (existing logic)."""
         try:
             # Step 0: Fetch real housing age data from Census API
             local_data = None
@@ -119,6 +131,10 @@ class AIContentGenerator:
             
         except Exception as e:
             raise Exception(f"AI content generation failed: {str(e)}")
+    
+    def _generate_service_hub_content(self, data: PageData) -> GeneratePageResponse:
+        """Generate service hub page content (no city-specific content)."""
+        return ai_generator_hub.generate_service_hub_content(self, data)
 
     def generate_page_content_preview(self, data: PageData) -> GeneratePageResponse:
         """Generate a fast preview response (no repair loop, reduced output)."""

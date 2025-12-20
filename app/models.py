@@ -8,13 +8,29 @@ from typing import List, Union, Optional
 
 class PageData(BaseModel):
     """Data model for page generation parameters."""
-    service: str = Field(..., description="Service type (e.g., 'Roof Repair')")
-    city: str = Field(..., description="City name (e.g., 'Austin')")
-    state: str = Field(default="", description="State abbreviation (e.g., 'TX') - optional for neighborhoods")
-    company_name: str = Field(default="", description="Company name (optional)")
-    phone: str = Field(default="", description="Phone number (optional)")
+    # Mode selection
+    page_mode: str = Field(default="service_city", description="Page mode: 'service_city' or 'service_hub'")
+    
+    # Universal fields
+    vertical: str = Field(default="", description="Business vertical (e.g., 'electrician', 'plumber', 'roofer')")
+    business_name: str = Field(default="", description="Business name")
+    phone: str = Field(default="", description="Phone number")
+    cta_text: str = Field(default="Request a Free Estimate", description="Primary CTA text")
+    service_area_label: str = Field(default="", description="Service area label (e.g., 'Tulsa Metro')")
+    
+    # Service+City mode fields
+    service: str = Field(default="", description="Service type (e.g., 'Roof Repair')")
+    city: str = Field(default="", description="City name (e.g., 'Austin')")
+    state: str = Field(default="", description="State abbreviation (e.g., 'TX')")
+    company_name: str = Field(default="", description="Company name (deprecated, use business_name)")
     email: str = Field(default="", description="Email address (optional)")
     address: str = Field(default="", description="Full address (optional)")
+    
+    # Service Hub mode fields
+    hub_key: str = Field(default="", description="Hub key (e.g., 'residential', 'commercial')")
+    hub_label: str = Field(default="", description="Hub label (e.g., 'Residential')")
+    hub_slug: str = Field(default="", description="Hub slug (e.g., 'residential-services')")
+    services_for_hub: List[dict] = Field(default_factory=list, description="List of services for hub page")
 
 class GeneratePageRequest(BaseModel):
     """Request model for the /generate-page endpoint."""
