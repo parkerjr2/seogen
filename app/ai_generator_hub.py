@@ -126,7 +126,7 @@ Generate these blocks in order:
 3. "Services We Offer" heading (level 2)
 4. Paragraph (3-4 sentences) - Introduce the services list and explain the comprehensive nature of offerings
 5. "Primary Service Areas" heading (level 2)
-6. Paragraph with shortcode: "We provide {hub_label.lower()} {trade_name} services throughout {data.service_area_label or 'the area'}. [seogen_service_hub_links hub_key=\\"{data.hub_key}\\"]"
+6. Paragraph with shortcode: "We provide {hub_label.lower()} {trade_name} services throughout {data.service_area_label or 'the area'}. [seogen_service_hub_city_links hub_key=\\"{data.hub_key}\\" limit=\\"6\\"]"
 7. "Frequently Asked Questions" heading (level 2)
 8. 6-8 FAQs with detailed answers (3-4 sentences each) - Cover common questions about {hub_label.lower()} {trade_name} services
 9. CTA block
@@ -139,7 +139,7 @@ Output JSON schema:
     {{"type": "heading", "level": 2, "text": "Services We Offer"}},
     {{"type": "paragraph", "text": "3-4 sentence paragraph introducing services"}},
     {{"type": "heading", "level": 2, "text": "Primary Service Areas"}},
-    {{"type": "paragraph", "text": "We provide {hub_label.lower()} {trade_name} services throughout {data.service_area_label or 'the area'}. [seogen_service_hub_links hub_key=\\"{data.hub_key}\\"]"}},
+    {{"type": "paragraph", "text": "We provide {hub_label.lower()} {trade_name} services throughout {data.service_area_label or 'the area'}. [seogen_service_hub_city_links hub_key=\\"{data.hub_key}\\" limit=\\"6\\"]"}},
     {{"type": "heading", "level": 2, "text": "Frequently Asked Questions"}},
     {{"type": "faq", "question": "What types of {hub_label.lower()} {trade_name} services do you offer?", "answer": "Detailed 3-4 sentence answer with specifics"}},
     {{"type": "faq", "question": "...", "answer": "..."}},
@@ -195,7 +195,7 @@ def _generate_fallback_hub_content(data: PageData, profile: dict) -> dict:
         },
         {
             "type": "paragraph",
-            "text": f"We provide {hub_label.lower()} {trade_name} services throughout {data.service_area_label or 'the area'}. [seogen_service_hub_links hub_key=\"{data.hub_key}\"]"
+            "text": f"We provide {hub_label.lower()} {trade_name} services throughout {data.service_area_label or 'the area'}. [seogen_service_hub_city_links hub_key=\"{data.hub_key}\" limit=\"6\"]"
         },
         {
             "type": "heading",
