@@ -113,7 +113,32 @@ def _call_openai_hub_generation(
     if data.services_for_hub:
         services_list = "\n".join([f"- {s.get('name', '')}" for s in data.services_for_hub[:20]])
     
+    # Add randomization to prompt to ensure unique content
+    import random
+    import time
+    random.seed(time.time())  # Use current time for randomness
+    
+    writing_styles = [
+        "conversational and approachable",
+        "authoritative and technical",
+        "straightforward and practical",
+        "detailed and educational"
+    ]
+    
+    opening_approaches = [
+        "Start by addressing common pain points",
+        "Begin with the value proposition",
+        "Open with what makes this service essential",
+        "Lead with customer concerns and solutions"
+    ]
+    
+    style = random.choice(writing_styles)
+    approach = random.choice(opening_approaches)
+    
     system_prompt = f"""You are an expert {trade_name} content writer creating a {hub_label.lower()} service hub page.
+
+WRITING STYLE: Use a {style} tone throughout.
+APPROACH: {approach}
 
 CRITICAL RULES:
 1. Do NOT mention any specific city, town, or neighborhood
@@ -123,13 +148,33 @@ CRITICAL RULES:
 5. Emphasize {hub_guidance['key_focus']}
 6. Be professional and informative, not salesy
 7. Output ONLY valid JSON matching the schema below
+8. IMPORTANT: Write unique, varied content - avoid generic phrases and templates
 
 FORBIDDEN:
 - Never mention specific cities or locations
 - No marketing fluff like "top-notch", "premier", "best-in-class"
 - No meta-language like "this page", "this article"
+- No repetitive sentence structures
 """
 
+    # Add unique elements to each generation
+    unique_angles = [
+        "Focus on real-world scenarios and practical examples",
+        "Emphasize problem-solving and solutions",
+        "Highlight expertise and experience",
+        "Address common misconceptions and concerns"
+    ]
+    
+    faq_approaches = [
+        "Answer questions in a direct, helpful manner",
+        "Provide detailed explanations with context",
+        "Use examples to illustrate answers",
+        "Address both the question and underlying concerns"
+    ]
+    
+    angle = random.choice(unique_angles)
+    faq_style = random.choice(faq_approaches)
+    
     user_prompt = f"""Generate content blocks for a {hub_label.lower()} {trade_name} service hub page.
 
 Hub Category: {hub_label}
@@ -146,6 +191,11 @@ Services Offered:
 
 Content Guidelines:
 {hub_guidance['content_guidelines']}
+
+CONTENT ANGLE: {angle}
+FAQ STYLE: {faq_style}
+
+IMPORTANT: Create unique, original content. Do NOT use generic templates or repetitive phrases. Each section should feel naturally written and specific to this service type and audience. Vary your sentence structure and vocabulary throughout.
 
 Generate these sections with unique, natural content:
 
@@ -225,7 +275,7 @@ CRITICAL:
 - Make FAQs relevant to {hub_guidance['audience']} concerns"""
 
     try:
-        result = generator._call_openai_json(system_prompt, user_prompt, max_tokens=3500)
+        result = generator._call_openai_json(system_prompt, user_prompt, max_tokens=3500, temperature=0.8)
         return result
     except Exception as e:
         print(f"[HUB] OpenAI generation failed: {e}, using fallback")

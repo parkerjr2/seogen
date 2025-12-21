@@ -173,7 +173,7 @@ class AIContentGenerator:
         # Cap at 60 characters
         return slug[:60].rstrip('-')
     
-    def _call_openai_json(self, system_prompt: str, user_prompt: str, *, max_tokens: int = 4000, timeout: int = 60) -> Dict[str, Any]:
+    def _call_openai_json(self, system_prompt: str, user_prompt: str, *, max_tokens: int = 4000, timeout: int = 60, temperature: float = 0.4) -> Dict[str, Any]:
         """Call OpenAI API via httpx and return parsed JSON."""
         headers = {
             "Authorization": f"Bearer {self.api_key}",
@@ -186,7 +186,7 @@ class AIContentGenerator:
                 {"role": "system", "content": system_prompt},
                 {"role": "user", "content": user_prompt}
             ],
-            "temperature": 0.4,
+            "temperature": temperature,
             "max_tokens": max_tokens
         }
         
