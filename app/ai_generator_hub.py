@@ -532,11 +532,25 @@ FORBIDDEN PATTERNS:
     try:
         result = generator._call_openai_json(system_prompt, user_prompt, max_tokens=3500, temperature=0.9)
         
-        # Add shortcode to service areas section
+        # Add shortcode to service areas/coverage section
         if result.get("sections"):
+            shortcode_added = False
             for section in result["sections"]:
-                if "service area" in section.get("heading", "").lower() or "areas we serve" in section.get("heading", "").lower():
+                heading_lower = section.get("heading", "").lower()
+                # Match various service area heading patterns
+                if any(pattern in heading_lower for pattern in ["service area", "areas we serve", "coverage", "locations", "where we serve"]):
                     section["paragraph"] += f' [seogen_service_hub_city_links hub_key="{data.hub_key}" limit="6"]'
+                    shortcode_added = True
+                    break
+            
+            # If no matching section found, append to last section before FAQ
+            if not shortcode_added and result.get("sections"):
+                # Find last non-FAQ section
+                for i in range(len(result["sections"]) - 1, -1, -1):
+                    section = result["sections"][i]
+                    if "faq" not in section.get("heading", "").lower() and "question" not in section.get("heading", "").lower():
+                        section["paragraph"] += f' [seogen_service_hub_city_links hub_key="{data.hub_key}" limit="6"]'
+                        break
         
         return result
     except Exception as e:
