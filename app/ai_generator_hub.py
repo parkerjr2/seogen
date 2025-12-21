@@ -1,16 +1,16 @@
 """
-Service Hub Page Generation with AI-Generated Unique Content
+Service Hub Page Generation with Randomized Structure (Like Service Pages)
 
-Combines deterministic variant selection (for section ordering) with AI-generated
-unique content to create hub pages that are both structurally varied and 
-substantively unique.
-
-- 3 deterministic variants control section order
-- AI generates unique content for each hub
-- Hub-specific prompts ensure residential/commercial/emergency differentiation
+Uses the same randomization approach as service+city pages to ensure truly unique content:
+- Random section headings
+- Random section positions
+- Random FAQ count
+- Less prescriptive prompts
+- Natural content generation
 """
 
 import hashlib
+import random
 from typing import List, Dict, Any
 from app.models import GeneratePageResponse, PageData
 from app.vertical_profiles import get_vertical_profile, get_trade_name
@@ -18,24 +18,16 @@ from app.vertical_profiles import get_vertical_profile, get_trade_name
 
 def generate_service_hub_content(generator, data: PageData) -> GeneratePageResponse:
     """
-    Generate service hub page content with AI-generated unique content.
+    Generate service hub page content with randomized structure for uniqueness.
     
-    Args:
-        generator: The AIContentGenerator instance
-        data: Page generation parameters with hub information
-        
-    Returns:
-        Complete validated hub page content with unique AI-generated text
+    Uses same approach as service+city pages to ensure truly unique content.
     """
     vertical = data.vertical or "other"
     hub_key = data.hub_key or "residential"
     hub_slug = data.hub_slug or "services"
     
-    # Deterministic variant selection based on slug
-    variant = _get_variant_from_slug(hub_slug)
-    
     # Debug log
-    print(f"[HUB] slug={hub_slug} variant={variant} hub_key={hub_key}")
+    print(f"[HUB] slug={hub_slug} hub_key={hub_key}")
     
     vertical_profile = get_vertical_profile(vertical)
     trade_name = vertical_profile["trade_name"]
@@ -54,7 +46,7 @@ def generate_service_hub_content(generator, data: PageData) -> GeneratePageRespo
         meta_description += f"Serving {data.service_area_label}. "
     meta_description += f"{data.cta_text}."
     
-    # Generate AI content with hub-specific focus
+    # Generate AI content with randomized structure
     ai_content = _call_openai_hub_generation(
         generator=generator,
         data=data,
@@ -64,13 +56,8 @@ def generate_service_hub_content(generator, data: PageData) -> GeneratePageRespo
         trade_name=trade_name
     )
     
-    # Assemble blocks using selected variant for ordering
-    blocks = _assemble_blocks_for_variant(
-        variant=variant,
-        ai_content=ai_content,
-        h1_text=h1_text,
-        data=data
-    )
+    # Convert AI content to blocks
+    blocks = _convert_to_blocks(ai_content, h1_text, data)
     
     response = GeneratePageResponse(
         title=title,
@@ -82,14 +69,64 @@ def generate_service_hub_content(generator, data: PageData) -> GeneratePageRespo
     return response
 
 
-def _get_variant_from_slug(slug: str) -> int:
-    """
-    Deterministically select variant (0, 1, or 2) based on slug.
-    Uses SHA256 hash to ensure consistent selection.
-    """
-    hash_bytes = hashlib.sha256(slug.encode('utf-8')).digest()
-    hash_int = int.from_bytes(hash_bytes[:4], byteorder='big')
-    return hash_int % 3
+def _get_random_hub_headings(hub_label: str, trade_name: str, hub_key: str) -> Dict[str, str]:
+    """Generate random heading variations for each section (like service pages)."""
+    
+    # Hub-specific heading variations
+    if hub_key == "residential":
+        audience_term = random.choice(["Homeowners", "Residential Property Owners", "Home Owners"])
+        service_term = random.choice(["Services", "Solutions", "Work"])
+    elif hub_key == "commercial":
+        audience_term = random.choice(["Business Owners", "Commercial Property Managers", "Facility Managers"])
+        service_term = random.choice(["Services", "Solutions", "Work"])
+    elif hub_key == "emergency":
+        audience_term = random.choice(["Property Owners", "Homeowners & Businesses", "Customers"])
+        service_term = random.choice(["Emergency Services", "Urgent Response", "Emergency Work"])
+    else:
+        audience_term = random.choice(["Property Owners", "Customers", "Clients"])
+        service_term = random.choice(["Services", "Solutions", "Work"])
+    
+    headings = {
+        'who_for': random.choice([
+            f"Who Benefits from {hub_label} {trade_name.title()} {service_term}",
+            f"Is This Right for Your Property?",
+            f"Who We Serve with {hub_label} {service_term}",
+            f"{audience_term} Who Need {hub_label} {service_term}"
+        ]),
+        'projects': random.choice([
+            f"Common {hub_label} {trade_name.title()} Projects",
+            f"Typical {hub_label} Work We Handle",
+            f"What We Do for {audience_term}",
+            f"{hub_label} Projects We Complete"
+        ]),
+        'process': random.choice([
+            f"Our {hub_label} Service Process",
+            f"How We Work with {audience_term}",
+            f"What to Expect from Our {hub_label} {service_term}",
+            f"Our Approach to {hub_label} Work"
+        ]),
+        'compliance': random.choice([
+            "Permits, Codes & Safety Standards",
+            "Code Compliance & Permits",
+            "Safety Standards & Regulations",
+            "Meeting Code Requirements"
+        ]),
+        'service_areas': random.choice([
+            "Primary Service Areas",
+            "Areas We Serve",
+            "Service Coverage",
+            "Where We Work"
+        ]),
+        'pricing': random.choice([
+            "Understanding Project Costs",
+            "What Affects Pricing",
+            "Investment & Pricing Factors",
+            "Cost Considerations"
+        ]),
+        'faqs': "Frequently Asked Questions"
+    }
+    
+    return headings
 
 
 def _call_openai_hub_generation(
@@ -101,11 +138,15 @@ def _call_openai_hub_generation(
     trade_name: str
 ) -> Dict:
     """
-    Call OpenAI to generate unique hub page content with hub-specific focus.
+    Call OpenAI with randomized, less prescriptive prompt (like service pages).
     """
     vocabulary = vertical_profile.get("vocabulary", [])
     
-    # Hub-specific content guidance
+    # Randomize structure elements (like service pages)
+    num_faqs = random.randint(4, 7)  # Variable FAQ count
+    headings = _get_random_hub_headings(hub_label, trade_name, hub_key)
+    
+    # Hub-specific guidance
     hub_guidance = _get_hub_specific_guidance(hub_key, hub_label, trade_name)
     
     # Build services list
@@ -113,69 +154,10 @@ def _call_openai_hub_generation(
     if data.services_for_hub:
         services_list = "\n".join([f"- {s.get('name', '')}" for s in data.services_for_hub[:20]])
     
-    # Add randomization to prompt to ensure unique content
-    import random
-    import time
-    random.seed(time.time())  # Use current time for randomness
+    # Simple, less prescriptive system prompt (like service pages)
+    system_prompt = f"""You are a professional {trade_name} content writer. Write natural, helpful content that genuinely helps {hub_guidance['audience']} understand these services and make informed decisions. Focus on practical, actionable information rather than marketing fluff."""
     
-    writing_styles = [
-        "conversational and approachable",
-        "authoritative and technical",
-        "straightforward and practical",
-        "detailed and educational"
-    ]
-    
-    opening_approaches = [
-        "Start by addressing common pain points",
-        "Begin with the value proposition",
-        "Open with what makes this service essential",
-        "Lead with customer concerns and solutions"
-    ]
-    
-    style = random.choice(writing_styles)
-    approach = random.choice(opening_approaches)
-    
-    system_prompt = f"""You are an expert {trade_name} content writer creating a {hub_label.lower()} service hub page.
-
-WRITING STYLE: Use a {style} tone throughout.
-APPROACH: {approach}
-
-CRITICAL RULES:
-1. Do NOT mention any specific city, town, or neighborhood
-2. Keep content general and applicable to the entire service area
-3. Use trade-specific vocabulary: {', '.join(vocabulary[:10])}
-4. Focus on {hub_guidance['audience']} needs and concerns
-5. Emphasize {hub_guidance['key_focus']}
-6. Be professional and informative, not salesy
-7. Output ONLY valid JSON matching the schema below
-8. IMPORTANT: Write unique, varied content - avoid generic phrases and templates
-
-FORBIDDEN:
-- Never mention specific cities or locations
-- No marketing fluff like "top-notch", "premier", "best-in-class"
-- No meta-language like "this page", "this article"
-- No repetitive sentence structures
-"""
-
-    # Add unique elements to each generation
-    unique_angles = [
-        "Focus on real-world scenarios and practical examples",
-        "Emphasize problem-solving and solutions",
-        "Highlight expertise and experience",
-        "Address common misconceptions and concerns"
-    ]
-    
-    faq_approaches = [
-        "Answer questions in a direct, helpful manner",
-        "Provide detailed explanations with context",
-        "Use examples to illustrate answers",
-        "Address both the question and underlying concerns"
-    ]
-    
-    angle = random.choice(unique_angles)
-    faq_style = random.choice(faq_approaches)
-    
-    user_prompt = f"""Generate content blocks for a {hub_label.lower()} {trade_name} service hub page.
+    user_prompt = f"""Generate content for a {hub_label.lower()} {trade_name} service hub page.
 
 Hub Category: {hub_label}
 Target Audience: {hub_guidance['audience']}
@@ -192,94 +174,45 @@ Services Offered:
 Content Guidelines:
 {hub_guidance['content_guidelines']}
 
-CONTENT ANGLE: {angle}
-FAQ STYLE: {faq_style}
-
-IMPORTANT: Create unique, original content. Do NOT use generic templates or repetitive phrases. Each section should feel naturally written and specific to this service type and audience. Vary your sentence structure and vocabulary throughout.
-
-Generate these sections with unique, natural content:
-
-1. "Who This Is For" section:
-   - Heading: "Who Benefits from {hub_label} {trade_name.title()} Services"
-   - 2 paragraphs explaining who should use these services and who they're not for
-   - Focus on {hub_guidance['audience']} specifically
-
-2. "Common Projects" section:
-   - Heading: "Common {hub_label} {trade_name.title()} Projects"
-   - 1-2 paragraphs with specific examples relevant to {hub_guidance['audience']}
-
-3. "Our Process" section:
-   - Heading: "Our {hub_label} Service Process"
-   - 1-2 paragraphs explaining how you work, emphasizing {hub_guidance['process_focus']}
-
-4. "Compliance" section:
-   - Heading: "Permits, Codes & Safety Standards"
-   - 1 paragraph about compliance, emphasizing {hub_guidance['compliance_focus']}
-
-5. "Service Areas" section:
-   - Heading: "Primary Service Areas"
-   - 1 contextual paragraph about serving the area
-   - Then include this shortcode EXACTLY: [seogen_service_hub_city_links hub_key="{data.hub_key}" limit="6"]
-
-6. "Pricing" section:
-   - Heading: "Understanding Project Costs"
-   - 1 paragraph about pricing factors, mentioning {hub_guidance['pricing_focus']}
-
-7. "FAQs" section:
-   - Heading: "Frequently Asked Questions"
-   - 6 FAQs with detailed answers (3-4 sentences each)
-   - Questions should be specific to {hub_guidance['audience']} concerns
-   - Examples: {hub_guidance['faq_examples']}
-
-8. CTA block with text: "{data.cta_text}"
-
-Output JSON schema:
+Return ONLY valid JSON with this structure:
 {{
-  "who_this_is_for": {{
-    "heading": "Who Benefits from {hub_label} {trade_name.title()} Services",
-    "paragraphs": ["paragraph 1 text", "paragraph 2 text"]
-  }},
-  "common_projects": {{
-    "heading": "Common {hub_label} {trade_name.title()} Projects",
-    "paragraphs": ["paragraph text with examples"]
-  }},
-  "process": {{
-    "heading": "Our {hub_label} Service Process",
-    "paragraphs": ["paragraph text about process"]
-  }},
-  "compliance": {{
-    "heading": "Permits, Codes & Safety Standards",
-    "paragraphs": ["paragraph text about compliance"]
-  }},
-  "service_areas": {{
-    "heading": "Primary Service Areas",
-    "paragraphs": ["contextual paragraph", "We provide {hub_label.lower()} {trade_name} services throughout {data.service_area_label or 'the area'}. [seogen_service_hub_city_links hub_key=\\"{data.hub_key}\\" limit=\\"6\\"]"]
-  }},
-  "pricing": {{
-    "heading": "Understanding Project Costs",
-    "paragraphs": ["paragraph text about pricing"]
-  }},
+  "sections": [
+    {{"heading": "{headings['who_for']}", "paragraph": "2-3 sentences explaining who these services are for and who they're not for"}},
+    {{"heading": "{headings['projects']}", "paragraph": "2-3 sentences with specific project examples relevant to {hub_guidance['audience']}"}},
+    {{"heading": "{headings['process']}", "paragraph": "2-3 sentences about how you work, emphasizing {hub_guidance['process_focus']}"}},
+    {{"heading": "{headings['compliance']}", "paragraph": "2-3 sentences about compliance, emphasizing {hub_guidance['compliance_focus']}"}},
+    {{"heading": "{headings['service_areas']}", "paragraph": "1-2 sentences about serving the area"}},
+    {{"heading": "{headings['pricing']}", "paragraph": "2-3 sentences about pricing factors, mentioning {hub_guidance['pricing_focus']}"}}
+  ],
   "faqs": [
-    {{"question": "Question text?", "answer": "Detailed 3-4 sentence answer"}},
-    {{"question": "Question text?", "answer": "Detailed 3-4 sentence answer"}},
-    ...6 total FAQs
-  ]
+    {', '.join(['{{"question": "string", "answer": "string"}}'] * num_faqs)}
+  ],
+  "cta_text": "{data.cta_text or 'Contact Us Today'}"
 }}
 
-CRITICAL: 
-- Write substantial paragraphs (3-4 sentences minimum)
-- Use technical trade vocabulary naturally
-- Make content specific to {hub_guidance['audience']}
-- Include the shortcode token EXACTLY as shown in service_areas
-- Do NOT mention specific cities or neighborhoods
-- Make FAQs relevant to {hub_guidance['audience']} concerns"""
+CRITICAL RULES:
+1. Do NOT mention specific cities, towns, or neighborhoods
+2. Use trade-specific vocabulary: {', '.join(vocabulary[:8])}
+3. Focus on {hub_guidance['audience']} needs and concerns
+4. Write unique, natural content - avoid generic templates
+5. Make FAQs specific to {hub_guidance['audience']} concerns
+6. No marketing fluff like "top-notch", "premier", "best-in-class"
+
+FAQ Examples for this audience: {hub_guidance['faq_examples']}"""
 
     try:
-        result = generator._call_openai_json(system_prompt, user_prompt, max_tokens=3500, temperature=0.8)
+        result = generator._call_openai_json(system_prompt, user_prompt, max_tokens=3000, temperature=0.9)
+        
+        # Add shortcode to service areas section
+        if result.get("sections"):
+            for section in result["sections"]:
+                if section.get("heading") == headings['service_areas']:
+                    section["paragraph"] += f" [seogen_service_hub_city_links hub_key=\"{data.hub_key}\" limit=\"6\"]"
+        
         return result
     except Exception as e:
         print(f"[HUB] OpenAI generation failed: {e}, using fallback")
-        return _generate_fallback_content(hub_key, hub_label, trade_name, data)
+        return _generate_fallback_content(hub_key, hub_label, trade_name, data, headings, num_faqs)
 
 
 def _get_hub_specific_guidance(hub_key: str, hub_label: str, trade_name: str) -> Dict:
@@ -327,47 +260,35 @@ def _get_hub_specific_guidance(hub_key: str, hub_label: str, trade_name: str) ->
         }
 
 
-def _generate_fallback_content(hub_key: str, hub_label: str, trade_name: str, data: PageData) -> Dict:
+def _generate_fallback_content(hub_key: str, hub_label: str, trade_name: str, data: PageData, headings: Dict, num_faqs: int) -> Dict:
     """Generate fallback content if AI generation fails."""
     return {
-        "who_this_is_for": {
-            "heading": f"Who Benefits from {hub_label} {trade_name.title()} Services",
-            "paragraphs": [
-                f"These services are designed for property owners who need reliable {trade_name} work.",
-                f"We work with clients who value quality workmanship and professional service."
-            ]
-        },
-        "common_projects": {
-            "heading": f"Common {hub_label} {trade_name.title()} Projects",
-            "paragraphs": [
-                f"We handle a wide range of {hub_label.lower()} {trade_name} projects including installations, repairs, maintenance, and upgrades."
-            ]
-        },
-        "process": {
-            "heading": f"Our {hub_label} Service Process",
-            "paragraphs": [
-                f"We begin every project with a thorough assessment and provide clear communication throughout the process."
-            ]
-        },
-        "compliance": {
-            "heading": "Permits, Codes & Safety Standards",
-            "paragraphs": [
-                f"All work complies with applicable building codes and safety standards. We handle necessary permits and inspections."
-            ]
-        },
-        "service_areas": {
-            "heading": "Primary Service Areas",
-            "paragraphs": [
-                f"We provide {hub_label.lower()} {trade_name} services throughout {data.service_area_label or 'the area'}.",
-                f"Explore our services in your area. [seogen_service_hub_city_links hub_key=\"{data.hub_key}\" limit=\"6\"]"
-            ]
-        },
-        "pricing": {
-            "heading": "Understanding Project Costs",
-            "paragraphs": [
-                f"Project costs vary based on scope, materials, and complexity. We provide detailed estimates before starting work."
-            ]
-        },
+        "sections": [
+            {
+                "heading": headings['who_for'],
+                "paragraph": f"These services are designed for property owners who need reliable {trade_name} work. We work with clients who value quality workmanship and professional service."
+            },
+            {
+                "heading": headings['projects'],
+                "paragraph": f"We handle a wide range of {hub_label.lower()} {trade_name} projects including installations, repairs, maintenance, and upgrades."
+            },
+            {
+                "heading": headings['process'],
+                "paragraph": f"We begin every project with a thorough assessment and provide clear communication throughout the process."
+            },
+            {
+                "heading": headings['compliance'],
+                "paragraph": f"All work complies with applicable building codes and safety standards. We handle necessary permits and inspections."
+            },
+            {
+                "heading": headings['service_areas'],
+                "paragraph": f"We provide {hub_label.lower()} {trade_name} services throughout {data.service_area_label or 'the area'}. [seogen_service_hub_city_links hub_key=\"{data.hub_key}\" limit=\"6\"]"
+            },
+            {
+                "heading": headings['pricing'],
+                "paragraph": f"Project costs vary based on scope, materials, and complexity. We provide detailed estimates before starting work."
+            }
+        ],
         "faqs": [
             {
                 "question": f"What types of {hub_label.lower()} {trade_name} services do you provide?",
@@ -384,142 +305,58 @@ def _generate_fallback_content(hub_key: str, hub_label: str, trade_name: str, da
             {
                 "question": "Are your technicians licensed and insured?",
                 "answer": f"Yes, our technicians hold appropriate licenses and we maintain comprehensive insurance coverage."
-            },
-            {
-                "question": "What areas do you serve?",
-                "answer": f"We provide services throughout our coverage area. Contact us to confirm availability for your location."
-            },
-            {
-                "question": "What warranty comes with your work?",
-                "answer": f"We warranty our workmanship. Specific terms depend on the type of work and materials used."
             }
-        ]
+        ][:num_faqs],
+        "cta_text": data.cta_text or "Contact Us Today"
     }
 
 
-def _assemble_blocks_for_variant(
-    variant: int,
-    ai_content: Dict,
-    h1_text: str,
-    data: PageData
-) -> List[Dict]:
-    """
-    Assemble AI-generated content blocks in variant-specific order.
-    
-    Variant 0: Standard order (Who → Projects → Process → Compliance → Areas → Pricing → FAQs)
-    Variant 1: Reordered (Projects → Who → Compliance → Process → Areas → FAQs → Pricing)
-    Variant 2: Alternative (Process → Compliance → Who → Projects → Pricing → Areas → FAQs)
-    """
+def _convert_to_blocks(ai_content: Dict, h1_text: str, data: PageData) -> List[Dict]:
+    """Convert AI-generated content to block format."""
     blocks = []
     
-    # Hero section (H1)
+    # H1
     blocks.append({
         "type": "heading",
         "level": 1,
         "text": h1_text
     })
     
-    # Convert AI content sections to block format
-    sections = {
-        "who": _section_to_blocks(ai_content.get("who_this_is_for", {})),
-        "projects": _section_to_blocks(ai_content.get("common_projects", {})),
-        "process": _section_to_blocks(ai_content.get("process", {})),
-        "compliance": _section_to_blocks(ai_content.get("compliance", {})),
-        "areas": _section_to_blocks(ai_content.get("service_areas", {})),
-        "pricing": _section_to_blocks(ai_content.get("pricing", {})),
-        "faqs": _faqs_to_blocks(ai_content.get("faqs", []))
-    }
+    # Sections
+    for section in ai_content.get("sections", []):
+        if section.get("heading"):
+            blocks.append({
+                "type": "heading",
+                "level": 2,
+                "text": section["heading"]
+            })
+        if section.get("paragraph"):
+            blocks.append({
+                "type": "paragraph",
+                "text": section["paragraph"]
+            })
     
-    # Assemble in variant-specific order
-    if variant == 0:
-        # Variant 0: Standard order
-        blocks.extend(sections["who"])
-        blocks.extend(sections["projects"])
-        blocks.extend(sections["process"])
-        blocks.extend(sections["compliance"])
-        blocks.extend(sections["areas"])
-        blocks.extend(sections["pricing"])
-        blocks.extend(sections["faqs"])
-        
-    elif variant == 1:
-        # Variant 1: Reordered
-        blocks.extend(sections["projects"])
-        blocks.extend(sections["who"])
-        blocks.extend(sections["compliance"])
-        blocks.extend(sections["process"])
-        blocks.extend(sections["areas"])
-        blocks.extend(sections["faqs"])
-        blocks.extend(sections["pricing"])
-        
-    else:  # variant == 2
-        # Variant 2: Alternative order
-        blocks.extend(sections["process"])
-        blocks.extend(sections["compliance"])
-        blocks.extend(sections["who"])
-        blocks.extend(sections["projects"])
-        blocks.extend(sections["pricing"])
-        blocks.extend(sections["areas"])
-        blocks.extend(sections["faqs"])
-    
-    # Add CTA
-    blocks.append({
-        "type": "cta",
-        "text": data.cta_text or "Contact Us Today",
-        "phone": data.phone or ""
-    })
-    
-    return blocks
-
-
-def _section_to_blocks(section: Dict) -> List[Dict]:
-    """Convert a section dict to block format."""
-    blocks = []
-    
-    if not section:
-        return blocks
-    
-    # Add heading
-    heading = section.get("heading", "")
-    if heading:
+    # FAQs
+    faqs = ai_content.get("faqs", [])
+    if faqs:
         blocks.append({
             "type": "heading",
             "level": 2,
-            "text": heading
+            "text": "Frequently Asked Questions"
         })
+        for faq in faqs:
+            if faq.get("question") and faq.get("answer"):
+                blocks.append({
+                    "type": "faq",
+                    "question": faq["question"],
+                    "answer": faq["answer"]
+                })
     
-    # Add paragraphs
-    paragraphs = section.get("paragraphs", [])
-    for para in paragraphs:
-        if para:
-            blocks.append({
-                "type": "paragraph",
-                "text": para
-            })
-    
-    return blocks
-
-
-def _faqs_to_blocks(faqs: List[Dict]) -> List[Dict]:
-    """Convert FAQs list to block format."""
-    blocks = []
-    
-    if not faqs:
-        return blocks
-    
-    # Add FAQ heading
+    # CTA
     blocks.append({
-        "type": "heading",
-        "level": 2,
-        "text": "Frequently Asked Questions"
+        "type": "cta",
+        "text": ai_content.get("cta_text", data.cta_text or "Contact Us Today"),
+        "phone": data.phone or ""
     })
-    
-    # Add FAQ blocks
-    for faq in faqs:
-        if faq.get("question") and faq.get("answer"):
-            blocks.append({
-                "type": "faq",
-                "question": faq["question"],
-                "answer": faq["answer"]
-            })
     
     return blocks
