@@ -138,6 +138,10 @@ class AIContentGenerator:
 
     def generate_page_content_preview(self, data: PageData) -> GeneratePageResponse:
         """Generate a fast preview response (no repair loop, reduced output)."""
+        # Route based on page_mode for preview as well
+        if data.page_mode == "service_hub":
+            return self._generate_service_hub_content(data)
+        
         try:
             content_json = self._call_openai_generation_preview(data)
             response = self._assemble_response(content_json, data)

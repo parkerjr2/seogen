@@ -109,9 +109,15 @@ async def generate_page(request: GeneratePageRequest):
     # Preview mode: fast generation, no credits deducted, no usage logs
     if getattr(request, "preview", False):
         api_key_id = license_data.get("id")
-        print(f"/generate-page PREVIEW mode: api_key_id={api_key_id} service={request.data.service} city={request.data.city} state={request.data.state}")
+        page_mode = getattr(request.data, "page_mode", "service_city")
+        if page_mode == "service_hub":
+            hub_key = getattr(request.data, "hub_key", "")
+            hub_label = getattr(request.data, "hub_label", "")
+            print(f"/generate-page PREVIEW mode: api_key_id={api_key_id} page_mode={page_mode} hub_key={hub_key} hub_label={hub_label}")
+        else:
+            print(f"/generate-page PREVIEW mode: api_key_id={api_key_id} page_mode={page_mode} service={request.data.service} city={request.data.city} state={request.data.state}")
         try:
-            page_content = ai_generator.generate_page_content_preview(request.data)
+            page_content = ai_generator.generate_page_content(request.data)
             return page_content
         except Exception as e:
             print(f"AI preview generation error for api_key {api_key_id}: {str(e)}")
@@ -131,7 +137,12 @@ async def generate_page(request: GeneratePageRequest):
             detail=reason
         )
     
-    print(f"/generate-page FULL mode: api_key_id={api_key_id} service={request.data.service} city={request.data.city} state={request.data.state} stats={stats}")
+    page_mode = getattr(request.data, "page_mode", "service_city")
+    if page_mode == "service_hub":
+        hub_key = getattr(request.data, "hub_key", "")
+        print(f"/generate-page FULL mode: api_key_id={api_key_id} page_mode={page_mode} hub_key={hub_key} stats={stats}")
+    else:
+        print(f"/generate-page FULL mode: api_key_id={api_key_id} page_mode={page_mode} service={request.data.service} city={request.data.city} state={request.data.state} stats={stats}")
     
     try:
         # Generate AI-powered content with strict validation
