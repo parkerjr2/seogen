@@ -9,7 +9,7 @@ from typing import List, Union, Optional
 class PageData(BaseModel):
     """Data model for page generation parameters."""
     # Mode selection
-    page_mode: str = Field(default="service_city", description="Page mode: 'service_city' or 'service_hub'")
+    page_mode: str = Field(default="service_city", description="Page mode: 'service_city', 'service_hub', or 'city_hub'")
     
     # Universal fields
     vertical: str = Field(default="", description="Business vertical (e.g., 'electrician', 'plumber', 'roofer')")
@@ -31,6 +31,9 @@ class PageData(BaseModel):
     hub_label: str = Field(default="", description="Hub label (e.g., 'Residential')")
     hub_slug: str = Field(default="", description="Hub slug (e.g., 'residential-services')")
     services_for_hub: List[dict] = Field(default_factory=list, description="List of services for hub page")
+    
+    # City Hub mode fields (combines hub + city)
+    city_slug: str = Field(default="", description="City slug (e.g., 'tulsa-ok')")
 
 class GeneratePageRequest(BaseModel):
     """Request model for the /generate-page endpoint."""

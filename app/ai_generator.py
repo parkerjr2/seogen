@@ -79,7 +79,7 @@ class AIContentGenerator:
     def generate_page_content(self, data: PageData) -> GeneratePageResponse:
         """
         Generate complete page content with validation and repair.
-        Routes to service_city or service_hub generation based on page_mode.
+        Routes to service_city, service_hub, or city_hub generation based on page_mode.
         
         Args:
             data: Page generation parameters
@@ -93,6 +93,8 @@ class AIContentGenerator:
         # Route based on page_mode
         if data.page_mode == "service_hub":
             return self._generate_service_hub_content(data)
+        elif data.page_mode == "city_hub":
+            return self._generate_city_hub_content(data)
         else:
             return self._generate_service_city_content(data)
     
@@ -135,12 +137,19 @@ class AIContentGenerator:
     def _generate_service_hub_content(self, data: PageData) -> GeneratePageResponse:
         """Generate service hub page content (no city-specific content)."""
         return ai_generator_hub.generate_service_hub_content(self, data)
+    
+    def _generate_city_hub_content(self, data: PageData) -> GeneratePageResponse:
+        """Generate city hub page content (city-localized hub page)."""
+        from app import ai_generator_city_hub
+        return ai_generator_city_hub.generate_city_hub_content(self, data)
 
     def generate_page_content_preview(self, data: PageData) -> GeneratePageResponse:
         """Generate a fast preview response (no repair loop, reduced output)."""
         # Route based on page_mode for preview as well
         if data.page_mode == "service_hub":
             return self._generate_service_hub_content(data)
+        elif data.page_mode == "city_hub":
+            return self._generate_city_hub_content(data)
         
         try:
             content_json = self._call_openai_generation_preview(data)
