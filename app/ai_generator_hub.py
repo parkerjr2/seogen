@@ -43,23 +43,39 @@ def generate_service_hub_content(generator, data: PageData) -> GeneratePageRespo
     # Generate content blocks via LLM
     content_json = _call_openai_hub_generation(generator, data, profile)
     
-    # Ensure H1 is at the start
     blocks = content_json.get("blocks", [])
     
-    # Check if first block is H1, if not add it
-    if not blocks or blocks[0].get("type") != "heading" or blocks[0].get("level") != 1:
-        blocks.insert(0, {
+    # Prepend H1 and intro paragraph for hero section (WordPress will format as hero)
+    # The build_gutenberg_content_from_blocks method expects H1 + paragraph at start for hero
+    hero_blocks = [
+        {
             "type": "heading",
             "level": 1,
             "text": h1_text
+        }
+    ]
+    
+    # If first block is a paragraph, it becomes the hero paragraph
+    # Otherwise add a default hero paragraph
+    if blocks and blocks[0].get("type") == "paragraph":
+        hero_blocks.append(blocks[0])
+        blocks = blocks[1:]  # Remove it from main blocks since it's now in hero
+    else:
+        # Add default hero paragraph
+        hero_blocks.append({
+            "type": "paragraph",
+            "text": f"Professional {hub_label.lower()} {trade_name} services for your property."
         })
+    
+    # Combine hero blocks with content blocks
+    all_blocks = hero_blocks + blocks
     
     # Assemble response
     response = GeneratePageResponse(
         title=title,
         meta_description=meta_description[:160],
         slug=slug,
-        blocks=blocks
+        blocks=all_blocks
     )
     
     return response
