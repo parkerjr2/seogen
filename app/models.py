@@ -77,8 +77,13 @@ class CTABlock(BaseModel):
     text: str
     phone: str
 
+class ListBlock(BaseModel):
+    """List block with minimal schema."""
+    type: str = "list"
+    items: List[str]
+
 # Union type for all block types
-PageBlock = Union[HeadingBlock, ParagraphBlock, FAQBlock, NAPBlock, CTABlock]
+PageBlock = Union[HeadingBlock, ParagraphBlock, FAQBlock, NAPBlock, CTABlock, ListBlock]
 
 class GeneratePageResponse(BaseModel):
     """Response model for the /generate-page endpoint."""
