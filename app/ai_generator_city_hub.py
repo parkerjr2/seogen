@@ -127,11 +127,13 @@ Generate these blocks in EXACT order:
 
 1. INTRO PARAGRAPH (2-3 sentences):
    - Mention {city} ONCE in the first sentence
-   - Include exactly ONE city-specific factor that affects homes/buildings: age of housing, renovations, growth, inspections, or weather exposure
+   - Include ONE city-specific factor AND its PRACTICAL CONSEQUENCE
+   - The consequence must affect decisions, timing, or what gets discovered
+   - City factors: housing age, renovations, growth, inspections, weather exposure
    - NO landmarks, NO ZIP codes, NO nearby city lists
    - NO generic phrasing that would work unchanged if city name were swapped
    - Use trade vocabulary: {', '.join(vocabulary[:8])}
-   - Example: "Homes in {city} range from older builds to newer additions, which means the type of {trade_name} work people need often depends on when systems were last updated. Growth in certain neighborhoods has also brought more inspection requirements."
+   - Example: "Homes in {city} span a wide range of build dates, which means issues are often discovered during upgrades or inspections rather than routine maintenance. That changes how people prioritize what to address first."
 
 2. SERVICES SECTION - HEADING (level 2):
    - Text: "Services We Offer in {city}, {state}"
@@ -143,8 +145,13 @@ Generate these blocks in EXACT order:
    - Example: "Most calls start with a specific issue or a planned update, and it's not always obvious what work makes sense until things are looked at more closely."
 
 4. SERVICES SECTION - BRIDGE SENTENCE (1 sentence):
-   - Natural lead-in to service links
-   - Examples: "If you're not sure where to start, the pages below explain common options and what to expect." OR "The guides below walk through typical projects, timelines, and when to call a pro."
+   - Describe a REAL decision moment that leads someone to explore service pages
+   - Explain WHY someone would click (not just "see below")
+   - DO NOT use: "Below are our services", "Explore our services", "We offer a range"
+   - Good patterns:
+     * "Once the situation is clear, the next step is usually narrowing down which type of work actually applies."
+     * "At that point, it helps to see how similar situations are typically handled."
+     * "From there, most people want to understand what each option involves before deciding."
 
 5. PLACEHOLDER TOKEN (EXACT TEXT, standalone paragraph):
    - Output EXACTLY: {{{{CITY_SERVICE_LINKS}}}}
@@ -156,17 +163,17 @@ Generate these blocks in EXACT order:
    - NO city name in this heading
 
 7. WHY CHOOSE US - PARAGRAPH (ONE paragraph, 4-6 sentences):
-   - Must sound like a real contractor explaining how they work
-   - MUST include:
-     * One decision moment (why something is or isn't recommended)
-     * One explanation moment (how options are explained)
-     * One expectation-setting moment (timing, process, or outcome)
-   - Talk about: diagnosing problems, explaining options, safety/code awareness, clean completion
+   - Write like a tradesperson explaining how jobs actually go
+   - MUST CLEARLY SHOW ALL THREE MOMENTS:
+     * DECISION MOMENT: When/why something is recommended vs. deferred (e.g., "We'll tell you if something can wait versus needs attention now")
+     * EXPLANATION MOMENT: How findings or options are explained (e.g., "We walk through what we found and what each option means for the long term")
+     * EXPECTATION MOMENT: Timing, permits, inspection, or follow-up (e.g., "If permits are required, we explain that before starting so there are no surprises")
+   - Talk about: diagnosing scope, explaining trade-offs, code/safety, setting expectations
    - Trade-neutral (works for any vertical)
    - NO bullets, NO lists, NO fluff words: "top-rated", "trusted", "best", "locally"
    - Do NOT mention {city} in this section
    - Do NOT mention reviews, awards, rankings, or being "the best"
-   - Example: "When someone calls us, we start by figuring out what's actually going on instead of jumping straight to a fix. We explain what we see, walk through options, and point out anything that could affect safety or future repairs. If permits or inspections apply, we flag that early so there are no surprises. Our goal is to leave things working properly and make sure the customer understands what was done."
+   - Example: "Most calls start with figuring out whether a problem is isolated or part of something bigger. We walk through what we find, explain what needs attention now versus later, and outline any code or inspection requirements before work begins. That way you know what to expect in terms of timing and what the work will actually involve. We also make sure to explain why we're recommending one approach over another so the decision makes sense."
 
 8. FAQ - HEADING (level 2):
    - Text: "Frequently Asked Questions"
@@ -208,16 +215,18 @@ CRITICAL RULES:
 
 MANDATORY VALIDATION (CHECK BEFORE RETURNING OUTPUT):
 1. Would this content sound natural if read aloud to a homeowner?
-2. Does the "Why Choose Us" paragraph include:
-   - one decision moment (why something is or isn't recommended)
-   - one explanation moment (how options are explained)
-   - one expectation-setting moment (timing, process, or outcome)
-3. Does ANY sentence rely on vague stand-ins like "many homeowners", "a lot of calls", "people often"?
+2. Does the intro explain WHY the city factor matters (practical consequence)?
+3. Does the bridge sentence describe a REAL decision moment (not just "see below")?
+4. Does "Why Choose Us" CLEARLY show all three moments:
+   - Decision moment (when/why something is recommended vs. deferred)
+   - Explanation moment (how findings or options are explained)
+   - Expectation moment (timing, permits, inspection, follow-up)
+5. Does ANY sentence rely on vague stand-ins like "many homeowners", "a lot of calls", "people often"?
    If yes, rewrite with a concrete situation.
-4. Could the city name be swapped with another city and still sound correct?
+6. Could the city name be swapped with another city and still sound correct?
    If yes, rewrite to make the context city-dependent.
-5. Does ANY sentence exist only to introduce links?
-   If yes, rewrite it to describe a real situation instead.
+7. Could the "Why Choose Us" paragraph be reused for another city unchanged?
+   If yes, it's too generic - rewrite.
 
 If ANY check fails, rewrite the entire section and re-run this checklist.
 Do NOT return output until ALL checks pass.
@@ -249,7 +258,7 @@ def _generate_fallback_city_hub_content(data: PageData, profile: dict) -> dict:
     blocks = [
         {
             "type": "paragraph",
-            "text": f"Homes in {city} range from older builds to newer additions, which means the type of {hub_label.lower()} {trade_name} work needed often depends on when systems were last updated. Growth in certain neighborhoods has also brought more inspection requirements."
+            "text": f"Homes in {city} span a wide range of build dates, which means issues are often discovered during upgrades or inspections rather than routine maintenance. That changes how people prioritize what to address first."
         },
         {
             "type": "heading",
@@ -262,7 +271,7 @@ def _generate_fallback_city_hub_content(data: PageData, profile: dict) -> dict:
         },
         {
             "type": "paragraph",
-            "text": "If you're not sure where to start, the pages below explain common options and what to expect."
+            "text": "Once the situation is clear, the next step is usually narrowing down which type of work actually applies."
         },
         {
             "type": "paragraph",
@@ -275,7 +284,7 @@ def _generate_fallback_city_hub_content(data: PageData, profile: dict) -> dict:
         },
         {
             "type": "paragraph",
-            "text": "When someone calls us, we start by figuring out what's actually going on instead of jumping straight to a fix. We explain what we see, walk through options, and point out anything that could affect safety or future repairs. If permits or inspections apply, we flag that early so there are no surprises. Our goal is to leave things working properly and make sure the customer understands what was done."
+            "text": "Most calls start with figuring out whether a problem is isolated or part of something bigger. We walk through what we find, explain what needs attention now versus later, and outline any code or inspection requirements before work begins. That way you know what to expect in terms of timing and what the work will actually involve. We also make sure to explain why we're recommending one approach over another so the decision makes sense."
         },
         {
             "type": "heading",
