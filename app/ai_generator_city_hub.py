@@ -127,12 +127,18 @@ Generate these blocks in order:
 4. ONE short paragraph (2-3 sentences) - Brief intro about the range of services available, NO enumeration of specific service names
 5. Bridge sentence paragraph: A single natural sentence introducing the service links below (e.g., "Explore our most requested services in the area below." or similar)
 6. "Why Choose Us" heading (level 2) - NO city name in this heading
-7. REQUIRED: Either 3 bullet points OR 2 concise paragraphs explaining benefits. Content must be:
+7. REQUIRED: Either 3-4 bullet points OR 2 concise paragraphs explaining benefits. Content must be:
    - Trade-neutral (works for any home service)
-   - NO generic marketing fluff ("we are the best", "top-rated")
+   - Natural, conversational tone - write like a professional tradesperson, not marketing copy
+   - Complete sentences or substantial phrases (8-15 words each)
+   - NO generic marketing fluff ("we are the best", "top-rated", "#1 choice")
    - NO service enumeration
-   - May reference local factors (response times, local codes, housing stock, weather)
-   Example bullet points: "Local experience with homes and properties in {city}", "Clear communication and upfront expectations", "Work that meets current safety and code standards"
+   - May reference local factors (response times, familiarity with local codes, property types, weather patterns)
+   Example bullet points:
+   * "We're familiar with the building codes and common issues in {city} properties"
+   * "Straightforward pricing and clear explanations before we start any work"
+   * "Licensed, insured, and focused on doing the job right the first time"
+   * "We respond quickly and show up when we say we will"
 8. "Frequently Asked Questions" heading (level 2)
 9. 5-8 FAQs with detailed answers (3-4 sentences each) - Cover common questions about {hub_label.lower()} {trade_name} services in {city}, {state}
 10. CTA block
@@ -146,7 +152,7 @@ Output JSON schema:
     {{"type": "paragraph", "text": "2-3 sentence brief intro about service range - NO specific service names"}},
     {{"type": "paragraph", "text": "One natural bridge sentence like 'Explore our most requested services in the area below.' or similar"}},
     {{"type": "heading", "level": 2, "text": "Why Choose Us"}},
-    {{"type": "list", "items": ["Local experience with homes in {city}", "Clear communication and upfront expectations", "Work that meets current safety standards"]}} OR {{"type": "paragraph", "text": "2 concise paragraphs"}},
+    {{"type": "list", "items": ["We're familiar with the building codes and common issues in {city} properties", "Straightforward pricing and clear explanations before we start any work", "Licensed, insured, and focused on doing the job right the first time", "We respond quickly and show up when we say we will"]}} OR {{"type": "paragraph", "text": "2 concise paragraphs"}},
     {{"type": "heading", "level": 2, "text": "Frequently Asked Questions"}},
     {{"type": "faq", "question": "What {hub_label.lower()} {trade_name} services do you offer in {city}?", "answer": "Detailed 3-4 sentence answer"}},
     {{"type": "faq", "question": "...", "answer": "..."}},
@@ -218,9 +224,10 @@ def _generate_fallback_city_hub_content(data: PageData, profile: dict) -> dict:
         {
             "type": "list",
             "items": [
-                f"Local experience with homes and properties in {city}",
-                "Clear communication and upfront expectations",
-                "Work that meets current safety and code standards"
+                f"We're familiar with the building codes and common issues in {city} properties",
+                "Straightforward pricing and clear explanations before we start any work",
+                "Licensed, insured, and focused on doing the job right the first time",
+                "We respond quickly and show up when we say we will"
             ]
         },
         {
