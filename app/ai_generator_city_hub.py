@@ -127,18 +127,20 @@ Generate these blocks in EXACT order:
 
 1. INTRO PARAGRAPH (2-3 sentences):
    - Mention {city} ONCE in the first sentence
-   - Include exactly ONE general city factor: older homes, renovations, mixed housing stock, growth, or storms
-   - NO landmarks, NO "locally", NO "local property owners", NO "serving the local area"
+   - Include exactly ONE city-specific factor that affects homes/buildings: age of housing, renovations, growth, inspections, or weather exposure
+   - NO landmarks, NO ZIP codes, NO nearby city lists
+   - NO generic phrasing that would work unchanged if city name were swapped
    - Use trade vocabulary: {', '.join(vocabulary[:8])}
-   - Example: "Residential electrical work in {city}, {state} covers everything from panel upgrades to outlet repairs. Many homes here were built decades ago, so safety checks and code updates are common requests."
+   - Example: "Homes in {city} range from older builds to newer additions, which means the type of {trade_name} work people need often depends on when systems were last updated. Growth in certain neighborhoods has also brought more inspection requirements."
 
 2. SERVICES SECTION - HEADING (level 2):
    - Text: "Services We Offer in {city}, {state}"
 
-3. SERVICES SECTION - INTRO PARAGRAPH (1-2 sentences):
-   - Brief, general intro about service range
-   - DO NOT list or name any specific services
-   - Example: "Whether you need a quick repair or a larger project, we handle the full range of {hub_label.lower()} {trade_name} work."
+3. SERVICES CONTEXT PARAGRAPH (1-2 sentences):
+   - Describe REAL situations people call about WITHOUT naming services
+   - Write as if describing actual calls or inspections
+   - NO generic phrasing like "we handle a full range"
+   - Example: "Most calls start with a specific issue or a planned update, and it's not always obvious what work makes sense until things are looked at more closely."
 
 4. SERVICES SECTION - BRIDGE SENTENCE (1 sentence):
    - Natural lead-in to service links
@@ -155,12 +157,16 @@ Generate these blocks in EXACT order:
 
 7. WHY CHOOSE US - PARAGRAPH (ONE paragraph, 4-6 sentences):
    - Must sound like a real contractor explaining how they work
-   - Talk about: communication, showing up, diagnosing, explaining options, code/safety, cleanup, documentation
+   - MUST include:
+     * One decision moment (why something is or isn't recommended)
+     * One explanation moment (how options are explained)
+     * One expectation-setting moment (timing, process, or outcome)
+   - Talk about: diagnosing problems, explaining options, safety/code awareness, clean completion
    - Trade-neutral (works for any vertical)
-   - NO bullets, NO lists
-   - NO fluff words: "top-rated", "trusted", "best", "locally"
-   - Mention {city} ZERO or ONE time maximum (prefer zero)
-   - Example: "When you call, we start by asking a few questions and checking the situation in person if needed. We'll explain what we found in plain language, walk through your options, and tell you what's worth doing now versus later. If permits or code requirements apply, we point that out up front—no surprises after work starts. We keep the job site clean, communicate about timing, and make sure you know what changed when we're done."
+   - NO bullets, NO lists, NO fluff words: "top-rated", "trusted", "best", "locally"
+   - Do NOT mention {city} in this section
+   - Do NOT mention reviews, awards, rankings, or being "the best"
+   - Example: "When someone calls us, we start by figuring out what's actually going on instead of jumping straight to a fix. We explain what we see, walk through options, and point out anything that could affect safety or future repairs. If permits or inspections apply, we flag that early so there are no surprises. Our goal is to leave things working properly and make sure the customer understands what was done."
 
 8. FAQ - HEADING (level 2):
    - Text: "Frequently Asked Questions"
@@ -200,11 +206,28 @@ CRITICAL RULES:
 - Total city mentions: 2-3 times maximum across entire page
 - Never use banned phrases (see system prompt)
 
+MANDATORY VALIDATION (CHECK BEFORE RETURNING OUTPUT):
+1. Would this content sound natural if read aloud to a homeowner?
+2. Does the "Why Choose Us" paragraph include:
+   - one decision moment (why something is or isn't recommended)
+   - one explanation moment (how options are explained)
+   - one expectation-setting moment (timing, process, or outcome)
+3. Does ANY sentence rely on vague stand-ins like "many homeowners", "a lot of calls", "people often"?
+   If yes, rewrite with a concrete situation.
+4. Could the city name be swapped with another city and still sound correct?
+   If yes, rewrite to make the context city-dependent.
+5. Does ANY sentence exist only to introduce links?
+   If yes, rewrite it to describe a real situation instead.
+
+If ANY check fails, rewrite the entire section and re-run this checklist.
+Do NOT return output until ALL checks pass.
+
 QUALITY RULES:
 - Write like a real contractor, not marketing copy
 - Use technical trade vocabulary naturally
 - Make FAQs detailed and informative (3-4 sentences per answer)
-- Be professional and direct, not salesy"""
+- Be professional and direct, not salesy
+- Avoid vague phrases - describe concrete situations instead"""
 
     try:
         result = generator._call_openai_json(system_prompt, user_prompt, max_tokens=3000)
@@ -226,7 +249,7 @@ def _generate_fallback_city_hub_content(data: PageData, profile: dict) -> dict:
     blocks = [
         {
             "type": "paragraph",
-            "text": f"{hub_label} {trade_name} work in {city}, {state} covers everything from routine repairs to larger projects. Many properties here have a mix of older and newer construction, so code compliance and safety checks come up often."
+            "text": f"Homes in {city} range from older builds to newer additions, which means the type of {hub_label.lower()} {trade_name} work needed often depends on when systems were last updated. Growth in certain neighborhoods has also brought more inspection requirements."
         },
         {
             "type": "heading",
@@ -235,7 +258,7 @@ def _generate_fallback_city_hub_content(data: PageData, profile: dict) -> dict:
         },
         {
             "type": "paragraph",
-            "text": f"Whether you need a quick repair or a larger project, we handle the full range of {hub_label.lower()} {trade_name} work."
+            "text": "Most calls start with a specific issue or a planned update, and it's not always obvious what work makes sense until things are looked at more closely."
         },
         {
             "type": "paragraph",
@@ -252,7 +275,7 @@ def _generate_fallback_city_hub_content(data: PageData, profile: dict) -> dict:
         },
         {
             "type": "paragraph",
-            "text": "When you call, we start by asking a few questions and checking the situation in person if needed. We'll explain what we found in plain language, walk through your options, and tell you what's worth doing now versus later. If permits or code requirements apply, we point that out up front—no surprises after work starts. We keep the job site clean, communicate about timing, and make sure you know what changed when we're done."
+            "text": "When someone calls us, we start by figuring out what's actually going on instead of jumping straight to a fix. We explain what we see, walk through options, and point out anything that could affect safety or future repairs. If permits or inspections apply, we flag that early so there are no surprises. Our goal is to leave things working properly and make sure the customer understands what was done."
         },
         {
             "type": "heading",
