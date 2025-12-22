@@ -186,7 +186,26 @@ Rules:
 GOOD STYLE:
 "Calls usually come in after something stops working, a remodel uncovers an issue, or an inspection raises questions that weren't obvious beforehand."
 
-### 3) SERVICE LINKS INSERTION POINT (MANDATORY)
+### 3) DECISION TENSION — WHY LOOK DEEPER (ONE sentence)
+Purpose: Explain WHY someone would need to explore service pages.
+
+Rules:
+- ONE sentence only
+- No service names
+- Describe a real moment of uncertainty or decision
+- Must feel spoken, not written
+
+GOOD PATTERNS (rotate, do NOT reuse verbatim):
+- "The tricky part is figuring out whether what you're seeing is a one-off issue or part of something bigger."
+- "What looks like a small problem can sometimes point to a larger update, which is why the details matter."
+- "Once you know what's happening, the next step is understanding which type of work actually applies."
+
+BAD PATTERNS:
+- "Below are our services"
+- "Explore our services"
+- "We offer a range of services"
+
+### 4) SERVICE LINKS INSERTION POINT (MANDATORY)
 On its OWN LINE, output EXACTLY the following token and nothing else:
 
 {{{{CITY_SERVICE_LINKS}}}}
@@ -196,7 +215,7 @@ Rules:
 - Do NOT add text on the same line.
 - This will be replaced later with natural inline service links.
 
-### 4) WHY CHOOSE US — REAL JOB FLOW, NOT VALUES (ONE PARAGRAPH, 4–6 sentences)
+### 5) WHY CHOOSE US — EXPERIENCED, NOT GENERIC (ONE PARAGRAPH, 4–6 sentences)
 Purpose: Describe what actually happens when someone calls — not values, not claims.
 
 This paragraph MUST include ALL FOUR:
@@ -204,6 +223,15 @@ This paragraph MUST include ALL FOUR:
 2) A decision moment (when something is recommended vs deferred)
 3) An explanation moment (how options or findings are explained)
 4) An expectation moment (timing, permits, inspections, or follow-up)
+
+CRITICAL VARIATION RULE:
+- Do NOT reuse the same phrasing across pages
+- Rotate emphasis between:
+  * diagnosis-first ("When someone calls, the first step is figuring out...")
+  * planning-first ("Before recommending anything, we look at...")
+  * compliance-first ("If permits or inspections apply, that's discussed early...")
+  * prevention-first ("Sometimes what looks urgent can wait, and what looks minor needs attention...")
+- Sentence structure must differ per city
 
 Rules:
 - ONE paragraph only.
@@ -218,10 +246,13 @@ Rules:
 UNACCEPTABLE:
 "We focus on clear communication and doing the job right."
 
-ACCEPTABLE STYLE (do NOT copy verbatim):
-"Most jobs start by figuring out whether the issue is isolated or part of something bigger. If it's something that can wait, that's said clearly. If it's likely to cause trouble later, the reason is explained along with options. When permits or inspections are involved, that's discussed up front so there are no surprises. The goal is to leave the work done correctly and make sure the customer understands what changed."
+GOLD-STANDARD EXAMPLE (STYLE ONLY — DO NOT COPY):
+"When someone calls, the first step is figuring out whether the issue is isolated or part of a larger update. Sometimes that means opening things up or testing further before recommending anything. If it's something that can wait, that's said plainly. If it's likely to create problems down the line, the reasons are explained along with options. When permits or inspections are involved, that's discussed early so expectations are clear before work begins."
 
-### 5) CTA — LOW PRESSURE (1–2 sentences)
+Your output must match the realism and specificity of this example,
+but must NOT reuse its wording or structure.
+
+### 6) CTA — LOW PRESSURE (1–2 sentences)
 Purpose: Guide without selling.
 
 Rules:
@@ -237,9 +268,10 @@ OUTPUT JSON SCHEMA
     {{"type": "paragraph", "text": "2-3 sentence intro with city factor + consequence"}},
     {{"type": "heading", "level": 2, "text": "Services We Offer in {city}, {state}"}},
     {{"type": "paragraph", "text": "1-2 sentence real triggers - NO service names"}},
+    {{"type": "paragraph", "text": "ONE sentence decision tension - WHY look deeper"}},
     {{"type": "paragraph", "text": "{{{{CITY_SERVICE_LINKS}}}}"}},
     {{"type": "heading", "level": 2, "text": "Why Choose Us"}},
-    {{"type": "paragraph", "text": "ONE paragraph, 4-6 sentences, real process"}},
+    {{"type": "paragraph", "text": "ONE paragraph, 4-6 sentences, real process with natural variation patterns"}},
     {{"type": "heading", "level": 2, "text": "Frequently Asked Questions"}},
     {{"type": "faq", "question": "What {hub_label.lower()} {trade_name} services do you offer in {city}?", "answer": "Detailed 3-4 sentence answer"}},
     {{"type": "faq", "question": "...", "answer": "..."}},
@@ -248,16 +280,15 @@ OUTPUT JSON SCHEMA
 }}
 
 ==================================================
-HARD SELF-REWRITE ENFORCEMENT (DO NOT SKIP)
+HARD SELF-REVIEW ENFORCEMENT (DO NOT SKIP)
 ==================================================
-You are NOT allowed to return the first draft.
+You may NOT return the first draft.
 
-After writing, you MUST reread the content and answer:
-
-- Does this sound like a real tradesperson describing actual jobs?
-- Does the city factor clearly lead to a consequence?
+Before finalizing, review your output and ask:
+- Does this sound like a real tradesperson describing real jobs?
+- Does the service-links transition create a reason to click?
 - Does "Why Choose Us" describe actions, not values?
-- Could any paragraph be reused for another city unchanged?
+- Could this paragraph be reused unchanged on another city page?
 
 If the answer to ANY question is YES (except the first):
 → Rewrite the affected section.
@@ -302,6 +333,10 @@ def _generate_fallback_city_hub_content(data: PageData, profile: dict) -> dict:
         {
             "type": "paragraph",
             "text": "Calls usually come in after something stops working, a remodel uncovers an issue, or an inspection raises questions that weren't obvious beforehand."
+        },
+        {
+            "type": "paragraph",
+            "text": "The tricky part is figuring out whether what you're seeing is a one-off issue or part of something bigger."
         },
         {
             "type": "paragraph",
