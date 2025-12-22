@@ -155,22 +155,25 @@ BANNED WORDS / PHRASES (NEVER USE):
 REQUIRED STRUCTURE (FOLLOW EXACTLY)
 ==================================================
 
-### 1) INTRO — CITY FACTOR WITH CONSEQUENCE (2–3 sentences)
-Purpose: Explain WHY this category matters in THIS city.
+### 1) INTRO — CITY FACTOR CAUSES REAL CONSEQUENCE (2–3 sentences)
+Purpose: Show WHY this type of work shows up the way it does in THIS city.
 
 Rules:
 - Mention {city} exactly ONCE.
-- Include exactly ONE city-specific factor:
-  (housing age, renovations, inspections, growth, weather exposure).
-- Explain ONE real-world consequence of that factor that affects decisions or timing.
+- Include exactly ONE city factor: housing age, inspections, growth, renovations, or weather.
+- Show ONE practical consequence that affects:
+  * what gets discovered,
+  * when work is done,
+  * or why issues surface.
+- Do NOT write anything that would still apply unchanged to another city.
 - No landmarks, ZIP codes, or nearby city lists.
 - No sales language.
 
-BAD (unacceptable):
+UNACCEPTABLE:
 "Homes vary in age, which can affect service needs."
 
-GOOD STYLE (do NOT copy verbatim):
-"When homes were built before modern standards were common, issues tend to surface during upgrades or inspections instead of routine maintenance, which changes how problems are prioritized."
+ACCEPTABLE STYLE (do NOT copy verbatim):
+"Because many homes in {city} were built before modern standards were common, issues are often uncovered during inspections or remodels rather than routine maintenance, which changes how problems are prioritized."
 
 ### 2) SERVICES CONTEXT — REAL TRIGGERS (1–2 sentences)
 Purpose: Describe what actually prompts calls WITHOUT naming services.
@@ -193,27 +196,30 @@ Rules:
 - Do NOT add text on the same line.
 - This will be replaced later with natural inline service links.
 
-### 4) WHY CHOOSE US — REAL PROCESS, NOT VALUES (ONE PARAGRAPH, 4–6 sentences)
-Purpose: Explain HOW jobs are actually handled.
+### 4) WHY CHOOSE US — REAL JOB FLOW, NOT VALUES (ONE PARAGRAPH, 4–6 sentences)
+Purpose: Describe what actually happens when someone calls — not values, not claims.
 
-This paragraph MUST include ALL THREE:
-1) A decision moment (when work is recommended vs deferred)
-2) An explanation moment (how findings or options are explained)
-3) An expectation-setting moment (timing, permits, inspections, follow-up)
+This paragraph MUST include ALL FOUR:
+1) A discovery moment (what is checked or figured out first)
+2) A decision moment (when something is recommended vs deferred)
+3) An explanation moment (how options or findings are explained)
+4) An expectation moment (timing, permits, inspections, or follow-up)
 
 Rules:
 - ONE paragraph only.
+- 4–6 sentences.
 - No bullets.
-- No hype.
-- No city name repetition.
-- No credentials, reviews, awards, or rankings.
-- Must describe real job flow, not abstract principles.
+- No city name.
+- No marketing language.
+- No generic professionalism ("quality", "trusted", "customer-focused").
+- Must describe ACTIONS, not values.
+- If ANY of the 4 moments are missing, the output is INVALID.
 
-UNACCEPTABLE (DO NOT WRITE LIKE THIS):
-"We focus on quality work, clear communication, and customer satisfaction."
+UNACCEPTABLE:
+"We focus on clear communication and doing the job right."
 
 ACCEPTABLE STYLE (do NOT copy verbatim):
-"Most jobs start with figuring out whether an issue is isolated or part of something bigger. If it's something that can wait, we'll say that. If it's likely to cause trouble later, we explain why and what usually happens if it's ignored. When permits or inspections apply, that's discussed before work begins so expectations are clear."
+"Most jobs start by figuring out whether the issue is isolated or part of something bigger. If it's something that can wait, that's said clearly. If it's likely to cause trouble later, the reason is explained along with options. When permits or inspections are involved, that's discussed up front so there are no surprises. The goal is to leave the work done correctly and make sure the customer understands what changed."
 
 ### 5) CTA — LOW PRESSURE (1–2 sentences)
 Purpose: Guide without selling.
@@ -242,23 +248,29 @@ OUTPUT JSON SCHEMA
 }}
 
 ==================================================
-MANDATORY SELF-REWRITE ENFORCEMENT (CRITICAL)
+HARD SELF-REWRITE ENFORCEMENT (DO NOT SKIP)
 ==================================================
-You MAY NOT return the first draft.
+You are NOT allowed to return the first draft.
 
-After generating the page, you MUST review your own output and answer:
+After writing, you MUST reread the content and answer:
 
-- Does this sound like a real contractor speaking out loud?
-- Does the intro explain a city factor AND its real consequence?
-- Does "Why Choose Us" describe decisions, explanations, and expectations?
-- Does any sentence exist only for SEO or to introduce links?
-- Could this page be reused for another city unchanged?
+- Does this sound like a real tradesperson describing actual jobs?
+- Does the city factor clearly lead to a consequence?
+- Does "Why Choose Us" describe actions, not values?
+- Could any paragraph be reused for another city unchanged?
 
 If the answer to ANY question is YES (except the first):
-→ You MUST rewrite the affected sections.
-→ Repeat this review until ALL answers are correct.
+→ Rewrite the affected section.
+→ Repeat until ALL answers are NO.
 
-DO NOT return output until it passes this enforcement check."""
+Do NOT return output until this enforcement passes.
+
+CRITICAL CONTEXT:
+City Hub pages exist to answer:
+"Why does this type of work show up the way it does in this city,
+and how does this company actually handle those situations?"
+
+If the output sounds like advice, values, or professionalism, it has FAILED."""
 
     try:
         result = generator._call_openai_json(system_prompt, user_prompt, max_tokens=3000)
@@ -280,7 +292,7 @@ def _generate_fallback_city_hub_content(data: PageData, profile: dict) -> dict:
     blocks = [
         {
             "type": "paragraph",
-            "text": f"When homes in {city} were built before modern standards were common, issues tend to surface during upgrades or inspections instead of routine maintenance, which changes how problems are prioritized."
+            "text": f"Because many homes in {city} were built before modern standards were common, issues are often uncovered during inspections or remodels rather than routine maintenance, which changes how problems are prioritized."
         },
         {
             "type": "heading",
@@ -302,7 +314,7 @@ def _generate_fallback_city_hub_content(data: PageData, profile: dict) -> dict:
         },
         {
             "type": "paragraph",
-            "text": "Most jobs start with figuring out whether an issue is isolated or part of something bigger. If it's something that can wait, we'll say that. If it's likely to cause trouble later, we explain why and what usually happens if it's ignored. When permits or inspections apply, that's discussed before work begins so expectations are clear."
+            "text": "Most jobs start by figuring out whether the issue is isolated or part of something bigger. If it's something that can wait, that's said clearly. If it's likely to cause trouble later, the reason is explained along with options. When permits or inspections are involved, that's discussed up front so there are no surprises. The goal is to leave the work done correctly and make sure the customer understands what changed."
         },
         {
             "type": "heading",
