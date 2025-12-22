@@ -127,7 +127,12 @@ Generate these blocks in order:
 4. ONE short paragraph (2-3 sentences) - Brief intro about the range of services available, NO enumeration of specific service names
 5. Bridge sentence paragraph: A single natural sentence introducing the service links below (e.g., "Explore our most requested services in the area below." or similar)
 6. "Why Choose Us" heading (level 2) - NO city name in this heading
-7. Paragraph (3-4 sentences) - Explain benefits of choosing local {trade_name} services in {city}
+7. REQUIRED: Either 3 bullet points OR 2 concise paragraphs explaining benefits. Content must be:
+   - Trade-neutral (works for any home service)
+   - NO generic marketing fluff ("we are the best", "top-rated")
+   - NO service enumeration
+   - May reference local factors (response times, local codes, housing stock, weather)
+   Example bullet points: "Local experience with homes and properties in {city}", "Clear communication and upfront expectations", "Work that meets current safety and code standards"
 8. "Frequently Asked Questions" heading (level 2)
 9. 5-8 FAQs with detailed answers (3-4 sentences each) - Cover common questions about {hub_label.lower()} {trade_name} services in {city}, {state}
 10. CTA block
@@ -141,7 +146,7 @@ Output JSON schema:
     {{"type": "paragraph", "text": "2-3 sentence brief intro about service range - NO specific service names"}},
     {{"type": "paragraph", "text": "One natural bridge sentence like 'Explore our most requested services in the area below.' or similar"}},
     {{"type": "heading", "level": 2, "text": "Why Choose Us"}},
-    {{"type": "paragraph", "text": "3-4 sentence paragraph about local benefits in {city}"}},
+    {{"type": "list", "items": ["Local experience with homes in {city}", "Clear communication and upfront expectations", "Work that meets current safety standards"]}} OR {{"type": "paragraph", "text": "2 concise paragraphs"}},
     {{"type": "heading", "level": 2, "text": "Frequently Asked Questions"}},
     {{"type": "faq", "question": "What {hub_label.lower()} {trade_name} services do you offer in {city}?", "answer": "Detailed 3-4 sentence answer"}},
     {{"type": "faq", "question": "...", "answer": "..."}},
@@ -211,8 +216,12 @@ def _generate_fallback_city_hub_content(data: PageData, profile: dict) -> dict:
             "text": "Why Choose Us"
         },
         {
-            "type": "paragraph",
-            "text": f"As a local {trade_name} service provider in {city}, we understand the specific needs and challenges of properties in the area. Our team is familiar with local building codes and can respond quickly to service requests throughout {city}, {state}."
+            "type": "list",
+            "items": [
+                f"Local experience with homes and properties in {city}",
+                "Clear communication and upfront expectations",
+                "Work that meets current safety and code standards"
+            ]
         },
         {
             "type": "heading",
