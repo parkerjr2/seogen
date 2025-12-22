@@ -92,10 +92,8 @@ def _call_openai_city_hub_generation(generator, data: PageData, profile: dict) -
     city = data.city or "Your City"
     state = data.state or "ST"
     
-    # Build services list
-    services_list = ""
-    if data.services_for_hub:
-        services_list = "\n".join([f"- {s.get('name', '')}" for s in data.services_for_hub[:20]])
+    # Note: We do NOT pass service names to the AI to avoid enumeration
+    # The shortcode will handle service discovery and display
     
     system_prompt = f"""You are an expert {trade_name} content writer creating a city hub page.
 
@@ -122,16 +120,13 @@ Phone: {data.phone or ''}
 Service Area: {data.service_area_label or city}
 CTA Text: {data.cta_text}
 
-Services Offered in {city}:
-{services_list}
-
 Generate these blocks in order:
 1. Opening paragraph (3-4 sentences) - Explain what {hub_label.lower()} {trade_name} services are in {city}, {state} and why they matter. Use trade-specific vocabulary: {', '.join(vocabulary[:8])}
 2. Second paragraph (2-3 sentences) - Describe common scenarios or problems in {city} that these services solve
-3. "Services We Offer in {city}" heading (level 2)
-4. Paragraph (3-4 sentences) - Introduce the services list and explain the comprehensive nature of offerings in {city}
-5. Paragraph with shortcode: "We provide {hub_label.lower()} {trade_name} services throughout {city}, {state}. [seogen_city_hub_links hub_key=\\"{data.hub_key}\\" city_slug=\\"{data.city_slug}\\"]"
-6. "Why Choose Us in {city}" heading (level 2)
+3. "Services We Offer in {city}, {state}" heading (level 2)
+4. ONE short paragraph (2-3 sentences) - Brief intro about the range of services available, NO enumeration of specific service names
+5. Bridge sentence paragraph: A single natural sentence introducing the service links below (e.g., "Explore our most requested services in the area below." or similar)
+6. "Why Choose Us" heading (level 2) - NO city name in this heading
 7. Paragraph (3-4 sentences) - Explain benefits of choosing local {trade_name} services in {city}
 8. "Frequently Asked Questions" heading (level 2)
 9. 5-8 FAQs with detailed answers (3-4 sentences each) - Cover common questions about {hub_label.lower()} {trade_name} services in {city}, {state}
@@ -142,11 +137,11 @@ Output JSON schema:
   "blocks": [
     {{"type": "paragraph", "text": "3-4 sentence opening paragraph mentioning {city}, {state}"}},
     {{"type": "paragraph", "text": "2-3 sentence paragraph about common scenarios in {city}"}},
-    {{"type": "heading", "level": 2, "text": "Services We Offer in {city}"}},
-    {{"type": "paragraph", "text": "3-4 sentence paragraph introducing services in {city}"}},
-    {{"type": "paragraph", "text": "We provide {hub_label.lower()} {trade_name} services throughout {city}, {state}. [seogen_city_hub_links hub_key=\\"{data.hub_key}\\" city_slug=\\"{data.city_slug}\\"]"}},
-    {{"type": "heading", "level": 2, "text": "Why Choose Us in {city}"}},
-    {{"type": "paragraph", "text": "3-4 sentence paragraph about local benefits"}},
+    {{"type": "heading", "level": 2, "text": "Services We Offer in {city}, {state}"}},
+    {{"type": "paragraph", "text": "2-3 sentence brief intro about service range - NO specific service names"}},
+    {{"type": "paragraph", "text": "One natural bridge sentence like 'Explore our most requested services in the area below.' or similar"}},
+    {{"type": "heading", "level": 2, "text": "Why Choose Us"}},
+    {{"type": "paragraph", "text": "3-4 sentence paragraph about local benefits in {city}"}},
     {{"type": "heading", "level": 2, "text": "Frequently Asked Questions"}},
     {{"type": "faq", "question": "What {hub_label.lower()} {trade_name} services do you offer in {city}?", "answer": "Detailed 3-4 sentence answer"}},
     {{"type": "faq", "question": "...", "answer": "..."}},
@@ -154,16 +149,22 @@ Output JSON schema:
   ]
 }}
 
-CRITICAL: 
-- Write substantial paragraphs (3-4 sentences minimum)
+CRITICAL ANTI-DUPLICATION RULES:
+- DO NOT list or name individual services in any paragraph
+- DO NOT enumerate services (e.g., "including X, Y, and Z")
+- DO NOT create bullet lists of services
+- DO NOT create multiple service-related headings
+- DO NOT create "Services Available" or "Services Locally" headings
+- The service discovery will be handled automatically by the system
+- ONLY output the 10 blocks specified above, nothing more
+- Keep the bridge sentence natural and simple
+
+QUALITY RULES:
+- Write substantial paragraphs (2-4 sentences)
 - Use technical trade vocabulary naturally
 - Make FAQs detailed and informative (3-4 sentences per answer)
-- Include the shortcode token EXACTLY as shown
 - Mention {city}, {state} naturally but do NOT mention other cities
-- DO NOT add any extra headings or sections beyond what is specified above
-- DO NOT create "Services Available Locally" or "Services Available in {city}" headings
-- DO NOT create service lists - the shortcode will handle that automatically
-- ONLY output the 10 blocks specified above, nothing more"""
+- Be professional and informative, not salesy"""
 
     try:
         result = generator._call_openai_json(system_prompt, user_prompt, max_tokens=3000)
@@ -194,20 +195,20 @@ def _generate_fallback_city_hub_content(data: PageData, profile: dict) -> dict:
         {
             "type": "heading",
             "level": 2,
-            "text": f"Services We Offer in {city}"
+            "text": f"Services We Offer in {city}, {state}"
         },
         {
             "type": "paragraph",
-            "text": f"Our comprehensive {hub_label.lower()} {trade_name} services in {city} cover everything from basic maintenance to complex installations. We work with property owners, managers, and contractors throughout {city}, {state}."
+            "text": f"Our {hub_label.lower()} {trade_name} services address a wide range of property needs. From routine work to specialized projects, we provide reliable solutions for residential and commercial clients."
         },
         {
             "type": "paragraph",
-            "text": f"We provide {hub_label.lower()} {trade_name} services throughout {city}, {state}. [seogen_city_hub_links hub_key=\"{data.hub_key}\" city_slug=\"{data.city_slug}\"]"
+            "text": "Explore our most requested services in the area below."
         },
         {
             "type": "heading",
             "level": 2,
-            "text": f"Why Choose Us in {city}"
+            "text": "Why Choose Us"
         },
         {
             "type": "paragraph",
@@ -221,7 +222,7 @@ def _generate_fallback_city_hub_content(data: PageData, profile: dict) -> dict:
         {
             "type": "faq",
             "question": f"What {hub_label.lower()} {trade_name} services do you offer in {city}?",
-            "answer": f"We offer a complete range of {hub_label.lower()} {trade_name} services in {city}, {state} including routine maintenance, repairs, installations, and emergency services. Our team has experience with both simple and complex projects."
+            "answer": f"We offer a complete range of {hub_label.lower()} {trade_name} services in {city}, {state}. Our team has experience with both routine maintenance and complex projects, ensuring quality results for every job."
         },
         {
             "type": "faq",
