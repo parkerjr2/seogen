@@ -113,7 +113,18 @@ BANNED PHRASES (never use these):
 - No meta-language like "this page", "this article"
 """
 
-    user_prompt = f"""Generate content blocks for a {hub_label.lower()} {trade_name} city hub page.
+    user_prompt = f"""You are generating a City Hub page for a home-service business.
+
+PAGE TYPE:
+City Hub (category + city context page)
+
+This page is NOT:
+- a service page
+- a full service hub
+- a marketing page
+
+Its purpose:
+To explain WHY this category of work commonly comes up in THIS city and to guide the reader naturally to the next step.
 
 Hub Category: {hub_label}
 City: {city}, {state}
@@ -122,79 +133,107 @@ Business Name: {data.business_name or 'Our Company'}
 Phone: {data.phone or ''}
 Service Area: {data.service_area_label or city}
 CTA Text: {data.cta_text}
+Trade Vocabulary: {', '.join(vocabulary[:8])}
 
-Generate these blocks in EXACT order:
+==================================================
+ABSOLUTE RULES (NON-NEGOTIABLE)
+==================================================
+- Write like a real tradesperson explaining work to a homeowner.
+- Sound practical and conversational, not polished marketing.
+- Do NOT enumerate services in prose.
+- Do NOT use bullet points or numbered lists.
+- Do NOT repeat sentence structures across city pages.
+- Do NOT write content that would still make sense if the city name were swapped.
 
-1. INTRO PARAGRAPH (2-3 sentences):
-   - Mention {city} ONCE in the first sentence
-   - Include ONE city-specific factor AND its PRACTICAL CONSEQUENCE
-   - The consequence must affect decisions, timing, or what gets discovered
-   - City factors: housing age, renovations, growth, inspections, weather exposure
-   - NO landmarks, NO ZIP codes, NO nearby city lists
-   - NO generic phrasing that would work unchanged if city name were swapped
-   - Use trade vocabulary: {', '.join(vocabulary[:8])}
-   - Example: "Homes in {city} span a wide range of build dates, which means issues are often discovered during upgrades or inspections rather than routine maintenance. That changes how people prioritize what to address first."
+BANNED WORDS / PHRASES (NEVER USE):
+- "locally", "local", "local property owners"
+- "serving the area", "in your area"
+- "trusted", "top-rated", "best", "premier", "award-winning"
+- "we offer the following services", "services include"
 
-2. SERVICES SECTION - HEADING (level 2):
-   - Text: "Services We Offer in {city}, {state}"
+==================================================
+REQUIRED STRUCTURE (FOLLOW EXACTLY)
+==================================================
 
-3. SERVICES CONTEXT PARAGRAPH (1-2 sentences):
-   - Describe REAL situations people call about WITHOUT naming services
-   - Write as if describing actual calls or inspections
-   - NO generic phrasing like "we handle a full range"
-   - Example: "Most calls start with a specific issue or a planned update, and it's not always obvious what work makes sense until things are looked at more closely."
+### 1) INTRO — CITY FACTOR WITH CONSEQUENCE (2–3 sentences)
+Purpose: Explain WHY this category matters in THIS city.
 
-4. SERVICES SECTION - BRIDGE SENTENCE (1 sentence):
-   - Describe a REAL decision moment that leads someone to explore service pages
-   - Explain WHY someone would click (not just "see below")
-   - DO NOT use: "Below are our services", "Explore our services", "We offer a range"
-   - Good patterns:
-     * "Once the situation is clear, the next step is usually narrowing down which type of work actually applies."
-     * "At that point, it helps to see how similar situations are typically handled."
-     * "From there, most people want to understand what each option involves before deciding."
+Rules:
+- Mention {city} exactly ONCE.
+- Include exactly ONE city-specific factor:
+  (housing age, renovations, inspections, growth, weather exposure).
+- Explain ONE real-world consequence of that factor that affects decisions or timing.
+- No landmarks, ZIP codes, or nearby city lists.
+- No sales language.
 
-5. PLACEHOLDER TOKEN (EXACT TEXT, standalone paragraph):
-   - Output EXACTLY: {{{{CITY_SERVICE_LINKS}}}}
-   - This must be its own paragraph block, not inside another paragraph
-   - Do NOT add any other text on this line
+BAD (unacceptable):
+"Homes vary in age, which can affect service needs."
 
-6. WHY CHOOSE US - HEADING (level 2):
-   - Text: "Why Choose Us"
-   - NO city name in this heading
+GOOD STYLE (do NOT copy verbatim):
+"When homes were built before modern standards were common, issues tend to surface during upgrades or inspections instead of routine maintenance, which changes how problems are prioritized."
 
-7. WHY CHOOSE US - PARAGRAPH (ONE paragraph, 4-6 sentences):
-   - Write like a tradesperson explaining how jobs actually go
-   - MUST CLEARLY SHOW ALL THREE MOMENTS:
-     * DECISION MOMENT: When/why something is recommended vs. deferred (e.g., "We'll tell you if something can wait versus needs attention now")
-     * EXPLANATION MOMENT: How findings or options are explained (e.g., "We walk through what we found and what each option means for the long term")
-     * EXPECTATION MOMENT: Timing, permits, inspection, or follow-up (e.g., "If permits are required, we explain that before starting so there are no surprises")
-   - Talk about: diagnosing scope, explaining trade-offs, code/safety, setting expectations
-   - Trade-neutral (works for any vertical)
-   - NO bullets, NO lists, NO fluff words: "top-rated", "trusted", "best", "locally"
-   - Do NOT mention {city} in this section
-   - Do NOT mention reviews, awards, rankings, or being "the best"
-   - Example: "Most calls start with figuring out whether a problem is isolated or part of something bigger. We walk through what we find, explain what needs attention now versus later, and outline any code or inspection requirements before work begins. That way you know what to expect in terms of timing and what the work will actually involve. We also make sure to explain why we're recommending one approach over another so the decision makes sense."
+### 2) SERVICES CONTEXT — REAL TRIGGERS (1–2 sentences)
+Purpose: Describe what actually prompts calls WITHOUT naming services.
 
-8. FAQ - HEADING (level 2):
-   - Text: "Frequently Asked Questions"
+Rules:
+- Do NOT name or list services.
+- Describe real situations or moments of uncertainty.
+- Avoid vague phrases like "many homeowners" or "people often".
 
-9. FAQ BLOCKS (5-8 questions):
-   - Detailed answers (3-4 sentences each)
-   - Cover common questions about {hub_label.lower()} {trade_name} services in {city}, {state}
+GOOD STYLE:
+"Calls usually come in after something stops working, a remodel uncovers an issue, or an inspection raises questions that weren't obvious beforehand."
 
-10. CTA BLOCK:
-   - Use provided CTA text and phone
+### 3) SERVICE LINKS INSERTION POINT (MANDATORY)
+On its OWN LINE, output EXACTLY the following token and nothing else:
 
-Output JSON schema:
+{{{{CITY_SERVICE_LINKS}}}}
+
+Rules:
+- Do NOT wrap this token in a paragraph.
+- Do NOT add text on the same line.
+- This will be replaced later with natural inline service links.
+
+### 4) WHY CHOOSE US — REAL PROCESS, NOT VALUES (ONE PARAGRAPH, 4–6 sentences)
+Purpose: Explain HOW jobs are actually handled.
+
+This paragraph MUST include ALL THREE:
+1) A decision moment (when work is recommended vs deferred)
+2) An explanation moment (how findings or options are explained)
+3) An expectation-setting moment (timing, permits, inspections, follow-up)
+
+Rules:
+- ONE paragraph only.
+- No bullets.
+- No hype.
+- No city name repetition.
+- No credentials, reviews, awards, or rankings.
+- Must describe real job flow, not abstract principles.
+
+UNACCEPTABLE (DO NOT WRITE LIKE THIS):
+"We focus on quality work, clear communication, and customer satisfaction."
+
+ACCEPTABLE STYLE (do NOT copy verbatim):
+"Most jobs start with figuring out whether an issue is isolated or part of something bigger. If it's something that can wait, we'll say that. If it's likely to cause trouble later, we explain why and what usually happens if it's ignored. When permits or inspections apply, that's discussed before work begins so expectations are clear."
+
+### 5) CTA — LOW PRESSURE (1–2 sentences)
+Purpose: Guide without selling.
+
+Rules:
+- Calm, neutral tone.
+- No urgency or hype.
+- No repetition of city name.
+
+==================================================
+OUTPUT JSON SCHEMA
+==================================================
 {{
   "blocks": [
-    {{"type": "paragraph", "text": "2-3 sentence intro with city factor"}},
+    {{"type": "paragraph", "text": "2-3 sentence intro with city factor + consequence"}},
     {{"type": "heading", "level": 2, "text": "Services We Offer in {city}, {state}"}},
-    {{"type": "paragraph", "text": "1-2 sentence general intro - NO service names"}},
-    {{"type": "paragraph", "text": "One bridge sentence leading to service links"}},
+    {{"type": "paragraph", "text": "1-2 sentence real triggers - NO service names"}},
     {{"type": "paragraph", "text": "{{{{CITY_SERVICE_LINKS}}}}"}},
     {{"type": "heading", "level": 2, "text": "Why Choose Us"}},
-    {{"type": "paragraph", "text": "ONE paragraph, 4-6 sentences, sounds like real contractor"}},
+    {{"type": "paragraph", "text": "ONE paragraph, 4-6 sentences, real process"}},
     {{"type": "heading", "level": 2, "text": "Frequently Asked Questions"}},
     {{"type": "faq", "question": "What {hub_label.lower()} {trade_name} services do you offer in {city}?", "answer": "Detailed 3-4 sentence answer"}},
     {{"type": "faq", "question": "...", "answer": "..."}},
@@ -202,41 +241,24 @@ Output JSON schema:
   ]
 }}
 
-CRITICAL RULES:
-- DO NOT list or name individual services anywhere
-- DO NOT enumerate services (e.g., "including X, Y, and Z")
-- DO NOT create any HTML lists (<ul>, <ol>, bullets, numbered lists)
-- DO NOT create headings like "Services Available", "Services Locally"
-- The {{{{CITY_SERVICE_LINKS}}}} token will be replaced with actual service links
-- Output EXACTLY the blocks specified above, nothing more
-- Why Choose Us must be ONE paragraph (not bullets, not multiple paragraphs)
-- Total city mentions: 2-3 times maximum across entire page
-- Never use banned phrases (see system prompt)
+==================================================
+MANDATORY SELF-REWRITE ENFORCEMENT (CRITICAL)
+==================================================
+You MAY NOT return the first draft.
 
-MANDATORY VALIDATION (CHECK BEFORE RETURNING OUTPUT):
-1. Would this content sound natural if read aloud to a homeowner?
-2. Does the intro explain WHY the city factor matters (practical consequence)?
-3. Does the bridge sentence describe a REAL decision moment (not just "see below")?
-4. Does "Why Choose Us" CLEARLY show all three moments:
-   - Decision moment (when/why something is recommended vs. deferred)
-   - Explanation moment (how findings or options are explained)
-   - Expectation moment (timing, permits, inspection, follow-up)
-5. Does ANY sentence rely on vague stand-ins like "many homeowners", "a lot of calls", "people often"?
-   If yes, rewrite with a concrete situation.
-6. Could the city name be swapped with another city and still sound correct?
-   If yes, rewrite to make the context city-dependent.
-7. Could the "Why Choose Us" paragraph be reused for another city unchanged?
-   If yes, it's too generic - rewrite.
+After generating the page, you MUST review your own output and answer:
 
-If ANY check fails, rewrite the entire section and re-run this checklist.
-Do NOT return output until ALL checks pass.
+- Does this sound like a real contractor speaking out loud?
+- Does the intro explain a city factor AND its real consequence?
+- Does "Why Choose Us" describe decisions, explanations, and expectations?
+- Does any sentence exist only for SEO or to introduce links?
+- Could this page be reused for another city unchanged?
 
-QUALITY RULES:
-- Write like a real contractor, not marketing copy
-- Use technical trade vocabulary naturally
-- Make FAQs detailed and informative (3-4 sentences per answer)
-- Be professional and direct, not salesy
-- Avoid vague phrases - describe concrete situations instead"""
+If the answer to ANY question is YES (except the first):
+→ You MUST rewrite the affected sections.
+→ Repeat this review until ALL answers are correct.
+
+DO NOT return output until it passes this enforcement check."""
 
     try:
         result = generator._call_openai_json(system_prompt, user_prompt, max_tokens=3000)
@@ -258,7 +280,7 @@ def _generate_fallback_city_hub_content(data: PageData, profile: dict) -> dict:
     blocks = [
         {
             "type": "paragraph",
-            "text": f"Homes in {city} span a wide range of build dates, which means issues are often discovered during upgrades or inspections rather than routine maintenance. That changes how people prioritize what to address first."
+            "text": f"When homes in {city} were built before modern standards were common, issues tend to surface during upgrades or inspections instead of routine maintenance, which changes how problems are prioritized."
         },
         {
             "type": "heading",
@@ -267,11 +289,7 @@ def _generate_fallback_city_hub_content(data: PageData, profile: dict) -> dict:
         },
         {
             "type": "paragraph",
-            "text": "Most calls start with a specific issue or a planned update, and it's not always obvious what work makes sense until things are looked at more closely."
-        },
-        {
-            "type": "paragraph",
-            "text": "Once the situation is clear, the next step is usually narrowing down which type of work actually applies."
+            "text": "Calls usually come in after something stops working, a remodel uncovers an issue, or an inspection raises questions that weren't obvious beforehand."
         },
         {
             "type": "paragraph",
@@ -284,7 +302,7 @@ def _generate_fallback_city_hub_content(data: PageData, profile: dict) -> dict:
         },
         {
             "type": "paragraph",
-            "text": "Most calls start with figuring out whether a problem is isolated or part of something bigger. We walk through what we find, explain what needs attention now versus later, and outline any code or inspection requirements before work begins. That way you know what to expect in terms of timing and what the work will actually involve. We also make sure to explain why we're recommending one approach over another so the decision makes sense."
+            "text": "Most jobs start with figuring out whether an issue is isolated or part of something bigger. If it's something that can wait, we'll say that. If it's likely to cause trouble later, we explain why and what usually happens if it's ignored. When permits or inspections apply, that's discussed before work begins so expectations are clear."
         },
         {
             "type": "heading",
