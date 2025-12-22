@@ -159,7 +159,11 @@ CRITICAL:
 - Use technical trade vocabulary naturally
 - Make FAQs detailed and informative (3-4 sentences per answer)
 - Include the shortcode token EXACTLY as shown
-- Mention {city}, {state} naturally but do NOT mention other cities"""
+- Mention {city}, {state} naturally but do NOT mention other cities
+- DO NOT add any extra headings or sections beyond what is specified above
+- DO NOT create "Services Available Locally" or "Services Available in {city}" headings
+- DO NOT create service lists - the shortcode will handle that automatically
+- ONLY output the 10 blocks specified above, nothing more"""
 
     try:
         result = generator._call_openai_json(system_prompt, user_prompt, max_tokens=3000)
