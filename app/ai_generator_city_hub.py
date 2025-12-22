@@ -98,15 +98,18 @@ def _call_openai_city_hub_generation(generator, data: PageData, profile: dict) -
     system_prompt = f"""You are an expert {trade_name} content writer creating a city hub page.
 
 CRITICAL RULES:
-1. Mention {city}, {state} naturally throughout the content
+1. Mention {city}, {state} naturally but sparingly (2-3 times total in intro)
 2. Do NOT mention any other cities or towns
 3. Use trade-specific vocabulary: {', '.join(vocabulary[:10])}
-4. Be professional and informative, not salesy
+4. Write like a real contractor, not marketing copy
 5. Output ONLY valid JSON matching the schema below
+6. Do NOT output any HTML lists (<ul>, <ol>, bullets, or numbered lists)
 
-FORBIDDEN:
-- Never mention cities other than {city}
-- No marketing fluff like "top-notch", "premier", "best-in-class"
+BANNED PHRASES (never use these):
+- "locally" / "local property owners" / "serving the local area" / "in your area"
+- "trusted by" / "top-rated" / "best in" / "#1 choice"
+- "we offer the following services" / "services include"
+- "premier" / "top-notch" / "best-in-class"
 - No meta-language like "this page", "this article"
 """
 
@@ -120,39 +123,65 @@ Phone: {data.phone or ''}
 Service Area: {data.service_area_label or city}
 CTA Text: {data.cta_text}
 
-Generate these blocks in order:
-1. Opening paragraph (3-4 sentences) - Explain what {hub_label.lower()} {trade_name} services are in {city}, {state} and why they matter. Use trade-specific vocabulary: {', '.join(vocabulary[:8])}
-2. Second paragraph (2-3 sentences) - Describe common scenarios or problems in {city} that these services solve
-3. "Services We Offer in {city}, {state}" heading (level 2)
-4. ONE short paragraph (2-3 sentences) - Brief intro about the range of services available, NO enumeration of specific service names
-5. Bridge sentence paragraph: A single natural sentence introducing the service links below (e.g., "Explore our most requested services in the area below." or similar)
-6. "Why Choose Us" heading (level 2) - NO city name in this heading
-7. REQUIRED: Either 3-4 bullet points OR 2 concise paragraphs explaining benefits. Content must be:
-   - Trade-neutral (works for any home service)
-   - Natural, conversational tone - write like a professional tradesperson, not marketing copy
-   - Complete sentences or substantial phrases (8-15 words each)
-   - NO generic marketing fluff ("we are the best", "top-rated", "#1 choice")
-   - NO service enumeration
-   - May reference local factors (response times, familiarity with local codes, property types, weather patterns)
-   Example bullet points:
-   * "We're familiar with the building codes and common issues in {city} properties"
-   * "Straightforward pricing and clear explanations before we start any work"
-   * "Licensed, insured, and focused on doing the job right the first time"
-   * "We respond quickly and show up when we say we will"
-8. "Frequently Asked Questions" heading (level 2)
-9. 5-8 FAQs with detailed answers (3-4 sentences each) - Cover common questions about {hub_label.lower()} {trade_name} services in {city}, {state}
-10. CTA block
+Generate these blocks in EXACT order:
+
+1. INTRO PARAGRAPH (2-3 sentences):
+   - Mention {city} ONCE in the first sentence
+   - Include exactly ONE general city factor: older homes, renovations, mixed housing stock, growth, or storms
+   - NO landmarks, NO "locally", NO "local property owners", NO "serving the local area"
+   - Use trade vocabulary: {', '.join(vocabulary[:8])}
+   - Example: "Residential electrical work in {city}, {state} covers everything from panel upgrades to outlet repairs. Many homes here were built decades ago, so safety checks and code updates are common requests."
+
+2. SERVICES SECTION - HEADING (level 2):
+   - Text: "Services We Offer in {city}, {state}"
+
+3. SERVICES SECTION - INTRO PARAGRAPH (1-2 sentences):
+   - Brief, general intro about service range
+   - DO NOT list or name any specific services
+   - Example: "Whether you need a quick repair or a larger project, we handle the full range of {hub_label.lower()} {trade_name} work."
+
+4. SERVICES SECTION - BRIDGE SENTENCE (1 sentence):
+   - Natural lead-in to service links
+   - Examples: "If you're not sure where to start, the pages below explain common options and what to expect." OR "The guides below walk through typical projects, timelines, and when to call a pro."
+
+5. PLACEHOLDER TOKEN (EXACT TEXT, standalone paragraph):
+   - Output EXACTLY: {{{{CITY_SERVICE_LINKS}}}}
+   - This must be its own paragraph block, not inside another paragraph
+   - Do NOT add any other text on this line
+
+6. WHY CHOOSE US - HEADING (level 2):
+   - Text: "Why Choose Us"
+   - NO city name in this heading
+
+7. WHY CHOOSE US - PARAGRAPH (ONE paragraph, 4-6 sentences):
+   - Must sound like a real contractor explaining how they work
+   - Talk about: communication, showing up, diagnosing, explaining options, code/safety, cleanup, documentation
+   - Trade-neutral (works for any vertical)
+   - NO bullets, NO lists
+   - NO fluff words: "top-rated", "trusted", "best", "locally"
+   - Mention {city} ZERO or ONE time maximum (prefer zero)
+   - Example: "When you call, we start by asking a few questions and checking the situation in person if needed. We'll explain what we found in plain language, walk through your options, and tell you what's worth doing now versus later. If permits or code requirements apply, we point that out up front—no surprises after work starts. We keep the job site clean, communicate about timing, and make sure you know what changed when we're done."
+
+8. FAQ - HEADING (level 2):
+   - Text: "Frequently Asked Questions"
+
+9. FAQ BLOCKS (5-8 questions):
+   - Detailed answers (3-4 sentences each)
+   - Cover common questions about {hub_label.lower()} {trade_name} services in {city}, {state}
+
+10. CTA BLOCK:
+   - Use provided CTA text and phone
 
 Output JSON schema:
 {{
   "blocks": [
-    {{"type": "paragraph", "text": "3-4 sentence opening paragraph mentioning {city}, {state}"}},
-    {{"type": "paragraph", "text": "2-3 sentence paragraph about common scenarios in {city}"}},
+    {{"type": "paragraph", "text": "2-3 sentence intro with city factor"}},
     {{"type": "heading", "level": 2, "text": "Services We Offer in {city}, {state}"}},
-    {{"type": "paragraph", "text": "2-3 sentence brief intro about service range - NO specific service names"}},
-    {{"type": "paragraph", "text": "One natural bridge sentence like 'Explore our most requested services in the area below.' or similar"}},
+    {{"type": "paragraph", "text": "1-2 sentence general intro - NO service names"}},
+    {{"type": "paragraph", "text": "One bridge sentence leading to service links"}},
+    {{"type": "paragraph", "text": "{{{{CITY_SERVICE_LINKS}}}}"}},
     {{"type": "heading", "level": 2, "text": "Why Choose Us"}},
-    {{"type": "list", "items": ["We're familiar with the building codes and common issues in {city} properties", "Straightforward pricing and clear explanations before we start any work", "Licensed, insured, and focused on doing the job right the first time", "We respond quickly and show up when we say we will"]}} OR {{"type": "paragraph", "text": "2 concise paragraphs"}},
+    {{"type": "paragraph", "text": "ONE paragraph, 4-6 sentences, sounds like real contractor"}},
     {{"type": "heading", "level": 2, "text": "Frequently Asked Questions"}},
     {{"type": "faq", "question": "What {hub_label.lower()} {trade_name} services do you offer in {city}?", "answer": "Detailed 3-4 sentence answer"}},
     {{"type": "faq", "question": "...", "answer": "..."}},
@@ -160,22 +189,22 @@ Output JSON schema:
   ]
 }}
 
-CRITICAL ANTI-DUPLICATION RULES:
-- DO NOT list or name individual services in any paragraph
+CRITICAL RULES:
+- DO NOT list or name individual services anywhere
 - DO NOT enumerate services (e.g., "including X, Y, and Z")
-- DO NOT create bullet lists of services
-- DO NOT create multiple service-related headings
-- DO NOT create "Services Available" or "Services Locally" headings
-- The service discovery will be handled automatically by the system
-- ONLY output the 10 blocks specified above, nothing more
-- Keep the bridge sentence natural and simple
+- DO NOT create any HTML lists (<ul>, <ol>, bullets, numbered lists)
+- DO NOT create headings like "Services Available", "Services Locally"
+- The {{{{CITY_SERVICE_LINKS}}}} token will be replaced with actual service links
+- Output EXACTLY the blocks specified above, nothing more
+- Why Choose Us must be ONE paragraph (not bullets, not multiple paragraphs)
+- Total city mentions: 2-3 times maximum across entire page
+- Never use banned phrases (see system prompt)
 
 QUALITY RULES:
-- Write substantial paragraphs (2-4 sentences)
+- Write like a real contractor, not marketing copy
 - Use technical trade vocabulary naturally
 - Make FAQs detailed and informative (3-4 sentences per answer)
-- Mention {city}, {state} naturally but do NOT mention other cities
-- Be professional and informative, not salesy"""
+- Be professional and direct, not salesy"""
 
     try:
         result = generator._call_openai_json(system_prompt, user_prompt, max_tokens=3000)
@@ -197,11 +226,7 @@ def _generate_fallback_city_hub_content(data: PageData, profile: dict) -> dict:
     blocks = [
         {
             "type": "paragraph",
-            "text": f"Our {hub_label.lower()} {trade_name} services in {city}, {state} provide comprehensive solutions for property owners and managers. Whether you need routine maintenance, emergency repairs, or new installations, our experienced team delivers reliable results."
-        },
-        {
-            "type": "paragraph",
-            "text": f"We understand the unique needs of properties in {city}. Our services are designed to address common challenges while ensuring safety, compliance, and long-term performance."
+            "text": f"{hub_label} {trade_name} work in {city}, {state} covers everything from routine repairs to larger projects. Many properties here have a mix of older and newer construction, so code compliance and safety checks come up often."
         },
         {
             "type": "heading",
@@ -210,11 +235,15 @@ def _generate_fallback_city_hub_content(data: PageData, profile: dict) -> dict:
         },
         {
             "type": "paragraph",
-            "text": f"Our {hub_label.lower()} {trade_name} services address a wide range of property needs. From routine work to specialized projects, we provide reliable solutions for residential and commercial clients."
+            "text": f"Whether you need a quick repair or a larger project, we handle the full range of {hub_label.lower()} {trade_name} work."
         },
         {
             "type": "paragraph",
-            "text": "Explore our most requested services in the area below."
+            "text": "If you're not sure where to start, the pages below explain common options and what to expect."
+        },
+        {
+            "type": "paragraph",
+            "text": "{{CITY_SERVICE_LINKS}}"
         },
         {
             "type": "heading",
@@ -222,13 +251,8 @@ def _generate_fallback_city_hub_content(data: PageData, profile: dict) -> dict:
             "text": "Why Choose Us"
         },
         {
-            "type": "list",
-            "items": [
-                f"We're familiar with the building codes and common issues in {city} properties",
-                "Straightforward pricing and clear explanations before we start any work",
-                "Licensed, insured, and focused on doing the job right the first time",
-                "We respond quickly and show up when we say we will"
-            ]
+            "type": "paragraph",
+            "text": "When you call, we start by asking a few questions and checking the situation in person if needed. We'll explain what we found in plain language, walk through your options, and tell you what's worth doing now versus later. If permits or code requirements apply, we point that out up front—no surprises after work starts. We keep the job site clean, communicate about timing, and make sure you know what changed when we're done."
         },
         {
             "type": "heading",
