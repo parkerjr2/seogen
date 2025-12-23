@@ -97,17 +97,14 @@ class BulkJobItemInput(BaseModel):
     service: str
     city: str
     state: str = ""  # Optional - empty string for city/neighborhood-only entries
-    company_name: str = ""  # Optional
-    phone: str = ""  # Optional
-    email: str = ""  # Optional
-    address: str = ""  # Optional
 
 
 class BulkJobCreateRequest(BaseModel):
+    """Request model for creating a bulk job."""
     license_key: str
     site_url: Optional[str] = None
     job_name: Optional[str] = None
-    items: List[BulkJobItemInput]
+    items: List[BulkJobItem]
 
 
 class BulkJobCreateResponse(BaseModel):
