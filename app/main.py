@@ -23,8 +23,19 @@ from app.supabase_client import supabase_client
 from app.ai_generator import ai_generator
 
 
-def _canonical_key(service: str, city: str, state: str) -> str:
-    return f"{service.strip().lower()}|{city.strip().lower()}|{state.strip().lower()}"
+def _canonical_key(service: str, city: str, state: str, page_mode: str = '', hub_key: str = '') -> str:
+    """Generate unique canonical key for bulk job items.
+    
+    For service_city pages: service|city|state
+    For service_hub pages: hub|hub_key
+    For city_hub pages: city_hub|city|state
+    """
+    if page_mode == 'service_hub' and hub_key:
+        return f"hub|{hub_key.strip().lower()}"
+    elif page_mode == 'city_hub' and city:
+        return f"city_hub|{city.strip().lower()}|{state.strip().lower()}"
+    else:
+        return f"{service.strip().lower()}|{city.strip().lower()}|{state.strip().lower()}"
 
 
 def _require_active_license(license_key: str) -> dict:
@@ -222,6 +233,8 @@ async def create_bulk_job(request: BulkJobCreateRequest):
         service = getattr(item, 'service', '') or ''
         city = getattr(item, 'city', '') or ''
         state = getattr(item, 'state', '') or ''
+        page_mode = getattr(item, 'page_mode', 'service_city')
+        hub_key = getattr(item, 'hub_key', '')
         
         items_payload.append(
             {
@@ -234,7 +247,7 @@ async def create_bulk_job(request: BulkJobCreateRequest):
                 "phone": item.phone,
                 "email": item.email,
                 "address": item.address,
-                "canonical_key": _canonical_key(service, city, state),
+                "canonical_key": _canonical_key(service, city, state, page_mode, hub_key),
                 "status": "pending",
                 "attempts": 0,
             }
