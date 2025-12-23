@@ -93,10 +93,24 @@ class GeneratePageResponse(BaseModel):
     blocks: List[PageBlock]
 
 
-class BulkJobItemInput(BaseModel):
-    service: str
-    city: str
-    state: str = ""  # Optional - empty string for city/neighborhood-only entries
+class BulkJobItem(BaseModel):
+    """Individual item in a bulk job - supports all page modes."""
+    # All fields optional with defaults to support different page modes
+    page_mode: str = Field(default="service_city", description="Page mode")
+    service: str = Field(default="", description="Service name")
+    city: str = Field(default="", description="City name")
+    state: str = Field(default="", description="State abbreviation")
+    company_name: str = Field(default="", description="Company name")
+    phone: str = Field(default="", description="Phone number")
+    email: str = Field(default="", description="Email address")
+    address: str = Field(default="", description="Address")
+    vertical: str = Field(default="", description="Business vertical")
+    business_name: str = Field(default="", description="Business name")
+    cta_text: str = Field(default="Request a Free Estimate", description="CTA text")
+    service_area_label: str = Field(default="", description="Service area label")
+    hub_key: str = Field(default="", description="Hub key for service_hub mode")
+    hub_label: str = Field(default="", description="Hub label for service_hub mode")
+    hub_slug: str = Field(default="", description="Hub slug for service_hub mode")
 
 
 class BulkJobCreateRequest(BaseModel):
