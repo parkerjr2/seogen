@@ -227,7 +227,7 @@ async def create_bulk_job(request: BulkJobCreateRequest):
     job_id = job["id"]
     items_payload: list[dict] = []
     for idx, item in enumerate(request.items):
-        print(f"[API /bulk-jobs POST] Inserting {len(request.items)} bulk job items")
+        print(f"[API /bulk-jobs POST] Processing item {idx}")
         
         # Handle different page modes - service and city are optional for hub pages
         service = getattr(item, 'service', '') or ''
@@ -235,6 +235,8 @@ async def create_bulk_job(request: BulkJobCreateRequest):
         state = getattr(item, 'state', '') or ''
         page_mode = getattr(item, 'page_mode', 'service_city')
         hub_key = getattr(item, 'hub_key', '')
+        
+        print(f"[API /bulk-jobs POST] Item {idx}: page_mode={page_mode}, hub_key={hub_key}, service={service}, city={city}")
         
         items_payload.append(
             {
