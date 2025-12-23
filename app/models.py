@@ -143,6 +143,18 @@ class BulkJobResultItem(BaseModel):
     attempts: int = 0
     result_json: Optional[dict] = None
     error: Optional[str] = None
+    service: str = ""
+    city: str = ""
+    state: str = ""
+    page_mode: str = ""
+    hub_key: str = ""
+    hub_label: str = ""
+    hub_slug: str = ""
+    city_slug: str = ""
+    vertical: str = ""
+    business_name: str = ""
+    cta_text: str = ""
+    service_area_label: str = ""
 
 
 class BulkJobResultsResponse(BaseModel):

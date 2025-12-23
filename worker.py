@@ -70,10 +70,14 @@ async def _process_item_async(item: dict, executor: ThreadPoolExecutor) -> None:
         return
 
     try:
-        # Debug: Log the item data to see what email value we're getting
-        _log(f"DEBUG item data: email='{item.get('email')}' phone='{item.get('phone')}' company='{item.get('company_name')}'")
+        # Extract all metadata fields from item
+        page_mode = str(item.get("page_mode") or "service_city")
         
+        _log(f"DEBUG item data: page_mode={page_mode} email='{item.get('email')}' phone='{item.get('phone')}' company=name='{item.get('company_name')}'")
+        
+        # Build PageData with all fields needed for different page modes
         data = PageData(
+            page_mode=page_mode,
             service=str(item.get("service") or ""),
             city=str(item.get("city") or ""),
             state=str(item.get("state") or ""),
@@ -81,9 +85,17 @@ async def _process_item_async(item: dict, executor: ThreadPoolExecutor) -> None:
             phone=str(item.get("phone") or ""),
             email=str(item.get("email") or ""),
             address=str(item.get("address") or ""),
+            hub_key=str(item.get("hub_key") or ""),
+            hub_label=str(item.get("hub_label") or ""),
+            hub_slug=str(item.get("hub_slug") or ""),
+            city_slug=str(item.get("city_slug") or ""),
+            vertical=str(item.get("vertical") or ""),
+            business_name=str(item.get("business_name") or ""),
+            cta_text=str(item.get("cta_text") or "Request a Free Estimate"),
+            service_area_label=str(item.get("service_area_label") or ""),
         )
         
-        _log(f"DEBUG PageData created: email='{data.email}' phone='{data.phone}' company='{data.company_name}'")
+        _log(f"DEBUG PageData created: page_mode={data.page_mode} hub_key={data.hub_key} email='{data.email}' phone='{data.phone}' company='{data.company_name}'")
 
         _log(f"generating item_id={item_id} job_id={job_id} idx={idx} key={canonical_key}")
         # Run CPU-intensive AI generation in thread pool to avoid blocking

@@ -252,6 +252,15 @@ async def create_bulk_job(request: BulkJobCreateRequest):
                 "canonical_key": _canonical_key(service, city, state, page_mode, hub_key),
                 "status": "pending",
                 "attempts": 0,
+                "page_mode": page_mode,
+                "hub_key": hub_key,
+                "hub_label": getattr(item, 'hub_label', ''),
+                "hub_slug": getattr(item, 'hub_slug', ''),
+                "city_slug": getattr(item, 'city_slug', ''),
+                "vertical": getattr(item, 'vertical', ''),
+                "business_name": getattr(item, 'business_name', ''),
+                "cta_text": getattr(item, 'cta_text', 'Request a Free Estimate'),
+                "service_area_label": getattr(item, 'service_area_label', ''),
             }
         )
     try:
@@ -320,6 +329,18 @@ async def get_bulk_job_results(
                 attempts=int(r.get("attempts") or 0),
                 result_json=r.get("result_json") if item_status == "completed" else None,
                 error=str(r.get("error") or "") if item_status == "failed" and r.get("error") else None,
+                service=str(r.get("service") or ""),
+                city=str(r.get("city") or ""),
+                state=str(r.get("state") or ""),
+                page_mode=str(r.get("page_mode") or ""),
+                hub_key=str(r.get("hub_key") or ""),
+                hub_label=str(r.get("hub_label") or ""),
+                hub_slug=str(r.get("hub_slug") or ""),
+                city_slug=str(r.get("city_slug") or ""),
+                vertical=str(r.get("vertical") or ""),
+                business_name=str(r.get("business_name") or ""),
+                cta_text=str(r.get("cta_text") or ""),
+                service_area_label=str(r.get("service_area_label") or ""),
             )
         )
         next_cursor = str(int(r.get("idx") or 0))

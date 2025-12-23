@@ -320,7 +320,7 @@ class SupabaseClient:
             params_after: dict[str, str] = {
                 "job_id": f"eq.{job_id}",
                 "status": f"in.(completed,failed)",
-                "select": "id,idx,canonical_key,status,attempts,result_json,error",
+                "select": "id,idx,canonical_key,status,attempts,result_json,error,service,city,state,page_mode,hub_key,hub_label,hub_slug,city_slug,vertical,business_name,cta_text,service_area_label",
                 "order": "idx.asc",
                 "limit": str(int(limit)),
             }
@@ -341,7 +341,7 @@ class SupabaseClient:
                     "job_id": f"eq.{job_id}",
                     "status": f"in.(completed,failed)",
                     "idx": f"lt.{cursor_idx}",
-                    "select": "id,idx,canonical_key,status,attempts,result_json,error",
+                    "select": "id,idx,canonical_key,status,attempts,result_json,error,service,city,state,page_mode,hub_key,hub_label,hub_slug,city_slug,vertical,business_name,cta_text,service_area_label",
                     "order": "idx.asc",
                     "limit": str(int(limit - len(items_after))),
                 }
@@ -384,7 +384,7 @@ class SupabaseClient:
     def list_pending_bulk_items(self, *, limit: int = 5) -> list[dict]:
         params = {
             "status": "in.(pending,running)",
-            "select": "id,job_id,idx,service,city,state,company_name,phone,email,address,canonical_key,attempts",
+            "select": "id,job_id,idx,service,city,state,company_name,phone,email,address,canonical_key,attempts,page_mode,hub_key,hub_label,hub_slug,city_slug,vertical,business_name,cta_text,service_area_label",
             "order": "created_at.asc,idx.asc",
             "limit": str(int(limit)),
         }
