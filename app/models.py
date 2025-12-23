@@ -82,8 +82,13 @@ class ListBlock(BaseModel):
     type: str = "list"
     items: List[str]
 
+class ShortcodeBlock(BaseModel):
+    """Shortcode block with minimal schema."""
+    type: str = "shortcode"
+    shortcode: str
+
 # Union type for all block types
-PageBlock = Union[HeadingBlock, ParagraphBlock, FAQBlock, NAPBlock, CTABlock, ListBlock]
+PageBlock = Union[HeadingBlock, ParagraphBlock, FAQBlock, NAPBlock, CTABlock, ListBlock, ShortcodeBlock]
 
 class GeneratePageResponse(BaseModel):
     """Response model for the /generate-page endpoint."""
