@@ -616,10 +616,6 @@ Return JSON only. No extra text."""
         # Build blocks with minimal schemas - NO null fields
         blocks = []
         
-        # City hub link shortcode (appears before H1 on service+city pages)
-        # This shortcode dynamically links to the city hub page if it exists
-        blocks.append(self._create_shortcode_block("seogen_city_hub_link"))
-        
         # H1 heading (programmatic) - only type, level, text
         blocks.append(self._create_heading_block(h1_text, 1))
         
@@ -697,11 +693,6 @@ Return JSON only. No extra text."""
     def _create_cta_block(self, text: str, phone: str) -> CTABlock:
         """Create CTA block with minimal schema: type, text, phone only."""
         return CTABlock(text=text, phone=phone)
-    
-    def _create_shortcode_block(self, shortcode: str):
-        """Create shortcode block with minimal schema: type, shortcode only."""
-        from app.models import ShortcodeBlock
-        return ShortcodeBlock(shortcode=shortcode)
     
     def _get_trade_vocabulary_for_service(self, service: str) -> List[str]:
         """Get relevant trade vocabulary for a service by matching keywords."""
