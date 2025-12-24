@@ -485,6 +485,92 @@ class SupabaseClient:
         except Exception as e:
             print(f"Error recomputing bulk counters: {e}")
             return None
+    
+    def register_site(self, site_url: str, license_key: str, secret_key: str, 
+                     plugin_version: str | None = None, wordpress_version: str | None = None) -> dict | None:
+        """
+        Register or update a WordPress site.
+        
+        Args:
+            site_url: Full URL of the WordPress site
+            license_key: License key used by the site
+            secret_key: Webhook secret for secure communication
+            plugin_version: SEOgen plugin version
+            wordpress_version: WordPress version
+            
+        Returns:
+            Site data dict if successful, None otherwise
+        """
+        try:
+            # Check if site already exists
+            response = self._request(
+                "GET",
+                f"/rest/v1/sites?site_url=eq.{site_url}",
+                timeout=10
+            )
+            
+            site_data = {
+                "site_url": site_url,
+                "license_key": license_key,
+                "secret_key": secret_key,
+                "plugin_version": plugin_version,
+                "wordpress_version": wordpress_version,
+                "updated_at": "now()"
+            }
+            
+            if response.status_code == 200 and response.json():
+                # Update existing site
+                update_response = self._request(
+                    "PATCH",
+                    f"/rest/v1/sites?site_url=eq.{site_url}",
+                    json=site_data,
+                    extra_headers={"Prefer": "return=representation"},
+                    timeout=10
+                )
+                if update_response.status_code == 200:
+                    result = update_response.json()
+                    return result[0] if result else None
+            else:
+                # Insert new site
+                site_data["registered_at"] = "now()"
+                insert_response = self._request(
+                    "POST",
+                    "/rest/v1/sites",
+                    json=site_data,
+                    extra_headers={"Prefer": "return=representation"},
+                    timeout=10
+                )
+                if insert_response.status_code == 201:
+                    result = insert_response.json()
+                    return result[0] if result else None
+            
+            return None
+        except Exception as e:
+            print(f"Error registering site: {e}")
+            return None
+    
+    def get_sites_by_license_key(self, license_key: str) -> list[dict]:
+        """
+        Get all sites registered with a specific license key.
+        
+        Args:
+            license_key: The license key to search for
+            
+        Returns:
+            List of site data dicts
+        """
+        try:
+            response = self._request(
+                "GET",
+                f"/rest/v1/sites?license_key=eq.{license_key}&status=eq.active",
+                timeout=10
+            )
+            if response.status_code == 200:
+                return response.json()
+            return []
+        except Exception as e:
+            print(f"Error getting sites by license key: {e}")
+            return []
 
 # Global Supabase client instance
 supabase_client = SupabaseClient()
