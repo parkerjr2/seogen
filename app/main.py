@@ -18,6 +18,8 @@ from app.models import (
     BulkJobCancelRequest,
     ValidateLicenseRequest,
     ValidateLicenseResponse,
+    SiteRegisterRequest,
+    SiteRegisterResponse,
 )
 from app.supabase_client import supabase_client
 from app.ai_generator import ai_generator
@@ -62,6 +64,51 @@ async def health_check():
         Simple status response indicating API is operational
     """
     return HealthResponse(status="ok")
+
+@app.post("/api/sites/register", response_model=SiteRegisterResponse)
+async def register_site(request: SiteRegisterRequest):
+    """
+    Register a WordPress site for license management.
+    
+    Stores site URL, license key, and webhook secret for future license status updates.
+    """
+    try:
+        # Validate license key exists
+        license_data = supabase_client.get_license_by_key(request.license_key)
+        if not license_data:
+            raise HTTPException(status_code=404, detail="License key not found")
+        
+        # Register the site
+        site_data = supabase_client.register_site(
+            site_url=request.site_url,
+            license_key=request.license_key,
+            secret_key=request.secret_key,
+            plugin_version=request.plugin_version,
+            wordpress_version=request.wordpress_version
+        )
+        
+        if not site_data:
+            raise HTTPException(status_code=500, detail="Failed to register site")
+        
+        # Return license status
+        license_status = license_data.get('status', 'unknown')
+        subscription = license_data.get('subscription')
+        expires_at = None
+        if subscription:
+            expires_at = subscription.get('current_period_end')
+        
+        return SiteRegisterResponse(
+            success=True,
+            message="Site registered successfully",
+            license_status=license_status,
+            expires_at=expires_at
+        )
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        print(f"Error in register_site: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
 
 @app.post("/validate-license", response_model=ValidateLicenseResponse)
 async def validate_license(request: ValidateLicenseRequest):

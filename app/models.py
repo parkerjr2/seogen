@@ -181,12 +181,27 @@ class ValidateLicenseRequest(BaseModel):
 
 
 class ValidateLicenseResponse(BaseModel):
-    status: str
-    credits_remaining: int  # Deprecated - kept for backward compatibility
-    page_limit: int
-    monthly_generation_limit: int
-    total_pages_generated: int
-    pages_generated_this_month: int
-    pages_remaining_capacity: int
-    pages_remaining_this_month: int
-    current_period_start: str
+    """Response model for license validation."""
+    valid: bool
+    status: str | None = None
+    page_limit: int | None = None
+    pages_used: int | None = None
+    pages_remaining: int | None = None
+    monthly_limit: int | None = None
+    monthly_used: int | None = None
+    monthly_remaining: int | None = None
+
+class SiteRegisterRequest(BaseModel):
+    """Request model for site registration."""
+    site_url: str
+    license_key: str
+    secret_key: str
+    plugin_version: str | None = None
+    wordpress_version: str | None = None
+
+class SiteRegisterResponse(BaseModel):
+    """Response model for site registration."""
+    success: bool
+    message: str | None = None
+    license_status: str | None = None
+    expires_at: str | None = None
