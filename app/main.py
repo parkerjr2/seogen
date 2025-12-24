@@ -134,15 +134,14 @@ async def validate_license(request: ValidateLicenseRequest):
     can_generate, reason, stats = supabase_client.check_can_generate(license_id)
     
     return ValidateLicenseResponse(
+        valid=True,
         status=license_data.get("status", "unknown"),
-        credits_remaining=license_data.get("credits_remaining", 0),  # Deprecated
         page_limit=stats.get("page_limit", 500),
-        monthly_generation_limit=stats.get("monthly_limit", 500),
-        total_pages_generated=stats.get("total_pages", 0),
-        pages_generated_this_month=stats.get("period_pages", 0),
-        pages_remaining_capacity=stats.get("pages_remaining_capacity", 0),
-        pages_remaining_this_month=stats.get("pages_remaining_this_month", 0),
-        current_period_start=license_data.get("current_period_start", "")
+        pages_used=stats.get("total_pages", 0),
+        pages_remaining=stats.get("pages_remaining_capacity", 0),
+        monthly_limit=stats.get("monthly_limit", 500),
+        monthly_used=stats.get("period_pages", 0),
+        monthly_remaining=stats.get("pages_remaining_this_month", 0)
     )
 
 @app.post("/generate-page", response_model=GeneratePageResponse)
