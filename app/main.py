@@ -3,7 +3,9 @@ FastAPI application main module.
 Defines API endpoints and application configuration.
 """
 
-from fastapi import FastAPI, HTTPException, Query
+from fastapi import FastAPI, HTTPException, Query, Request
+import stripe
+import httpx
 from app.models import (
     GeneratePageRequest,
     HealthResponse,
@@ -23,6 +25,7 @@ from app.models import (
 )
 from app.supabase_client import supabase_client
 from app.ai_generator import ai_generator
+from app.config import settings
 
 
 def _canonical_key(service: str, city: str, state: str, page_mode: str = '', hub_key: str = '') -> str:
@@ -412,13 +415,151 @@ async def cancel_bulk_job(job_id: str, request: BulkJobCancelRequest):
     job = supabase_client.get_bulk_job(job_id)
     if not job:
         raise HTTPException(status_code=404, detail="Job not found")
-    if job.get("license_key") != request.license_key:
         raise HTTPException(status_code=403, detail="Job does not belong to license")
     ok = supabase_client.cancel_bulk_job(job_id=job_id)
     if not ok:
         raise HTTPException(status_code=500, detail="Failed to cancel job")
-    return {"job_id": str(job_id), "status": "canceled"}
 
+@app.post("/api/stripe/webhook")
+async def stripe_webhook(request: Request):
+    """
+    Handle Stripe webhook events for subscription management.
+    
+    Events handled:
+    - customer.subscription.created: New subscription
+    - customer.subscription.updated: Status change
+    - customer.subscription.deleted: Cancellation
+    - invoice.paid: Payment success
+    - invoice.payment_failed: Payment failure
+    """
+    payload = await request.body()
+    sig_header = request.headers.get("stripe-signature")
+    
+    if not sig_header:
+        raise HTTPException(status_code=400, detail="Missing stripe-signature header")
+    
+    try:
+        # Verify webhook signature
+        event = stripe.Webhook.construct_event(
+            payload, sig_header, settings.stripe_webhook_secret
+        )
+    except ValueError:
+        raise HTTPException(status_code=400, detail="Invalid payload")
+    except stripe.error.SignatureVerificationError:
+        raise HTTPException(status_code=400, detail="Invalid signature")
+    
+    event_type = event["type"]
+    data = event["data"]["object"]
+    
+    print(f"[Stripe Webhook] Received event: {event_type}")
+    
+    # Handle subscription events
+    if event_type in ["customer.subscription.created", "customer.subscription.updated", "customer.subscription.deleted"]:
+        subscription_id = data["id"]
+        status = data["status"]
+        customer_id = data.get("customer")
+        
+        # Map Stripe status to our status
+        our_status = "active" if status == "active" else "inactive"
+        
+        print(f"[Stripe Webhook] Subscription {subscription_id}: {status} -> {our_status}")
+        
+        # Update subscription in Supabase
+        updated = supabase_client.update_subscription_by_stripe_id(
+            stripe_subscription_id=subscription_id,
+            status=our_status,
+            current_period_start=data.get("current_period_start"),
+            current_period_end=data.get("current_period_end")
+        )
+        
+        if updated:
+            # Get all API keys for this subscription
+            api_keys = supabase_client.get_api_keys_by_subscription_id(updated["id"])
+            
+            # Notify all WordPress sites using these API keys
+            for api_key in api_keys:
+                license_key = api_key["key"]
+                sites = supabase_client.get_sites_by_license_key(license_key)
+                
+                for site in sites:
+                    await notify_wordpress_site(
+                        site_url=site["site_url"],
+                        license_key=license_key,
+                        status=our_status,
+                        secret=site["secret_key"]
+                    )
+            
+            print(f"[Stripe Webhook] Notified {len(api_keys)} license keys across {sum(len(supabase_client.get_sites_by_license_key(k['key'])) for k in api_keys)} sites")
+    
+    # Handle invoice events
+    elif event_type == "invoice.payment_failed":
+        subscription_id = data.get("subscription")
+        if subscription_id:
+            print(f"[Stripe Webhook] Payment failed for subscription {subscription_id}")
+            # Immediate action - mark as inactive
+            updated = supabase_client.update_subscription_by_stripe_id(
+                stripe_subscription_id=subscription_id,
+                status="inactive"
+            )
+            
+            if updated:
+                api_keys = supabase_client.get_api_keys_by_subscription_id(updated["id"])
+                for api_key in api_keys:
+                    license_key = api_key["key"]
+                    sites = supabase_client.get_sites_by_license_key(license_key)
+                    for site in sites:
+                        await notify_wordpress_site(
+                            site_url=site["site_url"],
+                            license_key=license_key,
+                            status="inactive",
+                            secret=site["secret_key"]
+                        )
+    
+    elif event_type == "invoice.paid":
+        subscription_id = data.get("subscription")
+        if subscription_id:
+            print(f"[Stripe Webhook] Payment succeeded for subscription {subscription_id}")
+            # Reactivate subscription
+            updated = supabase_client.update_subscription_by_stripe_id(
+                stripe_subscription_id=subscription_id,
+                status="active"
+            )
+            
+            if updated:
+                api_keys = supabase_client.get_api_keys_by_subscription_id(updated["id"])
+                for api_key in api_keys:
+                    license_key = api_key["key"]
+                    sites = supabase_client.get_sites_by_license_key(license_key)
+                    for site in sites:
+                        await notify_wordpress_site(
+                            site_url=site["site_url"],
+                            license_key=license_key,
+                            status="active",
+                            secret=site["secret_key"]
+                        )
+    
+    return {"success": True, "event_type": event_type}
+
+async def notify_wordpress_site(site_url: str, license_key: str, status: str, secret: str):
+    """
+    Send webhook notification to WordPress site about license status change.
+    """
+    webhook_url = f"{site_url}/wp-json/seogen/v1/license-check"
+    payload = {
+        "license_key": license_key,
+        "status": status,
+        "secret": secret
+    }
+    
+    try:
+        async with httpx.AsyncClient(timeout=30.0) as client:
+            response = await client.post(webhook_url, json=payload)
+            if response.status_code == 200:
+                print(f"[WordPress Notify] Success: {site_url} - {status}")
+            else:
+                print(f"[WordPress Notify] Failed: {site_url} - Status {response.status_code}")
+    except Exception as e:
+        print(f"[WordPress Notify] Error: {site_url} - {str(e)}")
 
 @app.post("/admin/reset-monthly-periods")
 async def reset_monthly_periods(secret: str = Query(...)):

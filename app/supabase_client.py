@@ -571,6 +571,75 @@ class SupabaseClient:
         except Exception as e:
             print(f"Error getting sites by license key: {e}")
             return []
+    
+    def update_subscription_by_stripe_id(self, stripe_subscription_id: str, status: str, 
+                                        current_period_start: int | None = None,
+                                        current_period_end: int | None = None) -> dict | None:
+        """
+        Update subscription status by Stripe subscription ID.
+        
+        Args:
+            stripe_subscription_id: Stripe subscription ID
+            status: New status (active, inactive, etc.)
+            current_period_start: Unix timestamp for period start
+            current_period_end: Unix timestamp for period end
+            
+        Returns:
+            Updated subscription data dict if successful, None otherwise
+        """
+        try:
+            update_data = {
+                "status": status,
+                "updated_at": "now()"
+            }
+            
+            if current_period_start:
+                from datetime import datetime
+                update_data["current_period_start"] = datetime.fromtimestamp(current_period_start).isoformat()
+            
+            if current_period_end:
+                from datetime import datetime
+                update_data["current_period_end"] = datetime.fromtimestamp(current_period_end).isoformat()
+            
+            response = self._request(
+                "PATCH",
+                f"/rest/v1/subscriptions?stripe_subscription_id=eq.{stripe_subscription_id}",
+                json=update_data,
+                extra_headers={"Prefer": "return=representation"},
+                timeout=10
+            )
+            
+            if response.status_code == 200:
+                result = response.json()
+                return result[0] if result else None
+            
+            return None
+        except Exception as e:
+            print(f"Error updating subscription by Stripe ID: {e}")
+            return None
+    
+    def get_api_keys_by_subscription_id(self, subscription_id: str) -> list[dict]:
+        """
+        Get all API keys associated with a subscription.
+        
+        Args:
+            subscription_id: Subscription UUID
+            
+        Returns:
+            List of API key data dicts
+        """
+        try:
+            response = self._request(
+                "GET",
+                f"/rest/v1/api_keys?subscription_id=eq.{subscription_id}&status=eq.active",
+                timeout=10
+            )
+            if response.status_code == 200:
+                return response.json()
+            return []
+        except Exception as e:
+            print(f"Error getting API keys by subscription ID: {e}")
+            return []
 
 # Global Supabase client instance
 supabase_client = SupabaseClient()
