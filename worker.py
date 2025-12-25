@@ -5,6 +5,8 @@ import sys
 import subprocess
 import asyncio
 from concurrent.futures import ThreadPoolExecutor
+from threading import Thread
+from http.server import HTTPServer, BaseHTTPRequestHandler
 from app.supabase_client import supabase_client
 from app.ai_generator import ai_generator
 from app.models import PageData
@@ -20,6 +22,31 @@ REPLICA_ID = os.getenv("RAILWAY_REPLICA_ID", "unknown")
 
 def _log(msg: str) -> None:
     print(f"[SEOgen Worker][Replica:{REPLICA_ID}] {msg}")
+
+
+class HealthCheckHandler(BaseHTTPRequestHandler):
+    """Simple health check endpoint for Railway."""
+    def do_GET(self):
+        if self.path == '/health':
+            self.send_response(200)
+            self.send_header('Content-type', 'application/json')
+            self.end_headers()
+            self.wfile.write(b'{"status":"ok"}')
+        else:
+            self.send_response(404)
+            self.end_headers()
+    
+    def log_message(self, format, *args):
+        # Suppress HTTP server logs
+        pass
+
+
+def start_health_server():
+    """Start health check server in background thread."""
+    port = int(os.getenv('PORT', '8080'))
+    server = HTTPServer(('0.0.0.0', port), HealthCheckHandler)
+    _log(f"Health check server starting on port {port}")
+    server.serve_forever()
 
 
 async def _process_item_async(item: dict, executor: ThreadPoolExecutor) -> None:
@@ -175,6 +202,11 @@ async def _process_item_async(item: dict, executor: ThreadPoolExecutor) -> None:
 
 async def main_async() -> None:
     _log("worker started")
+    
+    # Start health check server in background thread
+    health_thread = Thread(target=start_health_server, daemon=True)
+    health_thread.start()
+    
     _log(f"argv={sys.argv}")
     _log(f"python={sys.version.splitlines()[0]}")
     _log(f"pid={os.getpid()}")
