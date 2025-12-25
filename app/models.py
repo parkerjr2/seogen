@@ -190,6 +190,12 @@ class ValidateLicenseResponse(BaseModel):
     monthly_limit: int | None = None
     monthly_used: int | None = None
     monthly_remaining: int | None = None
+    # WordPress-expected field names (for backward compatibility)
+    monthly_generation_limit: int | None = None
+    total_pages_generated: int | None = None
+    pages_generated_this_month: int | None = None
+    pages_remaining_capacity: int | None = None
+    pages_remaining_this_month: int | None = None
 
 class SiteRegisterRequest(BaseModel):
     """Request model for site registration."""
