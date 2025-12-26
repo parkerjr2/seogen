@@ -113,7 +113,13 @@ BANNED PHRASES (never use these):
 - No meta-language like "this page", "this article"
 """
 
-    user_prompt = f"""You are generating a City Hub page for a home-service business.
+    # Determine target audience based on hub label
+    is_commercial = hub_label and 'commercial' in hub_label.lower()
+    target_audience = "business owner" if is_commercial else "homeowner"
+    property_type = "commercial properties" if is_commercial else "homes"
+    business_type = f"{hub_label.lower()} {trade_name}" if hub_label else trade_name
+    
+    user_prompt = f"""You are generating a City Hub page for a {business_type} service business.
 
 PAGE TYPE:
 City Hub (category + city context page)
@@ -134,11 +140,13 @@ Phone: {data.phone or ''}
 Service Area: {data.service_area_label or city}
 CTA Text: {data.cta_text}
 Trade Vocabulary: {', '.join(vocabulary[:8])}
+Target Audience: {target_audience}
+Property Type: {property_type}
 
 ==================================================
 ABSOLUTE RULES (NON-NEGOTIABLE)
 ==================================================
-- Write like a real tradesperson explaining work to a homeowner.
+- Write like a real tradesperson explaining work to a {target_audience}.
 - Sound practical and conversational, not polished marketing.
 - Do NOT enumerate services in prose.
 - Do NOT use bullet points or numbered lists.
@@ -160,7 +168,7 @@ Purpose: Show WHY this type of work shows up the way it does in THIS city.
 
 Rules:
 - Mention {city} exactly ONCE.
-- Include exactly ONE city factor: housing age, inspections, growth, renovations, or weather.
+- Include exactly ONE city factor: building age, inspections, growth, renovations, or weather.
 - Show ONE practical consequence that affects:
   * what gets discovered,
   * when work is done,
@@ -168,12 +176,13 @@ Rules:
 - Do NOT write anything that would still apply unchanged to another city.
 - No landmarks, ZIP codes, or nearby city lists.
 - No sales language.
+- Reference {property_type}, not generic "properties"
 
 UNACCEPTABLE:
-"Homes vary in age, which can affect service needs."
+"Properties vary in age, which can affect service needs."
 
 ACCEPTABLE STYLE (do NOT copy verbatim):
-"Because many homes in {city} were built before modern standards were common, issues are often uncovered during inspections or remodels rather than routine maintenance, which changes how problems are prioritized."
+"Because many {property_type} in {city} were built before modern standards were common, issues are often uncovered during inspections or remodels rather than routine maintenance, which changes how problems are prioritized."
 
 ### 2) SERVICES CONTEXT — REAL TRIGGERS (1–2 sentences)
 Purpose: Describe what actually prompts calls WITHOUT naming services.
@@ -181,7 +190,8 @@ Purpose: Describe what actually prompts calls WITHOUT naming services.
 Rules:
 - Do NOT name or list services.
 - Describe real situations or moments of uncertainty.
-- Avoid vague phrases like "many homeowners" or "people often".
+- Avoid vague phrases like "many {target_audience}s" or "people often".
+- Use {target_audience} context appropriately.
 
 GOOD STYLE:
 "Calls usually come in after something stops working, a remodel uncovers an issue, or an inspection raises questions that weren't obvious beforehand."
@@ -266,7 +276,7 @@ OUTPUT JSON SCHEMA
 {{
   "blocks": [
     {{"type": "paragraph", "text": "2-3 sentence intro with city factor + consequence"}},
-    {{"type": "heading", "level": 2, "text": "Services We Offer in {city}, {state}"}},
+    {{"type": "heading", "level": 2, "text": "Services We Offer Locally"}},
     {{"type": "paragraph", "text": "1-2 sentence real triggers - NO service names"}},
     {{"type": "paragraph", "text": "ONE sentence decision tension - WHY look deeper"}},
     {{"type": "paragraph", "text": "{{{{CITY_SERVICE_LINKS}}}}"}},
