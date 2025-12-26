@@ -105,7 +105,15 @@ class AIContentGenerator:
             # Step 0: Fetch real housing age data from Census API
             local_data = None
             try:
-                local_data = asyncio.run(local_data_fetcher.fetch_city_data(data.city, data.state))
+                # Check if we're already in an event loop
+                try:
+                    asyncio.get_running_loop()
+                    # Already in event loop, skip Census data to avoid asyncio.run() error
+                    # Census data is optional and content generation works fine without it
+                    local_data = None
+                except RuntimeError:
+                    # No event loop running, safe to use asyncio.run()
+                    local_data = asyncio.run(local_data_fetcher.fetch_city_data(data.city, data.state))
             except Exception as e:
                 print(f"Warning: Could not fetch Census data for {data.city}, {data.state}: {e}")
                 local_data = None
