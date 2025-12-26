@@ -20,8 +20,9 @@ class AIContentGenerator:
     """Robust content generator with programmatic enforcement and repair capabilities."""
     
     # Forbidden meta-language phrases (case-insensitive)
+    # Note: "structure" removed as it's a legitimate construction/building term
     FORBIDDEN_PHRASES = [
-        "seo", "keyword", "word count", "structure", "first 100 words", 
+        "seo", "keyword", "word count", "first 100 words", 
         "this page", "this article", "in this section"
     ]
     
