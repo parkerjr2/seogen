@@ -178,6 +178,8 @@ class BulkJobCancelRequest(BaseModel):
 
 class ValidateLicenseRequest(BaseModel):
     license_key: str
+    wordpress_rest_url: Optional[str] = None
+    callback_secret: Optional[str] = None
 
 
 class ValidateLicenseResponse(BaseModel):

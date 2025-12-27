@@ -231,6 +231,101 @@ class SupabaseClient:
         # No-op: we now track via usage_logs instead of deducting
         return True
     
+    def update_wordpress_callback_credentials(self, license_key: str, wordpress_rest_url: str, callback_secret: str) -> bool:
+        """
+        Update WordPress callback credentials for an API key.
+        
+        Args:
+            license_key: The license key to update
+            wordpress_rest_url: WordPress REST API base URL
+            callback_secret: Shared secret for HMAC signing
+            
+        Returns:
+            True if updated successfully, False otherwise
+        """
+        try:
+            response = self._request(
+                "PATCH",
+                f"/rest/v1/api_keys?key=eq.{license_key}",
+                json={
+                    "wordpress_rest_url": wordpress_rest_url,
+                    "callback_secret": callback_secret
+                },
+                timeout=10
+            )
+            
+            if response.status_code in (200, 204):
+                print(f"Updated WordPress callback credentials for license key: {license_key[:8]}...")
+                return True
+            else:
+                print(f"Failed to update callback credentials: HTTP {response.status_code}")
+                return False
+                
+        except Exception as e:
+            print(f"Error updating callback credentials: {e}")
+            return False
+    
+    def get_wordpress_callback_credentials(self, api_key_id: str) -> dict | None:
+        """
+        Get WordPress callback credentials for an API key.
+        
+        Args:
+            api_key_id: The API key ID
+            
+        Returns:
+            Dict with wordpress_rest_url and callback_secret, or None if not found
+        """
+        try:
+            response = self._request(
+                "GET",
+                f"/rest/v1/api_keys?id=eq.{api_key_id}&select=wordpress_rest_url,callback_secret",
+                timeout=10
+            )
+            
+            if response.status_code == 200:
+                data = response.json()
+                if data and len(data) > 0:
+                    return data[0]
+            return None
+                
+        except Exception as e:
+            print(f"Error getting callback credentials: {e}")
+            return None
+    
+    def update_callback_status(self, api_key_id: str, success: bool, error: str = None) -> bool:
+        """
+        Update callback status after attempting to push to WordPress.
+        
+        Args:
+            api_key_id: The API key ID
+            success: Whether the callback succeeded
+            error: Error message if failed
+            
+        Returns:
+            True if updated successfully, False otherwise
+        """
+        try:
+            update_data = {}
+            
+            if success:
+                update_data["last_callback_at"] = "now()"
+                update_data["last_callback_error"] = None
+            else:
+                update_data["last_callback_error"] = error
+            
+            response = self._request(
+                "PATCH",
+                f"/rest/v1/api_keys?id=eq.{api_key_id}",
+                json=update_data,
+                timeout=10
+            )
+            
+            return response.status_code in (200, 204)
+                
+        except Exception as e:
+            print(f"Error updating callback status: {e}")
+            return False
+    
     def log_usage(self, api_key_id: str, action: str, details: dict = None) -> bool:
         """
         Log usage to the usage_logs table for tracking and analytics.

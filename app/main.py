@@ -117,9 +117,11 @@ async def register_site(request: SiteRegisterRequest):
 async def validate_license(request: ValidateLicenseRequest):
     """
     Validate a license key and return its status and dual-limit credit information.
+    Also stores WordPress callback credentials if provided.
     
     Args:
-        request: Contains license_key to validate
+        request: License validation request containing license_key, 
+                 optional wordpress_rest_url and callback_secret
         
     Returns:
         License status, page limits, and usage statistics
@@ -132,6 +134,14 @@ async def validate_license(request: ValidateLicenseRequest):
         raise HTTPException(status_code=403, detail="License key not found")
     
     license_id = license_data.get("id")
+    
+    # Store WordPress callback credentials if provided
+    if request.wordpress_rest_url and request.callback_secret:
+        supabase_client.update_wordpress_callback_credentials(
+            license_key=request.license_key,
+            wordpress_rest_url=request.wordpress_rest_url,
+            callback_secret=request.callback_secret
+        )
     
     # Get dual-limit stats
     can_generate, reason, stats = supabase_client.check_can_generate(license_id)
