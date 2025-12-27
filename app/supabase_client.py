@@ -143,7 +143,9 @@ class SupabaseClient:
                     timeout=10,
                     extra_headers={'Prefer': 'count=exact'}
                 )
+                print(f"DEBUG: Total usage query status={total_response.status_code}")
                 if total_response.status_code == 200:
+                    print(f"DEBUG: Total usage query returned {len(total_response.json())} rows")
                     # Parse count from Content-Range header (e.g., "0-999/2752")
                     content_range = total_response.headers.get('Content-Range', '')
                     print(f"DEBUG: Content-Range header for total pages: '{content_range}'")
