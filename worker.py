@@ -238,6 +238,9 @@ async def main_async() -> None:
                 _log("heartbeat")
                 last_heartbeat = now
 
+            # Add small random delay to reduce collision probability between replicas
+            await asyncio.sleep(random.uniform(0.1, 0.5))
+            
             _log(f"polling limit={BATCH_LIMIT}")
             items = supabase_client.list_pending_bulk_items(limit=BATCH_LIMIT)
             _log(f"found {len(items)} pending items")
