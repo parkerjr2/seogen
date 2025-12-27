@@ -158,7 +158,62 @@ async def _process_item_async(item: dict, executor: ThreadPoolExecutor) -> None:
         if not usage_logged:
             _log(f"WARNING: Failed to log usage for item_id={item_id}")
 
+        # Push to WordPress if callback credentials are configured
+        wordpress_push_success = False
+        try:
+            from app.wordpress_callback import push_to_wordpress
+            
+            # Get WordPress callback credentials
+            credentials = supabase_client.get_wordpress_callback_credentials(api_key_id)
+            
+            if credentials and credentials.get("wordpress_rest_url") and credentials.get("callback_secret"):
+                _log(f"pushing to WordPress: item_id={item_id} canonical_key={canonical_key}")
+                
+                # Build item metadata for WordPress
+                item_metadata = {
+                    "canonical_key": canonical_key,
+                    "service": data.service,
+                    "city": data.city,
+                    "state": data.state,
+                    "hub_key": data.hub_key,
+                }
+                
+                # Push to WordPress with retry logic
+                push_result = await push_to_wordpress(
+                    wordpress_rest_url=credentials["wordpress_rest_url"],
+                    callback_secret=credentials["callback_secret"],
+                    license_key=license_key,
+                    job_id=job_id,
+                    item_index=idx,
+                    result_json=result_data,
+                    item_metadata=item_metadata,
+                    max_retries=3,
+                    timeout=30
+                )
+                
+                if push_result.get("success"):
+                    wordpress_push_success = True
+                    wordpress_post_id = push_result.get("post_id")
+                    _log(f"WordPress push succeeded: item_id={item_id} post_id={wordpress_post_id}")
+                    
+                    # Update callback status
+                    supabase_client.update_callback_status(api_key_id, success=True)
+                else:
+                    error = push_result.get("error", "Unknown error")
+                    _log(f"WordPress push failed: item_id={item_id} error={error}")
+                    
+                    # Update callback status with error
+                    supabase_client.update_callback_status(api_key_id, success=False, error=error)
+            else:
+                _log(f"WordPress callback not configured for api_key_id={api_key_id}, skipping push")
+        
+        except Exception as push_error:
+            _log(f"WordPress push exception: item_id={item_id} error={push_error}")
+            # Don't fail the job if WordPress push fails - polling will handle import
+            supabase_client.update_callback_status(api_key_id, success=False, error=str(push_error))
+
         # Mark as completed after all operations succeed
+        # Note: Job completes even if WordPress push fails (polling fallback)
         supabase_client.update_bulk_item_result(
             item_id=item_id,
             status="completed",
