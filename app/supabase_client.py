@@ -90,13 +90,17 @@ class SupabaseClient:
             Tuple of (can_generate: bool, reason: str, stats: dict)
         """
         try:
+            print(f"DEBUG check_can_generate: Called with api_key_id={api_key_id}")
+            
             # Get API key and subscription data
             response = self._request(
                 "GET",
                 f"/rest/v1/api_keys?id=eq.{api_key_id}&select=*,subscription:subscriptions(*)",
                 timeout=10
             )
+            print(f"DEBUG check_can_generate: API key lookup status={response.status_code}")
             if response.status_code != 200:
+                print(f"DEBUG check_can_generate: API key not found, returning defaults")
                 return False, "API key not found", {}
             
             api_keys = response.json()
@@ -122,12 +126,14 @@ class SupabaseClient:
                 timeout=10
             )
             api_key_ids = [k['id'] for k in sub_keys_response.json()] if sub_keys_response.status_code == 200 else [api_key_id]
+            print(f"DEBUG check_can_generate: Found {len(api_key_ids)} API keys in subscription: {api_key_ids}")
             
             # Count usage across all API keys in this subscription
             total_pages = 0
             period_pages = 0
             
             for key_id in api_key_ids:
+                print(f"DEBUG check_can_generate: Counting usage for api_key_id={key_id}")
                 # Count total pages for this API key using count=exact header
                 # This returns the count in the Content-Range header instead of fetching all rows
                 # Must add Prefer: count=exact header to get actual count instead of '*'
@@ -195,6 +201,7 @@ class SupabaseClient:
                 "monthly_limit": monthly_limit,
                 "pages_remaining_this_month": monthly_limit - period_pages
             }
+            print(f"DEBUG check_can_generate: Final stats={stats}")
             
             # Check both limits
             if total_pages >= page_limit:
