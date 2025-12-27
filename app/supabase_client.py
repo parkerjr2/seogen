@@ -144,7 +144,8 @@ class SupabaseClient:
                     extra_headers={'Prefer': 'count=exact'}
                 )
                 print(f"DEBUG: Total usage query status={total_response.status_code}")
-                if total_response.status_code == 200:
+                # 200 = OK, 206 = Partial Content (when result set is large)
+                if total_response.status_code in (200, 206):
                     print(f"DEBUG: Total usage query returned {len(total_response.json())} rows")
                     # Parse count from Content-Range header (e.g., "0-999/2752")
                     content_range = total_response.headers.get('Content-Range', '')
@@ -175,7 +176,8 @@ class SupabaseClient:
                     timeout=10,
                     extra_headers={'Prefer': 'count=exact'}
                 )
-                if period_response.status_code == 200:
+                # 200 = OK, 206 = Partial Content (when result set is large)
+                if period_response.status_code in (200, 206):
                     # Parse count from Content-Range header
                     content_range = period_response.headers.get('Content-Range', '')
                     print(f"DEBUG: Content-Range header for period pages: '{content_range}'")
