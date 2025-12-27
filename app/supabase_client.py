@@ -128,13 +128,22 @@ class SupabaseClient:
             period_pages = 0
             
             for key_id in api_key_ids:
-                # Count total pages for this API key
+                # Count total pages for this API key using count=exact header
+                # This returns the count in the Content-Range header instead of fetching all rows
                 total_response = self._request(
                     "GET",
                     f"/rest/v1/usage_logs?api_key_id=eq.{key_id}&action=in.(ai_page_generation_success,bulk_item_generation_success)&select=id",
                     timeout=10
                 )
-                total_pages += len(total_response.json()) if total_response.status_code == 200 else 0
+                if total_response.status_code == 200:
+                    # Parse count from Content-Range header (e.g., "0-999/2752")
+                    content_range = total_response.headers.get('Content-Range', '')
+                    if '/' in content_range:
+                        total_count = int(content_range.split('/')[-1])
+                        total_pages += total_count
+                    else:
+                        # Fallback to counting returned rows (will be wrong if > 1000)
+                        total_pages += len(total_response.json())
                 
                 # Count pages this period for this API key
                 from urllib.parse import quote
@@ -144,7 +153,15 @@ class SupabaseClient:
                     f"/rest/v1/usage_logs?api_key_id=eq.{key_id}&action=in.(ai_page_generation_success,bulk_item_generation_success)&created_at=gte.{encoded_period_start}&select=id",
                     timeout=10
                 )
-                period_pages += len(period_response.json()) if period_response.status_code == 200 else 0
+                if period_response.status_code == 200:
+                    # Parse count from Content-Range header
+                    content_range = period_response.headers.get('Content-Range', '')
+                    if '/' in content_range:
+                        period_count = int(content_range.split('/')[-1])
+                        period_pages += period_count
+                    else:
+                        # Fallback to counting returned rows
+                        period_pages += len(period_response.json())
             
             stats = {
                 "total_pages": total_pages,
