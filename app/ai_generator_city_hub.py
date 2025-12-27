@@ -38,11 +38,24 @@ def generate_city_hub_content(generator, data: PageData) -> GeneratePageResponse
     # Build slug programmatically (city-slug, not hub-slug)
     city_slug = data.city_slug or generator.slugify("", f"{city}-{state}")
     
-    # Build meta description
-    meta_description = f"Professional {hub_label.lower()} {trade_name} services in {city}, {state}. "
-    if data.service_area_label:
-        meta_description += f"Serving {data.service_area_label}. "
-    meta_description += f"{data.cta_text}."
+    # Build meta description following Google best practices (155-160 chars)
+    # - Compelling and unique
+    # - Includes location and service category
+    # - Clear call-to-action
+    # - No generic marketing fluff
+    meta_description = f"Expert {hub_label.lower()} {trade_name} services in {city}, {state}. "
+    meta_description += f"Licensed professionals, quality workmanship, reliable service. "
+    meta_description += f"{data.cta_text}!"
+    
+    # Ensure optimal length (155-160 characters)
+    if len(meta_description) > 160:
+        meta_description = meta_description[:157] + "..."
+    elif len(meta_description) < 120:
+        # Add service area if too short
+        if data.service_area_label:
+            meta_description = f"Expert {hub_label.lower()} {trade_name} in {city}, {state}. Serving {data.service_area_label}. {data.cta_text}!"
+            if len(meta_description) > 160:
+                meta_description = meta_description[:157] + "..."
     
     # Generate content blocks via LLM
     content_json = _call_openai_city_hub_generation(generator, data, profile)
