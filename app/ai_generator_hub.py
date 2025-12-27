@@ -57,10 +57,21 @@ def generate_service_hub_content(generator, data: PageData) -> GeneratePageRespo
     h1_text = f"{hub_label} {trade_name.title()} Services"
     slug = hub_slug
     
-    meta_description = f"Professional {hub_label.lower()} {trade_name} services. "
-    if data.service_area_label:
-        meta_description += f"Serving {data.service_area_label}. "
-    meta_description += f"{data.cta_text}."
+    # Build meta description following Google best practices (150-160 chars)
+    # Formula: Primary service. Key benefit or differentiator. Trust signal or CTA.
+    meta_description = f"Expert {hub_label.lower()} {trade_name} services. "
+    meta_description += f"Licensed professionals, quality workmanship, reliable service. "
+    meta_description += f"{data.cta_text}!"
+    
+    # Ensure optimal length (150-160 characters)
+    if len(meta_description) > 160:
+        meta_description = meta_description[:157] + "..."
+    elif len(meta_description) < 120:
+        # Add service area if too short
+        if data.service_area_label:
+            meta_description = f"Expert {hub_label.lower()} {trade_name} in {data.service_area_label}. Licensed professionals. {data.cta_text}!"
+            if len(meta_description) > 160:
+                meta_description = meta_description[:157] + "..."
     
     # GUARDRAIL 1: Structural Variation Enforcement
     # Select 5-7 sections randomly, ensuring at least 1 optional section is omitted
