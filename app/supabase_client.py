@@ -138,12 +138,23 @@ class SupabaseClient:
                 if total_response.status_code == 200:
                     # Parse count from Content-Range header (e.g., "0-999/2752")
                     content_range = total_response.headers.get('Content-Range', '')
+                    print(f"DEBUG: Content-Range header for total pages: '{content_range}'")
                     if '/' in content_range:
-                        total_count = int(content_range.split('/')[-1])
-                        total_pages += total_count
+                        try:
+                            total_count = int(content_range.split('/')[-1])
+                            total_pages += total_count
+                            print(f"DEBUG: Parsed total count from header: {total_count}")
+                        except (ValueError, IndexError) as e:
+                            print(f"ERROR: Failed to parse Content-Range '{content_range}': {e}")
+                            # Fallback to counting returned rows
+                            row_count = len(total_response.json())
+                            total_pages += row_count
+                            print(f"DEBUG: Fallback to row count: {row_count}")
                     else:
                         # Fallback to counting returned rows (will be wrong if > 1000)
-                        total_pages += len(total_response.json())
+                        row_count = len(total_response.json())
+                        total_pages += row_count
+                        print(f"DEBUG: No Content-Range header, using row count: {row_count}")
                 
                 # Count pages this period for this API key
                 from urllib.parse import quote
@@ -156,12 +167,22 @@ class SupabaseClient:
                 if period_response.status_code == 200:
                     # Parse count from Content-Range header
                     content_range = period_response.headers.get('Content-Range', '')
+                    print(f"DEBUG: Content-Range header for period pages: '{content_range}'")
                     if '/' in content_range:
-                        period_count = int(content_range.split('/')[-1])
-                        period_pages += period_count
+                        try:
+                            period_count = int(content_range.split('/')[-1])
+                            period_pages += period_count
+                            print(f"DEBUG: Parsed period count from header: {period_count}")
+                        except (ValueError, IndexError) as e:
+                            print(f"ERROR: Failed to parse Content-Range '{content_range}': {e}")
+                            row_count = len(period_response.json())
+                            period_pages += row_count
+                            print(f"DEBUG: Fallback to row count: {row_count}")
                     else:
                         # Fallback to counting returned rows
-                        period_pages += len(period_response.json())
+                        row_count = len(period_response.json())
+                        period_pages += row_count
+                        print(f"DEBUG: No Content-Range header for period, using row count: {row_count}")
             
             stats = {
                 "total_pages": total_pages,
