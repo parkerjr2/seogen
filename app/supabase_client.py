@@ -130,10 +130,12 @@ class SupabaseClient:
             for key_id in api_key_ids:
                 # Count total pages for this API key using count=exact header
                 # This returns the count in the Content-Range header instead of fetching all rows
+                # Must add Prefer: count=exact header to get actual count instead of '*'
                 total_response = self._request(
                     "GET",
                     f"/rest/v1/usage_logs?api_key_id=eq.{key_id}&action=in.(ai_page_generation_success,bulk_item_generation_success)&select=id",
-                    timeout=10
+                    timeout=10,
+                    extra_headers={'Prefer': 'count=exact'}
                 )
                 if total_response.status_code == 200:
                     # Parse count from Content-Range header (e.g., "0-999/2752")
@@ -162,7 +164,8 @@ class SupabaseClient:
                 period_response = self._request(
                     "GET",
                     f"/rest/v1/usage_logs?api_key_id=eq.{key_id}&action=in.(ai_page_generation_success,bulk_item_generation_success)&created_at=gte.{encoded_period_start}&select=id",
-                    timeout=10
+                    timeout=10,
+                    extra_headers={'Prefer': 'count=exact'}
                 )
                 if period_response.status_code == 200:
                     # Parse count from Content-Range header
