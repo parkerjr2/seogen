@@ -176,6 +176,8 @@ async def _process_item_async(item: dict, executor: ThreadPoolExecutor) -> None:
                     "city": data.city,
                     "state": data.state,
                     "hub_key": data.hub_key,
+                    "hub_label": data.hub_label,
+                    "city_slug": data.city_slug,
                 }
                 
                 # Push to WordPress with retry logic
