@@ -301,7 +301,10 @@ async def create_bulk_job(request: BulkJobCreateRequest):
         page_mode = getattr(item, 'page_mode', 'service_city')
         hub_key = getattr(item, 'hub_key', '')
         
-        print(f"[API /bulk-jobs POST] Item {idx}: page_mode={page_mode}, hub_key={hub_key}, service={service}, city={city}")
+        print(f"[API /bulk-jobs POST] Item {idx}: page_mode={page_mode}, hub_key={hub_key}, service={service}, city={city}, state={state}")
+        
+        canonical_key = _canonical_key(service, city, state, page_mode, hub_key)
+        print(f"[API /bulk-jobs POST] Item {idx}: canonical_key={canonical_key}")
         
         items_payload.append(
             {
@@ -314,7 +317,7 @@ async def create_bulk_job(request: BulkJobCreateRequest):
                 "phone": item.phone,
                 "email": item.email,
                 "address": item.address,
-                "canonical_key": _canonical_key(service, city, state, page_mode, hub_key),
+                "canonical_key": canonical_key,
                 "status": "pending",
                 "attempts": 0,
                 "page_mode": page_mode,

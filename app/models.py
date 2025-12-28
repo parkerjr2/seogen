@@ -111,6 +111,7 @@ class BulkJobItem(BaseModel):
     hub_key: str = Field(default="", description="Hub key for service_hub mode")
     hub_label: str = Field(default="", description="Hub label for service_hub mode")
     hub_slug: str = Field(default="", description="Hub slug for service_hub mode")
+    city_slug: str = Field(default="", description="City slug for city_hub mode")
 
 
 class BulkJobCreateRequest(BaseModel):
