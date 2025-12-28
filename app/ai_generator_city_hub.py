@@ -27,13 +27,14 @@ def generate_city_hub_content(generator, data: PageData) -> GeneratePageResponse
     city = data.city or "Your City"
     state = data.state or "ST"
     
-    # Title: "Residential Electrical Services in Tulsa | Business Name"
-    title = f"{hub_label} {trade_name.title()} Services in {city}"
+    # Title: "Commercial Electrical Services in Tulsa | Business Name"
+    # Hub label should be the full service hub title (e.g., "Commercial Electrical Services")
+    title = f"{hub_label} in {city}"
     if data.business_name:
         title += f" | {data.business_name}"
     
     # Build H1 (without business name)
-    h1_text = f"{hub_label} {trade_name.title()} Services in {city}"
+    h1_text = f"{hub_label} in {city}"
     
     # Build slug programmatically (city-slug, not hub-slug)
     city_slug = data.city_slug or generator.slugify("", f"{city}-{state}")
