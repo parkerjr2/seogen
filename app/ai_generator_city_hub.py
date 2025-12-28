@@ -27,13 +27,14 @@ def generate_city_hub_content(generator, data: PageData) -> GeneratePageResponse
     city = data.city or "Your City"
     state = data.state or "ST"
     
-    # Title: "Residential Electrician in Tulsa, OK | Business Name"
-    title = f"{hub_label} {trade_name.title()} in {city}, {state}"
+    # Title: "Residential Electrical Services in Tulsa, OK | Business Name"
+    # Hub label should already include the service type (e.g., "Residential Electrical Services")
+    title = f"{hub_label} in {city}, {state}"
     if data.business_name:
         title += f" | {data.business_name}"
     
     # Build H1 (without business name)
-    h1_text = f"{hub_label} {trade_name.title()} in {city}, {state}"
+    h1_text = f"{hub_label} in {city}, {state}"
     
     # Build slug programmatically (city-slug, not hub-slug)
     city_slug = data.city_slug or generator.slugify("", f"{city}-{state}")
@@ -43,7 +44,7 @@ def generate_city_hub_content(generator, data: PageData) -> GeneratePageResponse
     # - Includes location and service category
     # - Clear call-to-action
     # - No generic marketing fluff
-    meta_description = f"Expert {hub_label.lower()} {trade_name} services in {city}, {state}. "
+    meta_description = f"Expert {hub_label.lower()} in {city}, {state}. "
     meta_description += f"Licensed professionals, quality workmanship, reliable service. "
     meta_description += f"{data.cta_text}!"
     
@@ -53,7 +54,7 @@ def generate_city_hub_content(generator, data: PageData) -> GeneratePageResponse
     elif len(meta_description) < 120:
         # Add service area if too short
         if data.service_area_label:
-            meta_description = f"Expert {hub_label.lower()} {trade_name} in {city}, {state}. Serving {data.service_area_label}. {data.cta_text}!"
+            meta_description = f"Expert {hub_label.lower()} in {city}, {state}. Serving {data.service_area_label}. {data.cta_text}!"
             if len(meta_description) > 160:
                 meta_description = meta_description[:157] + "..."
     
