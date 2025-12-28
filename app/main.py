@@ -33,12 +33,12 @@ def _canonical_key(service: str, city: str, state: str, page_mode: str = '', hub
     
     For service_city pages: service|city|state
     For service_hub pages: hub|hub_key
-    For city_hub pages: city_hub|city|state
+    For city_hub pages: city_hub|hub_key|city|state
     """
     if page_mode == 'service_hub' and hub_key:
         return f"hub|{hub_key.strip().lower()}"
-    elif page_mode == 'city_hub' and city:
-        return f"city_hub|{city.strip().lower()}|{state.strip().lower()}"
+    elif page_mode == 'city_hub' and city and hub_key:
+        return f"city_hub|{hub_key.strip().lower()}|{city.strip().lower()}|{state.strip().lower()}"
     else:
         return f"{service.strip().lower()}|{city.strip().lower()}|{state.strip().lower()}"
 
