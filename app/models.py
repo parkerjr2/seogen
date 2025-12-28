@@ -174,6 +174,15 @@ class BulkJobAckResponse(BaseModel):
     imported_count: int
 
 
+class BulkJobMarkImportedRequest(BaseModel):
+    license_key: str
+    item_ids: List[str]
+
+
+class BulkJobMarkImportedResponse(BaseModel):
+    marked: int
+
+
 class BulkJobCancelRequest(BaseModel):
     license_key: str
 

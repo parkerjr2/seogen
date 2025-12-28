@@ -17,6 +17,8 @@ from app.models import (
     BulkJobResultItem,
     BulkJobAckRequest,
     BulkJobAckResponse,
+    BulkJobMarkImportedRequest,
+    BulkJobMarkImportedResponse,
     BulkJobCancelRequest,
     ValidateLicenseRequest,
     ValidateLicenseResponse,
@@ -378,6 +380,7 @@ async def get_bulk_job_results(
     status: str = Query("completed"),
     limit: int = Query(20, ge=1, le=200),
     cursor: str | None = Query(None),
+    imported: bool | None = Query(None),
 ):
     _require_active_license(license_key)
     job = supabase_client.get_bulk_job(job_id)
@@ -387,7 +390,7 @@ async def get_bulk_job_results(
         raise HTTPException(status_code=403, detail="Job does not belong to license")
 
     cursor_idx = int(cursor) if cursor is not None and str(cursor).isdigit() else None
-    rows = supabase_client.get_bulk_job_results(job_id=job_id, status=status, cursor_idx=cursor_idx, limit=limit)
+    rows = supabase_client.get_bulk_job_results(job_id=job_id, status=status, cursor_idx=cursor_idx, limit=limit, imported=imported)
     items: list[BulkJobResultItem] = []
     next_cursor: str | None = None
     for r in rows:
@@ -430,6 +433,25 @@ async def ack_bulk_job_results(job_id: str, request: BulkJobAckRequest):
     imported = supabase_client.mark_bulk_items_imported(job_id=job_id, item_ids=request.imported_item_ids)
     supabase_client.recompute_bulk_job_counters(job_id=job_id)
     return BulkJobAckResponse(job_id=str(job_id), imported_count=int(imported))
+
+
+@app.post("/bulk-jobs/{job_id}/items/mark-imported", response_model=BulkJobMarkImportedResponse)
+async def mark_items_imported(job_id: str, request: BulkJobMarkImportedRequest):
+    """
+    Mark bulk job items as imported.
+    Used by WordPress to track which items have been successfully imported locally.
+    """
+    _require_active_license(request.license_key)
+    job = supabase_client.get_bulk_job(job_id)
+    if not job:
+        raise HTTPException(status_code=404, detail="Job not found")
+    if job.get("license_key") != request.license_key:
+        raise HTTPException(status_code=403, detail="Job does not belong to license")
+    
+    marked = supabase_client.mark_bulk_items_imported(job_id=job_id, item_ids=request.item_ids)
+    supabase_client.recompute_bulk_job_counters(job_id=job_id)
+    
+    return BulkJobMarkImportedResponse(marked=marked)
 
 
 @app.post("/bulk-jobs/{job_id}/cancel")

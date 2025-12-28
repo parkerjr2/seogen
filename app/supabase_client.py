@@ -457,16 +457,27 @@ class SupabaseClient:
         except Exception:
             return False
 
-    def get_bulk_job_results(self, *, job_id: str, status: str = "completed", cursor_idx: int | None = None, limit: int = 20) -> list[dict]:
+    def get_bulk_job_results(self, *, job_id: str, status: str = "completed", cursor_idx: int | None = None, limit: int = 20, imported: bool | None = None) -> list[dict]:
         # Fetch completed/failed items that haven't been imported yet
         # For efficiency with large jobs, we use the cursor but ALSO check for any
         # items before the cursor that might have completed out of order
         
         try:
+            # Determine status filter based on imported parameter
+            if imported is False:
+                # Only non-imported items (status = completed or failed, but not imported)
+                status_filter = "in.(completed,failed)"
+            elif imported is True:
+                # Only imported items
+                status_filter = "eq.imported"
+            else:
+                # Default: completed and failed (backward compatible)
+                status_filter = "in.(completed,failed)"
+            
             # First, get items after the cursor (normal progression)
             params_after: dict[str, str] = {
                 "job_id": f"eq.{job_id}",
-                "status": f"in.(completed,failed)",
+                "status": status_filter,
                 "select": "id,idx,canonical_key,status,attempts,result_json,error,service,city,state,page_mode,hub_key,hub_label,hub_slug,city_slug,vertical,business_name,cta_text,service_area_label",
                 "order": "idx.asc",
                 "limit": str(int(limit)),
@@ -486,7 +497,7 @@ class SupabaseClient:
             if cursor_idx is not None and len(items_after) < limit:
                 params_before: dict[str, str] = {
                     "job_id": f"eq.{job_id}",
-                    "status": f"in.(completed,failed)",
+                    "status": status_filter,
                     "idx": f"lt.{cursor_idx}",
                     "select": "id,idx,canonical_key,status,attempts,result_json,error,service,city,state,page_mode,hub_key,hub_label,hub_slug,city_slug,vertical,business_name,cta_text,service_area_label",
                     "order": "idx.asc",
