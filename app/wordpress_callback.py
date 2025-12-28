@@ -169,6 +169,17 @@ async def push_to_wordpress(
                         "attempts": attempt + 1
                     }
                 
+                # Lock held by another process (concurrent import)
+                elif response.status_code == 500 and "lock held" in response.text.lower():
+                    # Another process is importing this item - treat as success
+                    logger.info(f"WordPress import lock held - item being imported by another process")
+                    return {
+                        "success": True,
+                        "already_imported": False,
+                        "lock_held": True,
+                        "attempts": attempt + 1
+                    }
+                
                 # Retryable errors
                 elif response.status_code in (429, 500, 502, 503, 504):
                     last_error = f"HTTP {response.status_code}: {response.text[:200]}"
