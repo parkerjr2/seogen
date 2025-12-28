@@ -123,7 +123,8 @@ def generate_service_hub_content(generator, data: PageData) -> GeneratePageRespo
         title=title,
         meta_description=meta_description[:160],
         slug=slug,
-        blocks=blocks
+        blocks=blocks,
+        page_mode="service_hub"
     )
     
     print(f"[HUB GUARDRAILS] Generated hub with {len(section_plan['sections'])} sections, exclusive section: {exclusive_section['title']}")

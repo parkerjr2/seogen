@@ -91,6 +91,7 @@ class GeneratePageResponse(BaseModel):
     meta_description: str
     slug: str
     blocks: List[PageBlock]
+    page_mode: str = Field(default="service_city", description="Page mode")
 
 
 class BulkJobItem(BaseModel):

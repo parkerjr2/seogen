@@ -90,7 +90,8 @@ def generate_city_hub_content(generator, data: PageData) -> GeneratePageResponse
         title=title,
         meta_description=meta_description[:160],
         slug=city_slug,
-        blocks=all_blocks
+        blocks=all_blocks,
+        page_mode="city_hub"
     )
     
     return response

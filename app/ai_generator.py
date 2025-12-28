@@ -676,7 +676,8 @@ Return JSON only. No extra text."""
             title=title,
             meta_description=content_json.get("meta_description", ""),
             slug=slug,
-            blocks=blocks
+            blocks=blocks,
+            page_mode="service_city"
         )
     
     def _create_heading_block(self, text: str, level: int) -> HeadingBlock:
