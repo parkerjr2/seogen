@@ -94,6 +94,7 @@ async def push_to_wordpress(
     
     headers = {
         "Content-Type": "application/json",
+        "User-Agent": "SEOgen-Backend/1.0 (Bulk Page Generator)",
         "X-Seogen-Timestamp": timestamp,
         "X-Seogen-Body-SHA256": body_hash,
         "X-Seogen-Signature": signature,
