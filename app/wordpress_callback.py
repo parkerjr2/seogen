@@ -113,40 +113,52 @@ async def push_to_wordpress(
                     timeout=timeout
                 )
                 
-                # Phase 1: Detect WAF/CAPTCHA blocks (HTML responses)
-                content_type = response.headers.get("content-type", "").lower()
-                is_html = "text/html" in content_type or response.text.strip().startswith("<html")
-                
-                if is_html:
-                    # Check for WAF/CAPTCHA signatures
-                    response_lower = response.text.lower()
-                    is_waf_blocked = (
-                        "sgcaptcha" in response_lower or
-                        ".well-known/sgcaptcha" in response_lower or
-                        "captcha" in response_lower or
-                        "cloudflare" in response_lower and "challenge" in response_lower
-                    )
+                # Phase 1: Detect WAF/CAPTCHA blocks (HTML responses on error codes)
+                # Only check for WAF if we got an error status code (4xx, 5xx)
+                if response.status_code >= 400:
+                    content_type = response.headers.get("content-type", "").lower()
+                    is_html = "text/html" in content_type or response.text.strip().startswith("<html")
                     
-                    if is_waf_blocked:
-                        last_error = f"WAF/CAPTCHA blocked (HTTP {response.status_code})"
-                        logger.error(f"WordPress callback blocked by WAF/CAPTCHA - stopping retries")
-                        return {
-                            "success": False,
-                            "error": last_error,
-                            "blocked_by_waf": True,
-                            "attempts": attempt + 1
-                        }
+                    if is_html:
+                        # Check for WAF/CAPTCHA signatures
+                        response_lower = response.text.lower()
+                        is_waf_blocked = (
+                            "sgcaptcha" in response_lower or
+                            ".well-known/sgcaptcha" in response_lower or
+                            "captcha" in response_lower or
+                            "cloudflare" in response_lower and "challenge" in response_lower or
+                            "access denied" in response_lower or
+                            "forbidden" in response_lower and "firewall" in response_lower
+                        )
+                        
+                        if is_waf_blocked:
+                            last_error = f"WAF/CAPTCHA blocked (HTTP {response.status_code})"
+                            logger.error(f"WordPress callback blocked by WAF/CAPTCHA - stopping retries")
+                            return {
+                                "success": False,
+                                "error": last_error,
+                                "blocked_by_waf": True,
+                                "attempts": attempt + 1
+                            }
                 
                 # Success cases
-                if response.status_code == 200:
-                    data = response.json()
-                    return {
-                        "success": True,
-                        "post_id": data.get("post_id"),
-                        "title": data.get("title"),
-                        "already_imported": data.get("already_imported", False),
-                        "attempts": attempt + 1
-                    }
+                if response.status_code in (200, 202):
+                    # 200 OK or 202 Accepted (async operation)
+                    try:
+                        data = response.json()
+                        return {
+                            "success": True,
+                            "post_id": data.get("post_id"),
+                            "title": data.get("title"),
+                            "already_imported": data.get("already_imported", False),
+                            "attempts": attempt + 1
+                        }
+                    except Exception:
+                        # If JSON parsing fails but status is success, still return success
+                        return {
+                            "success": True,
+                            "attempts": attempt + 1
+                        }
                 
                 # Already imported (idempotent)
                 elif response.status_code == 409 and "already" in response.text.lower():
