@@ -31,7 +31,7 @@ from app.config import settings
 def _canonical_key(service: str, city: str, state: str, page_mode: str = '', hub_key: str = '') -> str:
     """Generate unique canonical key for bulk job items.
     
-    For service_city pages: service|city|state
+    For service_city pages: service|city|state|hub_key (hub_key included to support same service in multiple hubs)
     For service_hub pages: hub|hub_key
     For city_hub pages: city_hub|hub_key|city|state
     """
@@ -40,7 +40,11 @@ def _canonical_key(service: str, city: str, state: str, page_mode: str = '', hub
     elif page_mode == 'city_hub' and city and hub_key:
         return f"city_hub|{hub_key.strip().lower()}|{city.strip().lower()}|{state.strip().lower()}"
     else:
-        return f"{service.strip().lower()}|{city.strip().lower()}|{state.strip().lower()}"
+        # Include hub_key for service_city pages to support same service in multiple hubs
+        base_key = f"{service.strip().lower()}|{city.strip().lower()}|{state.strip().lower()}"
+        if hub_key:
+            return f"{base_key}|{hub_key.strip().lower()}"
+        return base_key
 
 
 def _require_active_license(license_key: str) -> dict:
