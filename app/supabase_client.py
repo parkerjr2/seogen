@@ -556,15 +556,31 @@ class SupabaseClient:
             return []
 
     def try_claim_bulk_item(self, *, item_id: str, attempts: int) -> bool:
+        """
+        Atomically claim a bulk item for processing.
+        Uses Prefer: return=representation to verify exactly one row was updated.
+        This prevents race conditions where multiple workers try to claim the same item.
+        """
         try:
             resp = self._request(
                 "PATCH",
                 "/rest/v1/bulk_job_items",
                 params={"id": f"eq.{item_id}", "status": "eq.pending"},
                 json={"status": "running", "attempts": int(attempts) + 1},
+                extra_headers={"Prefer": "return=representation"},
                 timeout=10,
             )
-            return resp.status_code == 204
+            
+            # Check if exactly one row was updated (atomic claim successful)
+            if resp.status_code == 200:
+                data = resp.json()
+                # Only return True if exactly 1 row was affected
+                if isinstance(data, list) and len(data) == 1:
+                    return True
+                # If 0 rows affected, another worker already claimed it
+                return False
+            
+            return False
         except Exception:
             return False
 

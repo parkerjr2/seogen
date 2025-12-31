@@ -67,8 +67,10 @@ async def _process_item_async(item: dict, executor: ThreadPoolExecutor) -> None:
 
     claimed = supabase_client.try_claim_bulk_item(item_id=item_id, attempts=attempts)
     if not claimed:
-        _log(f"skipping item_id={item_id} (already claimed by another replica)")
+        _log(f"CLAIM FAILED: item_id={item_id} job_id={job_id} idx={idx} key={canonical_key} (already claimed by another replica)")
         return
+    
+    _log(f"CLAIM SUCCESS: item_id={item_id} job_id={job_id} idx={idx} key={canonical_key}")
 
     job = supabase_client.get_bulk_job(job_id)
     if not job:
