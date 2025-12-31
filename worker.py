@@ -21,7 +21,62 @@ IDLE_SLEEP_SECONDS = (2, 5)
 REPLICA_ID = os.getenv("RAILWAY_REPLICA_ID", "unknown")
 
 def _log(msg: str) -> None:
-    print(f"[SEOgen Worker][Replica:{REPLICA_ID}] {msg}")
+    print(f"[SEOgen Worker][Replica:{REPLICA_ID}] {msg}", flush=True)
+
+
+def _cleanup_stuck_items() -> None:
+    """
+    Mark items that have been stuck in 'running' state for more than 10 minutes as failed.
+    This prevents jobs from getting stuck when workers crash or items fail silently.
+    """
+    try:
+        from datetime import datetime, timedelta
+        
+        # Calculate cutoff time (10 minutes ago)
+        cutoff = (datetime.utcnow() - timedelta(minutes=10)).isoformat()
+        
+        # Find items stuck in running state for more than 10 minutes
+        resp = supabase_client._request(
+            "GET",
+            "/rest/v1/bulk_job_items",
+            params={
+                "status": "eq.running",
+                "updated_at": f"lt.{cutoff}",
+                "select": "id,job_id,canonical_key",
+                "limit": "100"
+            },
+            timeout=15
+        )
+        
+        if resp.status_code != 200:
+            return
+        
+        stuck_items = resp.json()
+        if not isinstance(stuck_items, list) or len(stuck_items) == 0:
+            return
+        
+        _log(f"Found {len(stuck_items)} stuck items, marking as failed")
+        
+        # Mark each stuck item as failed
+        for item in stuck_items:
+            item_id = item.get("id")
+            job_id = item.get("job_id")
+            canonical_key = item.get("canonical_key", "")
+            
+            supabase_client.update_bulk_item_result(
+                item_id=item_id,
+                status="failed",
+                error="Item stuck in running state for >10 minutes (worker may have crashed)"
+            )
+            
+            _log(f"Marked stuck item as failed: item_id={item_id} job_id={job_id} key={canonical_key}")
+            
+            # Recompute job counters to update progress
+            if job_id:
+                supabase_client.recompute_bulk_job_counters(job_id=job_id)
+    
+    except Exception as e:
+        _log(f"Error in cleanup_stuck_items: {e}")
 
 
 class HealthCheckHandler(BaseHTTPRequestHandler):
@@ -290,12 +345,20 @@ async def main_async() -> None:
     # Create thread pool for CPU-intensive AI generation
     executor = ThreadPoolExecutor(max_workers=CONCURRENT_WORKERS)
     
+    last_cleanup = time.time()
+    
     try:
         while True:
             now = time.time()
             if now - last_heartbeat > 60:
                 _log("heartbeat")
                 last_heartbeat = now
+            
+            # Periodically clean up stuck items (every 5 minutes)
+            if now - last_cleanup > 300:
+                _log("running cleanup for stuck items")
+                _cleanup_stuck_items()
+                last_cleanup = now
 
             # Add small random delay to reduce collision probability between replicas
             await asyncio.sleep(random.uniform(0.1, 0.5))

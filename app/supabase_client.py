@@ -607,7 +607,7 @@ class SupabaseClient:
             items_resp = self._request(
                 "GET",
                 "/rest/v1/bulk_job_items",
-                params={"job_id": f"eq.{job_id}", "select": "status"},
+                params={"job_id": f"eq.{job_id}", "select": "status,updated_at"},
                 timeout=30,
             )
             if items_resp.status_code != 200:
@@ -619,6 +619,8 @@ class SupabaseClient:
             processed = 0
             completed = 0
             failed = 0
+            running_or_pending = 0
+            
             for row in statuses:
                 s = (row.get("status") or "").lower()
                 if s in ("completed", "failed", "imported"):
@@ -627,6 +629,8 @@ class SupabaseClient:
                     completed += 1
                 if s == "failed":
                     failed += 1
+                if s in ("running", "pending"):
+                    running_or_pending += 1
 
             job = self.get_bulk_job(job_id)
             total_items = int(job.get("total_items", 0)) if job else 0
@@ -634,10 +638,16 @@ class SupabaseClient:
 
             new_status = None
             if current_status not in ("canceled", "failed"):
+                # Job is complete if all items are in a final state (completed, failed, or imported)
                 if total_items > 0 and (completed + failed) >= total_items:
                     new_status = "complete"
-                else:
+                # Job is still running if there are items in running/pending state
+                elif running_or_pending > 0:
                     new_status = "running"
+                # If no running/pending items but not all completed/failed, something is wrong
+                # Mark as complete anyway to prevent stuck jobs
+                else:
+                    new_status = "complete"
 
             payload: dict = {"processed": processed, "completed": completed, "failed": failed}
             if new_status:
