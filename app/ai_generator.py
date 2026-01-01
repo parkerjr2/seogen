@@ -334,18 +334,31 @@ class AIContentGenerator:
 2. Meta description MUST include both "{data.service}" AND "{data.city}"
 3. Do NOT use forbidden phrases: "structure", "top-notch", "premier", "trusted experts"{landmark_requirement}
 
-⚠️ CRITICAL - UNDERSTAND THE SERVICE FIRST:
-Before generating ANY content, think carefully about what "{data.service}" actually means:
-- If it contains "insurance" or "claim" → This is about NAVIGATING INSURANCE CLAIMS (documentation, adjuster meetings, claim negotiation), NOT performing physical repairs
-- If it contains "inspection" or "assessment" → This is about EXAMINING and IDENTIFYING issues, NOT fixing them
-- If it contains "consultation" or "estimate" → This is about ADVISING and PLANNING, NOT performing work
-- If it contains "emergency" → This is about URGENT RESPONSE and temporary fixes, emphasize speed and availability
-- If it contains "maintenance" → This is about PREVENTIVE care and routine upkeep, NOT major repairs
-- If it contains "installation" → This is about INSTALLING NEW systems/components, NOT repairing existing ones
-- If it contains "replacement" → This is about REMOVING OLD and INSTALLING NEW, NOT repairing
+⚠️ CRITICAL - UNDERSTAND THE SERVICE FIRST (READ THIS CAREFULLY):
+The service name is "{data.service}". Before writing ANYTHING, determine what this service ACTUALLY does:
 
-Ask yourself: "What is the PRIMARY PURPOSE of '{data.service}'?" Then generate content ONLY about that purpose.
-DO NOT assume every service involves the same physical repair work. Match your content to what the service name actually means.
+IF THE SERVICE NAME CONTAINS "INSURANCE" OR "CLAIM":
+→ This is about HELPING CUSTOMERS NAVIGATE THE INSURANCE CLAIMS PROCESS
+→ Write about: reviewing insurance policies, documenting damage for claims, photographing evidence, preparing claim paperwork, meeting with insurance adjusters, negotiating claim amounts, understanding policy coverage, appealing denied claims, maximizing claim payouts
+→ DO NOT write about: performing repairs, fixing roofs, replacing shingles, stopping leaks, or any physical repair work
+→ Example topics: "How we document damage for your claim", "What to expect when the adjuster visits", "Understanding your policy coverage", "Common reasons claims get denied"
+
+IF THE SERVICE NAME CONTAINS "INSPECTION" OR "ASSESSMENT":
+→ This is about EXAMINING and IDENTIFYING problems, NOT fixing them
+→ Write about: what gets inspected, how issues are identified, what the inspection report includes, when inspections are needed
+→ DO NOT write about: performing repairs or fixing the problems found
+
+IF THE SERVICE NAME CONTAINS "CONSULTATION" OR "ESTIMATE":
+→ This is about ADVISING customers and providing quotes, NOT performing work
+→ Write about: assessment process, pricing factors, options available, recommendations
+→ DO NOT write about: actually doing the installation or repair work
+
+IF THE SERVICE NAME CONTAINS "EMERGENCY":
+→ Emphasize URGENT RESPONSE, 24/7 availability, fast arrival times, temporary fixes to prevent further damage
+→ Focus on speed and immediate action
+
+CRITICAL: For "{data.service}", the PRIMARY PURPOSE is [analyze the service name and determine what it's actually about].
+Generate content ONLY about that primary purpose. Do NOT write generic repair content unless the service is specifically about repairs.
 
 Generate content for a local service landing page about {data.service} using:
 Service: {data.service}
