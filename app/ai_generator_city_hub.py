@@ -7,6 +7,44 @@ from app.models import GeneratePageResponse, PageData
 from app.vertical_profiles import get_vertical_profile, get_trade_name
 
 
+def _validate_industry_content(blocks: list, trade_name: str, vertical: str) -> None:
+    """
+    Validate that AI-generated content doesn't contain wrong industry terms.
+    Raises exception if wrong industry content is detected.
+    """
+    # Define wrong industry terms that should never appear
+    wrong_terms = {
+        "lighting": ["lighting", "light fixture", "led retrofit", "illumination"],
+        "electrical": ["electrical", "wiring", "circuit", "panel", "breaker"],
+        "plumbing": ["plumbing", "pipe", "drain", "faucet", "water heater"],
+        "hvac": ["hvac", "air conditioning", "heating", "furnace", "ductwork"],
+        "roofing": ["roofing", "shingle", "membrane", "flashing"],
+        "painting": ["painting", "paint", "coating"],
+        "flooring": ["flooring", "carpet", "tile", "hardwood"]
+    }
+    
+    # Get terms to check based on vertical (exclude own industry)
+    terms_to_check = []
+    for industry, terms in wrong_terms.items():
+        # Don't check for terms from the same industry
+        if industry not in vertical.lower():
+            terms_to_check.extend(terms)
+    
+    # Check all paragraph blocks for wrong terms
+    for block in blocks:
+        if block.get("type") in ["paragraph", "faq"]:
+            text = block.get("text", "").lower()
+            if block.get("type") == "faq":
+                text += " " + block.get("answer", "").lower()
+            
+            for term in terms_to_check:
+                if term in text:
+                    raise Exception(
+                        f"AI generated wrong industry content: '{term}' found in {trade_name} page. "
+                        f"Content must only discuss {trade_name}-related work."
+                    )
+
+
 def generate_city_hub_content(generator, data: PageData) -> GeneratePageResponse:
     """
     Generate city hub page content (city-localized hub page).
@@ -62,6 +100,9 @@ def generate_city_hub_content(generator, data: PageData) -> GeneratePageResponse
     content_json = _call_openai_city_hub_generation(generator, data, profile)
     
     blocks = content_json.get("blocks", [])
+    
+    # Validate content doesn't contain wrong industry terms
+    _validate_industry_content(blocks, trade_name, vertical)
     
     # Prepend H1 and intro paragraph for hero section (WordPress will format as hero)
     hero_blocks = [
@@ -159,6 +200,16 @@ Target Audience: {target_audience}
 Property Type: {property_type}
 
 ==================================================
+INDUSTRY CONTEXT (CRITICAL)
+==================================================
+You are writing for a {trade_name} business.
+- ONLY discuss {trade_name}-related work and issues
+- NEVER mention other trades: electrical, plumbing, HVAC, lighting, roofing, painting, flooring
+- Use ONLY vocabulary from this list: {', '.join(vocabulary[:8])}
+- If you mention upgrades, repairs, or issues, they MUST be {trade_name}-specific
+- Any mention of work outside {trade_name} will cause the output to be rejected
+
+==================================================
 ABSOLUTE RULES (NON-NEGOTIABLE)
 ==================================================
 - Write like a real tradesperson explaining work to a {target_audience}.
@@ -179,11 +230,12 @@ REQUIRED STRUCTURE (FOLLOW EXACTLY)
 ==================================================
 
 ### 1) INTRO — CITY FACTOR CAUSES REAL CONSEQUENCE (2–3 sentences)
-Purpose: Show WHY this type of work shows up the way it does in THIS city.
+Purpose: Show WHY this type of {trade_name} work shows up the way it does in THIS city.
 
 Rules:
 - Mention {city} exactly ONCE.
 - Include exactly ONE city factor: building age, inspections, growth, renovations, or weather.
+- Connect that factor to a {trade_name}-SPECIFIC issue or pattern.
 - Show ONE practical consequence that affects:
   * what gets discovered,
   * when work is done,
@@ -192,12 +244,29 @@ Rules:
 - No landmarks, ZIP codes, or nearby city lists.
 - No sales language.
 - Reference {property_type}, not generic "properties"
+- CRITICAL: The issue/consequence MUST be specific to {trade_name} work
 
-UNACCEPTABLE:
+UNACCEPTABLE (too generic):
 "Properties vary in age, which can affect service needs."
+"Many buildings benefit from upgrades and energy-efficient improvements."
 
-ACCEPTABLE STYLE (do NOT copy verbatim):
-"Because many {property_type} in {city} were built before modern standards were common, issues are often uncovered during inspections or remodels rather than routine maintenance, which changes how problems are prioritized."
+ACCEPTABLE PATTERNS (rotate these approaches, do NOT copy verbatim):
+
+Pattern A - Building Age + Discovery Timing:
+"Because many {property_type} in {city} date back to [specific era], {trade_name}-specific issues like [specific problem] often surface during tenant turnover or lease renewals rather than routine maintenance, which affects how quickly repairs get prioritized."
+
+Pattern B - Growth + Inspection Triggers:
+"With {city} seeing steady commercial development over the past decade, {trade_name} concerns like [specific problem] frequently come up during building inspections or code compliance reviews that weren't required when older properties were built."
+
+Pattern C - Weather + Wear Patterns:
+"Given {city}'s [weather characteristic], {trade_name} issues such as [specific problem] tend to show up after seasonal changes or storm events rather than gradually, which changes when property managers typically call for service."
+
+EXAMPLES OF TRADE-SPECIFIC ISSUES (use appropriate ones for {trade_name}):
+- Garage door: door balance issues, opener malfunctions, track alignment problems, spring wear, weather seal deterioration
+- Electrician: panel capacity limits, outdated wiring, circuit overloads, grounding issues
+- Plumber: pipe corrosion, fixture failures, drainage issues, water pressure problems
+- HVAC: system efficiency decline, ductwork issues, refrigerant concerns
+- Roofer: membrane degradation, flashing failures, drainage problems
 
 ### 2) SERVICES CONTEXT — REAL TRIGGERS (1–2 sentences)
 Purpose: Describe what actually prompts calls WITHOUT naming services.
