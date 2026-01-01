@@ -13,6 +13,17 @@ def _validate_industry_content(blocks: list, trade_name: str, vertical: str) -> 
     Raises exception if wrong industry content is detected.
     """
     # Define wrong industry terms that should never appear
+    # Map vertical names to their industry keys
+    vertical_to_industry = {
+        "electrician": "electrical",
+        "plumber": "plumbing",
+        "hvac": "hvac",
+        "roofer": "roofing",
+        "painter": "painting",
+        "flooring": "flooring",
+        "lighting": "lighting"
+    }
+    
     wrong_terms = {
         "lighting": ["lighting", "light fixture", "led retrofit", "illumination"],
         "electrical": ["electrical", "wiring", "circuit", "panel", "breaker"],
@@ -23,11 +34,14 @@ def _validate_industry_content(blocks: list, trade_name: str, vertical: str) -> 
         "flooring": ["flooring", "carpet", "tile", "hardwood"]
     }
     
+    # Get the industry key for this vertical
+    current_industry = vertical_to_industry.get(vertical.lower(), vertical.lower())
+    
     # Get terms to check based on vertical (exclude own industry)
     terms_to_check = []
     for industry, terms in wrong_terms.items():
         # Don't check for terms from the same industry
-        if industry not in vertical.lower():
+        if industry != current_industry:
             terms_to_check.extend(terms)
     
     # Check all paragraph blocks for wrong terms
