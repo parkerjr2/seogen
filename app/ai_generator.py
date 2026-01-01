@@ -334,6 +334,19 @@ class AIContentGenerator:
 2. Meta description MUST include both "{data.service}" AND "{data.city}"
 3. Do NOT use forbidden phrases: "structure", "top-notch", "premier", "trusted experts"{landmark_requirement}
 
+⚠️ CRITICAL - UNDERSTAND THE SERVICE FIRST:
+Before generating ANY content, think carefully about what "{data.service}" actually means:
+- If it contains "insurance" or "claim" → This is about NAVIGATING INSURANCE CLAIMS (documentation, adjuster meetings, claim negotiation), NOT performing physical repairs
+- If it contains "inspection" or "assessment" → This is about EXAMINING and IDENTIFYING issues, NOT fixing them
+- If it contains "consultation" or "estimate" → This is about ADVISING and PLANNING, NOT performing work
+- If it contains "emergency" → This is about URGENT RESPONSE and temporary fixes, emphasize speed and availability
+- If it contains "maintenance" → This is about PREVENTIVE care and routine upkeep, NOT major repairs
+- If it contains "installation" → This is about INSTALLING NEW systems/components, NOT repairing existing ones
+- If it contains "replacement" → This is about REMOVING OLD and INSTALLING NEW, NOT repairing
+
+Ask yourself: "What is the PRIMARY PURPOSE of '{data.service}'?" Then generate content ONLY about that purpose.
+DO NOT assume every service involves the same physical repair work. Match your content to what the service name actually means.
+
 Generate content for a local service landing page about {data.service} using:
 Service: {data.service}
 City: {data.city}
