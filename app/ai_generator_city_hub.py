@@ -153,6 +153,17 @@ def generate_city_hub_content(generator, data: PageData) -> GeneratePageResponse
     return response
 
 
+def _get_banned_trades(current_trade: str) -> str:
+    """Get list of banned trade names excluding the current trade."""
+    all_trades = ["electrical", "plumbing", "HVAC", "lighting", "roofing", "painting", "flooring", "concrete", "siding"]
+    current_trade_lower = current_trade.lower()
+    
+    # Remove the current trade from banned list
+    banned = [t for t in all_trades if t.lower() != current_trade_lower]
+    
+    return ", ".join(banned)
+
+
 def _call_openai_city_hub_generation(generator, data: PageData, profile: dict) -> dict:
     """Call OpenAI to generate city hub page content blocks."""
     
@@ -214,14 +225,15 @@ Target Audience: {target_audience}
 Property Type: {property_type}
 
 ==================================================
-INDUSTRY CONTEXT (CRITICAL)
+INDUSTRY CONTEXT (CRITICAL - READ CAREFULLY)
 ==================================================
 You are writing for a {trade_name} business.
 - ONLY discuss {trade_name}-related work and issues
-- NEVER mention other trades: electrical, plumbing, HVAC, lighting, roofing, painting, flooring
+- NEVER mention these other trades: {_get_banned_trades(trade_name)}
 - Use ONLY vocabulary from this list: {', '.join(vocabulary[:8])}
 - If you mention upgrades, repairs, or issues, they MUST be {trade_name}-specific
-- Any mention of work outside {trade_name} will cause the output to be rejected
+- Any mention of "electrical service", "plumbing work", "HVAC systems", or other non-{trade_name} work will cause IMMEDIATE REJECTION
+- DO NOT default to electrical content - you are writing for {trade_name.upper()}
 
 ==================================================
 ABSOLUTE RULES (NON-NEGOTIABLE)
