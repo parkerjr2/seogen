@@ -317,7 +317,21 @@ class AIContentGenerator:
         cta_after_section = random.choice([5, 6])  # CTA after section 5 or 6 (after both special sections)
         contact_order = random.choice(['phone_first', 'email_first'])
         
-        system_prompt = "You are a professional local service copywriter. Write natural, trustworthy marketing copy that genuinely helps potential customers understand the service and make informed decisions. Focus on practical, actionable information rather than marketing fluff."
+        # Determine target audience based on hub_label
+        hub_label = data.hub_label or ""
+        is_commercial = 'commercial' in hub_label.lower()
+        is_industrial = 'industrial' in hub_label.lower()
+        
+        if is_commercial or is_industrial:
+            target_audience = "business owner"
+            property_type = "commercial properties" if is_commercial else "industrial facilities"
+            property_examples = "office buildings, retail spaces, warehouses" if is_commercial else "manufacturing facilities, warehouses, industrial complexes"
+        else:
+            target_audience = "homeowner"
+            property_type = "homes"
+            property_examples = "single-family homes, townhomes, condos"
+        
+        system_prompt = f"You are a professional local service copywriter. Write natural, trustworthy marketing copy that genuinely helps potential customers understand the service and make informed decisions. Focus on practical, actionable information rather than marketing fluff. Target audience: {target_audience}."
         
         # Format local data if available
         local_facts = ""
@@ -409,24 +423,30 @@ Your goal is to help potential customers understand:
 5. Why this service matters (safety, permits, costs, common failures)
 6. When to choose this service vs related services
 
-Write content that YOU would want to read if you were a homeowner researching this service.
+Write content that YOU would want to read if you were a {target_audience} researching this service.
+
+TARGET AUDIENCE: {target_audience.upper()}
+PROPERTY TYPE: {property_type}
+- Write for {target_audience}s, NOT homeowners (unless target audience is homeowner)
+- Reference {property_type}, NOT homes (unless property type is homes)
+- Use appropriate context: {property_examples}
 
 - Section 1: Use heading "{headings['section1']}"
-  CRITICAL: The FIRST SENTENCE must include both '{data.service}' and '{data.city}'. Example: "Breaker trips are common with electrical repair in older Tulsa homes."
+  CRITICAL: The FIRST SENTENCE must include both '{data.service}' and '{data.city}'. Example: "Breaker trips are common with electrical repair in older Tulsa {property_type}."
   SERVICE-SPECIFIC LOCAL SIGNALS (CRITICAL): Include at least 2 service+city combinations that show local expertise:
-  * "[Service] in [City] homes built before [year]..."
+  * "[Service] in [City] {property_type} built before [year]..."
   * "[City] [building type] often require [service-specific work]..."
   * "We regularly handle [service] in [City area type] properties..."
-  Help customers understand what makes {data.service} different in {data.city} specifically. Talk about real patterns they'll recognize: older homes vs newer construction, weather effects (TX: heat, storms, hail), common maintenance issues.
-  {self._get_landmark_instruction(local_data)}
+  Help {target_audience}s understand what makes {{data.service}} different in {{data.city}} specifically. Talk about real patterns they'll recognize: older vs newer construction, weather effects (TX: heat, storms, hail), common maintenance issues.
+  {{self._get_landmark_instruction(local_data)}}
   Focus on information that helps them understand their situation, not marketing language.
   Don't start with "In [city], electrical issues can be..." - start with something specific that includes the service and city immediately.
 
-- Section 2: Use heading "{headings['section2']}"
-  Help customers recognize when they need this service. Talk about what actually goes wrong and when people should call.
-  Most importantly: Tell people when something's urgent vs when they can wait. Explain one thing homeowners get wrong or don't realize.
+- Section 2: Use heading "{{headings['section2']}}"
+  Help {target_audience}s recognize when they need this service. Talk about what actually goes wrong and when people should call.
+  Most importantly: Tell people when something's urgent vs when they can wait. Explain one thing {target_audience}s get wrong or don't realize.
   Give them practical knowledge they can use to make decisions.
-  SERVICE-SPECIFIC LOCAL SIGNAL: Include 1 service+city pattern (e.g., "After {{city}} storms, we see {{service-specific problem}}...")
+  SERVICE-SPECIFIC LOCAL SIGNAL: Include 1 service+city pattern (e.g., "After {{{{city}}}} storms, we see {{{{service-specific problem}}}}...")
 
 - Section 3: Use heading "{headings['section3']}"
   Help customers understand what to expect when they hire someone for this work.
