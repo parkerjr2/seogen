@@ -392,9 +392,6 @@ OUTPUT JSON SCHEMA
     {{"type": "paragraph", "text": "{{{{CITY_SERVICE_LINKS}}}}"}},
     {{"type": "heading", "level": 2, "text": "Why Choose Us"}},
     {{"type": "paragraph", "text": "ONE paragraph, 4-6 sentences, real process with natural variation patterns"}},
-    {{"type": "heading", "level": 2, "text": "Frequently Asked Questions"}},
-    {{"type": "faq", "question": "What {hub_label.lower()} {trade_name} services do you offer in {city}?", "answer": "Detailed 3-4 sentence answer"}},
-    {{"type": "faq", "question": "...", "answer": "..."}},
     {{"type": "cta", "text": "{data.cta_text}", "phone": "{data.phone or ''}"}}
   ]
 }}
@@ -470,26 +467,6 @@ def _generate_fallback_city_hub_content(data: PageData, profile: dict) -> dict:
         {
             "type": "paragraph",
             "text": "Most jobs start by figuring out whether the issue is isolated or part of something bigger. If it's something that can wait, that's said clearly. If it's likely to cause trouble later, the reason is explained along with options. When permits or inspections are involved, that's discussed up front so there are no surprises. The goal is to leave the work done correctly and make sure the customer understands what changed."
-        },
-        {
-            "type": "heading",
-            "level": 2,
-            "text": "Frequently Asked Questions"
-        },
-        {
-            "type": "faq",
-            "question": f"What {hub_label.lower()} {trade_name} services do you offer in {city}?",
-            "answer": f"We offer a complete range of {hub_label.lower()} {trade_name} services in {city}, {state}. Our team has experience with both routine maintenance and complex projects, ensuring quality results for every job."
-        },
-        {
-            "type": "faq",
-            "question": f"How quickly can you respond in {city}?",
-            "answer": f"Response times in {city} vary based on the nature of the request. For routine services, we typically schedule within a few days. Emergency situations receive priority response, often within hours."
-        },
-        {
-            "type": "faq",
-            "question": "Do you provide estimates?",
-            "answer": f"Yes, we provide detailed estimates for all projects in {city}. Our estimates include scope of work, materials, labor, and timeline with transparent pricing."
         },
     ]
     
