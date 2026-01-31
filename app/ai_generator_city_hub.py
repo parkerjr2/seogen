@@ -62,18 +62,40 @@ def _validate_industry_content(blocks: list, trade_name: str, vertical: str) -> 
 def generate_city_hub_content(generator, data: PageData) -> GeneratePageResponse:
     """
     Generate city hub page content (city-localized hub page).
-    
+
     Args:
         generator: The AIContentGenerator instance
         data: Page generation parameters with hub + city information
-        
+
     Returns:
         Complete validated city hub page content
     """
+    import asyncio
+    from app.local_data_fetcher import local_data_fetcher
+
     vertical = data.vertical or "other"
     profile = get_vertical_profile(vertical)
     trade_name = profile["trade_name"]
-    
+
+    # Fetch comprehensive local data (Census + landmarks + research)
+    # Note: CITY_HUB research uses "General" trade type for cross-trade insights
+    local_data = None
+    try:
+        try:
+            asyncio.get_running_loop()
+            local_data = None  # Skip if already in event loop
+        except RuntimeError:
+            local_data = asyncio.run(
+                local_data_fetcher.get_all_local_data(
+                    data.city,
+                    data.state,
+                    "General"  # Use "General" trade type for city-level research
+                )
+            )
+    except Exception as e:
+        print(f"Warning: Could not fetch local data for {data.city}, {data.state}: {e}")
+        local_data = None
+
     # Build title programmatically
     hub_label = data.hub_label or "Services"
     city = data.city or "Your City"
@@ -111,7 +133,7 @@ def generate_city_hub_content(generator, data: PageData) -> GeneratePageResponse
                 meta_description = meta_description[:157] + "..."
     
     # Generate content blocks via LLM
-    content_json = _call_openai_city_hub_generation(generator, data, profile)
+    content_json = _call_openai_city_hub_generation(generator, data, profile, local_data)
     
     blocks = content_json.get("blocks", [])
     
@@ -164,15 +186,15 @@ def _get_banned_trades(current_trade: str) -> str:
     return ", ".join(banned)
 
 
-def _call_openai_city_hub_generation(generator, data: PageData, profile: dict) -> dict:
+def _call_openai_city_hub_generation(generator, data: PageData, profile: dict, local_data: dict = None) -> dict:
     """Call OpenAI to generate city hub page content blocks."""
-    
+
     trade_name = profile["trade_name"]
     vocabulary = profile.get("vocabulary", [])
     hub_label = data.hub_label or "Services"
     city = data.city or "Your City"
     state = data.state or "ST"
-    
+
     # Note: We do NOT pass service names to the AI to avoid enumeration
     # The shortcode will handle service discovery and display
     
@@ -199,8 +221,38 @@ BANNED PHRASES (never use these):
     target_audience = "business owner" if is_commercial else "homeowner"
     property_type = "commercial properties" if is_commercial else "homes"
     business_type = f"{hub_label.lower()} {trade_name}" if hub_label else trade_name
-    
-    user_prompt = f"""You are generating a City Hub page for a {business_type} service business.
+
+    # Format local data if available
+    local_facts = ""
+    if local_data:
+        from app.local_data_fetcher import local_data_fetcher
+        if local_data.get("housing_facts") or local_data.get("landmarks") or local_data.get("research"):
+            local_facts = "\n\n" + local_data_fetcher.format_for_prompt(local_data)
+
+    # Build "USING VERIFIED LOCAL CONTEXT" section if research data exists
+    using_context_section = ""
+    if local_data and local_data.get("research"):
+        using_context_section = f"""
+
+==================================================
+⚠️ USING VERIFIED LOCAL CONTEXT
+==================================================
+The local_context below contains REAL, VERIFIED data about {city}, {state}:
+- Census housing facts (building ages, construction periods)
+- Real landmarks verified by AI research
+- City-specific construction patterns, climate factors, and service demand drivers
+
+CRITICAL RULES:
+1. YOU MUST use at least 1 specific fact from the research data in your overview
+2. DO NOT invent local context - ONLY use what's provided
+3. Focus on factors that create service demand across multiple trades
+
+EXAMPLE:
+✅ "Many of {city}'s commercial buildings date from the 1978-1982 construction boom, creating consistent renovation needs across {trade_name} services"
+   (Uses specific construction era to explain multi-trade demand)
+"""
+
+    user_prompt = f"""You are generating a City Hub page for a {business_type} service business.{local_facts}{using_context_section}
 
 PAGE TYPE:
 City Hub (category + city context page)
@@ -272,27 +324,8 @@ Rules:
 - Reference {property_type}, not generic "properties"
 - CRITICAL: The issue/consequence MUST be specific to {trade_name} work
 
-UNACCEPTABLE (too generic):
-"Properties vary in age, which can affect service needs."
-"Many buildings benefit from upgrades and energy-efficient improvements."
-
-ACCEPTABLE PATTERNS (rotate these approaches, do NOT copy verbatim):
-
-Pattern A - Building Age + Discovery Timing:
-"Because many {property_type} in {city} date back to [specific era], {trade_name}-specific issues like [specific problem] often surface during tenant turnover or lease renewals rather than routine maintenance, which affects how quickly repairs get prioritized."
-
-Pattern B - Growth + Inspection Triggers:
-"With {city} seeing steady commercial development over the past decade, {trade_name} concerns like [specific problem] frequently come up during building inspections or code compliance reviews that weren't required when older properties were built."
-
-Pattern C - Weather + Wear Patterns:
-"Given {city}'s [weather characteristic], {trade_name} issues such as [specific problem] tend to show up after seasonal changes or storm events rather than gradually, which changes when property managers typically call for service."
-
-EXAMPLES OF TRADE-SPECIFIC ISSUES (use appropriate ones for {trade_name}):
-- Garage door: door balance issues, opener malfunctions, track alignment problems, spring wear, weather seal deterioration
-- Electrician: panel capacity limits, outdated wiring, circuit overloads, grounding issues
-- Plumber: pipe corrosion, fixture failures, drainage issues, water pressure problems
-- HVAC: system efficiency decline, ductwork issues, refrigerant concerns
-- Roofer: membrane degradation, flashing failures, drainage problems
+Use VERIFIED LOCAL RESEARCH from above (construction eras, climate factors) to explain city-specific service patterns.
+Avoid generic statements like "properties vary in age" - use specific data from the research.
 
 ### 2) SERVICES CONTEXT — REAL TRIGGERS (1–2 sentences)
 Purpose: Describe what actually prompts calls WITHOUT naming services.
@@ -396,29 +429,9 @@ OUTPUT JSON SCHEMA
   ]
 }}
 
-==================================================
-HARD SELF-REVIEW ENFORCEMENT (DO NOT SKIP)
-==================================================
-You may NOT return the first draft.
-
-Before finalizing, review your output and ask:
-- Does this sound like a real tradesperson describing real jobs?
-- Does the service-links transition create a reason to click?
-- Does "Why Choose Us" describe actions, not values?
-- Could this paragraph be reused unchanged on another city page?
-
-If the answer to ANY question is YES (except the first):
-→ Rewrite the affected section.
-→ Repeat until ALL answers are NO.
-
-Do NOT return output until this enforcement passes.
-
 CRITICAL CONTEXT:
-City Hub pages exist to answer:
-"Why does this type of work show up the way it does in this city,
-and how does this company actually handle those situations?"
-
-If the output sounds like advice, values, or professionalism, it has FAILED."""
+City Hub pages explain why this work shows up in this city and how situations are handled.
+Avoid advice-style language, values, or generic professionalism."""
 
     try:
         result = generator._call_openai_json(system_prompt, user_prompt, max_tokens=3000)

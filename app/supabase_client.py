@@ -805,10 +805,10 @@ class SupabaseClient:
     def get_api_keys_by_subscription_id(self, subscription_id: str) -> list[dict]:
         """
         Get all API keys associated with a subscription.
-        
+
         Args:
             subscription_id: Subscription UUID
-            
+
         Returns:
             List of API key data dicts
         """
@@ -824,6 +824,143 @@ class SupabaseClient:
         except Exception as e:
             print(f"Error getting API keys by subscription ID: {e}")
             return []
+
+    def get_city_research_cache(self, city_name: str, state: str, trade_type: str) -> dict | None:
+        """
+        Retrieve cached city research data if it exists and hasn't expired.
+
+        Args:
+            city_name: City name (e.g., "Tulsa")
+            state: Two-letter state code (e.g., "OK")
+            trade_type: Trade type (e.g., "Garage Door")
+
+        Returns:
+            Research data dict if found and not expired, None otherwise
+        """
+        try:
+            # Normalize inputs
+            city_name_normalized = city_name.strip().title()
+            state_normalized = state.strip().upper()
+            trade_type_normalized = trade_type.strip().title()
+
+            # Query for non-expired cache entry
+            response = self._request(
+                "GET",
+                f"/rest/v1/city_research_cache",
+                params={
+                    "city_name": f"eq.{city_name_normalized}",
+                    "state": f"eq.{state_normalized}",
+                    "trade_type": f"eq.{trade_type_normalized}",
+                    "expires_at": f"gt.{self._get_current_timestamp()}",
+                    "select": "*"
+                },
+                timeout=10
+            )
+
+            if response.status_code == 200:
+                data = response.json()
+                if data and len(data) > 0:
+                    return data[0].get('research_data')
+
+            return None
+
+        except Exception as e:
+            print(f"Error fetching city research cache: {e}")
+            return None
+
+    def set_city_research_cache(
+        self,
+        city_name: str,
+        state: str,
+        trade_type: str,
+        research_data: dict,
+        is_generic: bool = False,
+        differentiation_score: int = None,
+        needs_manual_review: bool = False,
+        validated_at: str = None
+    ) -> bool:
+        """
+        Store city research data in cache with variable TTL based on quality.
+        Uses UPSERT to handle duplicate key conflicts.
+
+        PART 4 & 5 Enhancement: Quality-based caching
+        - High-quality data (score >= 8): 90 day cache
+        - Generic/low-quality data (score < 6): 7 day cache
+        - Medium quality (score 6-7): 30 day cache
+
+        Args:
+            city_name: City name (e.g., "Tulsa")
+            state: Two-letter state code (e.g., "OK")
+            trade_type: Trade type (e.g., "Garage Door")
+            research_data: Full research data dict
+            is_generic: True if research is generic/regional (not city-specific)
+            differentiation_score: Score 1-10 rating uniqueness
+            needs_manual_review: True if research needs human review
+            validated_at: ISO timestamp of validation
+
+        Returns:
+            True if successful, False otherwise
+        """
+        try:
+            from datetime import datetime, timedelta
+
+            # Normalize inputs
+            city_name_normalized = city_name.strip().title()
+            state_normalized = state.strip().upper()
+            trade_type_normalized = trade_type.strip().title()
+
+            # Calculate expiration based on quality (PART 5)
+            if is_generic or (differentiation_score is not None and differentiation_score < 6):
+                # Generic/low-quality: 7 days only
+                cache_days = 7
+            elif differentiation_score is not None and differentiation_score >= 8:
+                # High-quality: 90 days
+                cache_days = 90
+            else:
+                # Medium quality or unknown: 30 days
+                cache_days = 30
+
+            expires_at = (datetime.utcnow() + timedelta(days=cache_days)).isoformat()
+
+            payload = {
+                "city_name": city_name_normalized,
+                "state": state_normalized,
+                "trade_type": trade_type_normalized,
+                "research_data": research_data,
+                "expires_at": expires_at,
+                "is_generic": is_generic,
+                "differentiation_score": differentiation_score,
+                "needs_manual_review": needs_manual_review,
+                "validated_at": validated_at or datetime.utcnow().isoformat()
+            }
+
+            # UPSERT: Insert or update if exists
+            response = self._request(
+                "POST",
+                "/rest/v1/city_research_cache",
+                json=payload,
+                extra_headers={
+                    "Prefer": "resolution=merge-duplicates"  # Upsert on conflict
+                },
+                timeout=10
+            )
+
+            if response.status_code in (200, 201, 204):
+                print(f"Cached research for {city_name_normalized}, {state_normalized} "
+                      f"({trade_type_normalized}) with {cache_days}-day TTL "
+                      f"(score: {differentiation_score}, generic: {is_generic})")
+                return True
+            else:
+                return False
+
+        except Exception as e:
+            print(f"Error setting city research cache: {e}")
+            return False
+
+    def _get_current_timestamp(self) -> str:
+        """Get current UTC timestamp in ISO format for Supabase queries."""
+        from datetime import datetime
+        return datetime.utcnow().isoformat()
 
 # Global Supabase client instance
 supabase_client = SupabaseClient()

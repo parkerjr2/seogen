@@ -102,20 +102,26 @@ class AIContentGenerator:
     def _generate_service_city_content(self, data: PageData) -> GeneratePageResponse:
         """Generate service+city page content (existing logic)."""
         try:
-            # Step 0: Fetch real housing age data from Census API
+            # Step 0: Fetch comprehensive local data (Census + landmarks + research)
             local_data = None
             try:
                 # Check if we're already in an event loop
                 try:
                     asyncio.get_running_loop()
-                    # Already in event loop, skip Census data to avoid asyncio.run() error
-                    # Census data is optional and content generation works fine without it
+                    # Already in event loop, skip local data to avoid asyncio.run() error
                     local_data = None
                 except RuntimeError:
                     # No event loop running, safe to use asyncio.run()
-                    local_data = asyncio.run(local_data_fetcher.fetch_city_data(data.city, data.state))
+                    # NEW: Use get_all_local_data to include research data
+                    local_data = asyncio.run(
+                        local_data_fetcher.get_all_local_data(
+                            data.city,
+                            data.state,
+                            data.vertical  # Pass vertical as trade_type
+                        )
+                    )
             except Exception as e:
-                print(f"Warning: Could not fetch Census data for {data.city}, {data.state}: {e}")
+                print(f"Warning: Could not fetch local data for {data.city}, {data.state}: {e}")
                 local_data = None
             
             # Step 1: Generate content via LLM (NOT title/slug/H1)
@@ -126,11 +132,25 @@ class AIContentGenerator:
             
             # Step 3: Validate output
             validation_errors = self._validate_output(response, data)
-            
+
+            # Step 3.5: Validate research data usage (if research data available)
+            if local_data and local_data.get("research"):
+                # Extract all content text from response blocks
+                content_text = ""
+                for block in response.blocks:
+                    if hasattr(block, 'text'):
+                        content_text += " " + block.text
+                    if hasattr(block, 'answer'):  # FAQ blocks
+                        content_text += " " + block.answer
+
+                is_valid, error_msg = self._validate_research_usage(content_text, local_data)
+                if not is_valid:
+                    validation_errors.append(error_msg)
+
             # Step 4: If validation fails, attempt repair pass
             if validation_errors:
                 print(f"Validation failed: {validation_errors}")
-                repaired_content = self._repair_output(content_json, validation_errors, data)
+                repaired_content = self._repair_output(content_json, validation_errors, data, local_data)
                 response = self._assemble_response(repaired_content, data)
                 
                 # Re-validate after repair
@@ -213,8 +233,26 @@ class AIContentGenerator:
                 
                 result = response.json()
                 content = result["choices"][0]["message"]["content"]
-                return json.loads(content)
-                
+
+                # Strip markdown code blocks if present (OpenAI sometimes wraps JSON in ```json ... ```)
+                content = content.strip()
+                if content.startswith("```json"):
+                    content = content[7:]  # Remove ```json
+                if content.startswith("```"):
+                    content = content[3:]  # Remove ```
+                if content.endswith("```"):
+                    content = content[:-3]  # Remove trailing ```
+                content = content.strip()
+
+                # Debug: Log what OpenAI actually returned if JSON parsing fails
+                try:
+                    return json.loads(content)
+                except json.JSONDecodeError as e:
+                    print(f"\n⚠️  OpenAI returned non-JSON content:")
+                    print(f"First 500 chars: {content[:500]}")
+                    print(f"JSON Error: {str(e)}")
+                    raise Exception(f"OpenAI returned invalid JSON: {str(e)}")
+
         except json.JSONDecodeError as e:
             raise Exception(f"OpenAI returned invalid JSON: {str(e)}")
         except Exception as e:
@@ -307,15 +345,29 @@ class AIContentGenerator:
         num_faqs = random.randint(3, 5)  # Variable FAQ count (3-5 for substantial content)
         headings = self._get_random_headings(data.service, data.city)
         
-        # Structural variance: randomize "Why This Service" section placement (after section 2 or 3)
-        why_section_position = random.choice([2, 3])  # Insert after section 2 or 3
-        
-        # Structural variance: randomize "When to Choose This Service" section placement (after section 2, 3, or 4)
-        when_section_position = random.choice([2, 3, 4])  # Insert after section 2, 3, or 4
-        
+        # Structural variance: randomize section order and placement
+        # Vary middle sections (problems, process, results) order
+        middle_sections_order = random.choice([
+            ['problems', 'process', 'results'],  # Default order
+            ['process', 'problems', 'results'],  # Process first
+            ['problems', 'results', 'process'],  # Results before process
+            ['results', 'problems', 'process'],  # Results first
+        ])
+
+        # Structural variance: randomize "Why This Service" section placement
+        why_section_position = random.choice([2, 3, 4])  # Insert after section 2, 3, or 4
+
+        # Structural variance: randomize "When to Choose This Service" section placement
+        when_section_position = random.choice([3, 4, 5])  # Insert after section 3, 4, or 5
+
         # Structural variance: randomize CTA placement and contact card order
         cta_after_section = random.choice([5, 6])  # CTA after section 5 or 6 (after both special sections)
         contact_order = random.choice(['phone_first', 'email_first'])
+
+        # Map middle section order to section numbers (2, 3, 4)
+        section_2_topic = middle_sections_order[0]
+        section_3_topic = middle_sections_order[1]
+        section_4_topic = middle_sections_order[2]
         
         # Determine target audience based on hub_label
         hub_label = data.hub_label or ""
@@ -342,7 +394,87 @@ class AIContentGenerator:
             # Add landmark requirement to critical validation if landmarks exist
             if local_data.get("landmarks"):
                 landmark_requirement = f"\n4. MUST mention at least ONE landmark from the verified list above (e.g., 'near {local_data['landmarks'][0]}' or 'around {local_data['landmarks'][0]}')"
-        
+
+        # Extract median year and construction eras from research for explicit prompting
+        median_year_text = ""
+        construction_era_text = ""
+        if local_data and local_data.get("research"):
+            research = local_data["research"]
+            building_age = research.get("building_age_specificity", {})
+            if building_age.get("median_year"):
+                median_year = building_age["median_year"]
+                median_year_text = f"The median building year for {data.city} is {median_year}. "
+
+            construction_eras = research.get("major_construction_eras", [])
+            if construction_eras:
+                era_list = []
+                for era in construction_eras[:2]:
+                    if isinstance(era, dict) and era.get("period"):
+                        era_list.append(f"{era['period']} ({era.get('description', '')})")
+                if era_list:
+                    construction_era_text = f"Major construction eras: {', '.join(era_list)}. "
+
+        # Build "USING VERIFIED LOCAL CONTEXT" section if research data exists
+        using_context_section = ""
+        if local_data and local_data.get("research"):
+            using_context_section = f"""
+
+⚠️ USING VERIFIED LOCAL CONTEXT:
+The local_context above contains REAL, VERIFIED data about {data.city}, {data.state}:
+- Census housing facts (building ages, construction periods)
+- Real landmarks verified by AI research
+- City-specific research for {data.service} businesses:
+  * Construction eras with SPECIFIC years and local events
+  * Climate factors with SPECIFIC measurements (not generic weather)
+  * Service triggers with LOCAL context (not generic scenarios)
+  * Permit requirements unique to this city
+  * Unique local factors (economic history, building stock)
+
+CRITICAL RULES FOR USING LOCAL CONTEXT:
+1. YOU MUST use at least 2 specific facts from the research data in your content
+2. DO NOT make up or invent local context - ONLY use what's provided
+3. Paraphrase research facts naturally - don't copy verbatim
+4. Connect research facts to {data.service} service needs
+5. If research data includes specificity notes, those validate the fact is city-specific
+
+⚠️ KEY RESEARCH FACTS FOR {data.city.upper()}:
+{median_year_text}{construction_era_text}
+
+EXAMPLES OF CORRECT USAGE:
+✅ "Many commercial buildings date from the 1978-1982 oil boom, when 40% of downtown office stock was constructed"
+   (Uses specific construction era from research with local economic context)
+
+✅ "With extreme heat waves reaching 110°F+ for 20 days per year—more than double the state average—{data.service} systems face intense demand"
+   (Uses climate factor with specific measurement and comparison)
+
+❌ "The area experiences hot summers and storms"
+   (Generic weather - research data includes specific measurements)
+
+❌ "Many buildings are older and may need repairs"
+   (Generic statement - research data includes specific construction eras)
+
+⚠️ MANDATORY RESEARCH INTEGRATION (VALIDATION WILL CHECK):
+You MUST use at least 2 specific facts from the VERIFIED LOCAL CONTEXT above.
+
+ACCEPTABLE FACT USAGE (these will pass validation):
+✓ Reference the ACTUAL median building year: {median_year_text.strip() if median_year_text else "Use the exact year from research"}
+✓ Reference construction era with dates: {construction_era_text.strip() if construction_era_text else "Use specific periods from research"}
+✓ Include climate measurements: "With {data.city} experiencing [specific number/measurement]..."
+✓ Use 2+ consecutive words from climate factors: "flash flooding", "heat island effect"
+✓ Reference unique local factors with key phrases: "suburban growth patterns", specific local events
+
+UNACCEPTABLE (will fail validation):
+✗ Generic year without using research: "built around 1979" or any year NOT in the research
+✗ Generic climate mentions: "hot weather" instead of specific measurements from research
+✗ Single common words: "due to", "with", "severe" that match accidentally
+✗ Not mentioning research data at all
+
+VALIDATION WILL VERIFY:
+- At least 2 facts are used from: construction eras, climate factors, building age, unique factors
+- Facts reference specific data (measurements, dates, multi-word phrases)
+- You're using the ACTUAL research data, not inventing similar-sounding generic content
+"""
+
         user_prompt = f"""⚠️ CRITICAL VALIDATION REQUIREMENTS (MUST PASS OR GENERATION FAILS):
 1. First paragraph MUST include both "{data.service}" AND "{data.city}" in the first sentence
 2. Meta description MUST include both "{data.service}" AND "{data.city}"
@@ -380,13 +512,13 @@ City: {data.city}
 State: {data.state}
 Company Name: {data.company_name}
 Phone: {data.phone}{local_facts}
-Address: {data.address}
+Address: {data.address}{using_context_section}
 
 Return ONLY valid JSON with this exact structure:
 {{
 "meta_description": "string",
 "sections": [
-{{ "heading": "string", "paragraph": "string" }},
+{{ "heading": "", "paragraph": "string" }},
 {{ "heading": "string", "paragraph": "string" }},
 {{ "heading": "string", "paragraph": "string" }},
 {{ "heading": "string", "paragraph": "string" }},
@@ -401,9 +533,13 @@ Return ONLY valid JSON with this exact structure:
   "why_section_position": {why_section_position},
   "when_section_position": {when_section_position},
   "cta_after_section": {cta_after_section},
-  "contact_order": "{contact_order}"
+  "contact_order": "{contact_order}",
+  "middle_sections_order": {middle_sections_order}
 }}
 }}
+
+NOTE: Section 1 heading must be EMPTY (uses H1 above). Sections 2-6 must have headings.
+IMPORTANT: Follow the specified topic order for sections 2-4: {section_2_topic}, {section_3_topic}, {section_4_topic}.
 
 CRITICAL SERVICE FOCUS RULES:
 Write ONLY about {data.service}. Every section must be exclusively about {data.service}.
@@ -413,7 +549,7 @@ Section headings must be specific to {data.service}, not generic or about other 
 Do NOT use generic "roofing" content as filler - stay 100% focused on the specified service.
 
 CONTENT STRUCTURE - GENUINELY HELPFUL FOR CUSTOMERS:
-6 sections total, each with an H2 heading and paragraph (at least 650 characters for main sections, 400+ for comparison section):
+6 sections total. Section 1 has NO heading (uses the H1 above). Sections 2-6 have H2 headings and paragraphs (at least 650 characters for main sections, 400+ for comparison section):
 
 Your goal is to help potential customers understand:
 1. What this service involves in their specific city
@@ -431,32 +567,21 @@ PROPERTY TYPE: {property_type}
 - Reference {property_type}, NOT homes (unless property type is homes)
 - Use appropriate context: {property_examples}
 
-- Section 1: Use heading "{headings['section1']}"
+- Section 1: NO HEADING (the page already has an H1). Start directly with the paragraph.
   CRITICAL: The FIRST SENTENCE must include both '{data.service}' and '{data.city}'. Example: "Breaker trips are common with electrical repair in older Tulsa {property_type}."
-  SERVICE-SPECIFIC LOCAL SIGNALS (CRITICAL): Include at least 2 service+city combinations that show local expertise:
-  * "[Service] in [City] {property_type} built before [year]..."
-  * "[City] [building type] often require [service-specific work]..."
-  * "We regularly handle [service] in [City area type] properties..."
-  Help {target_audience}s understand what makes {{data.service}} different in {{data.city}} specifically. Talk about real patterns they'll recognize: older vs newer construction, weather effects (TX: heat, storms, hail), common maintenance issues.
+  Help {target_audience}s understand what makes {{data.service}} different in {{data.city}} specifically using VERIFIED LOCAL DATA from the research above.
   {{self._get_landmark_instruction(local_data)}}
   Focus on information that helps them understand their situation, not marketing language.
   Don't start with "In [city], electrical issues can be..." - start with something specific that includes the service and city immediately.
 
-- Section 2: Use heading "{{headings['section2']}}"
-  Help {target_audience}s recognize when they need this service. Talk about what actually goes wrong and when people should call.
-  Most importantly: Tell people when something's urgent vs when they can wait. Explain one thing {target_audience}s get wrong or don't realize.
-  Give them practical knowledge they can use to make decisions.
-  SERVICE-SPECIFIC LOCAL SIGNAL: Include 1 service+city pattern (e.g., "After {{{{city}}}} storms, we see {{{{service-specific problem}}}}...")
+- Section 2: Topic = {section_2_topic.upper()}. Use heading "{{headings['section2']}}"
+  {'Help ' + target_audience + 's recognize when they need this service. Talk about what actually goes wrong and when people should call. Most importantly: Tell people when something urgent vs when they can wait.' if section_2_topic == 'problems' else 'Help customers understand what to expect when they hire someone for this work. Walk through what gets checked, what usually gets found, and what changes after the work is done.' if section_2_topic == 'process' else 'Help customers know what results to expect and how to verify the work was done properly. Talk about what people can actually see and verify - no more overflow, lights stop flickering, breakers stop tripping, etc.'}
 
-- Section 3: Use heading "{headings['section3']}"
-  Help customers understand what to expect when they hire someone for this work.
-  Walk through what gets checked, what usually gets found, and what changes after the work is done.
-  Explain when you can just fix something vs when you need to replace it. This helps them understand quotes they receive.
+- Section 3: Topic = {section_3_topic.upper()}. Use heading "{headings['section3']}"
+  {'Help ' + target_audience + 's recognize when they need this service. Talk about what actually goes wrong and when people should call. Most importantly: Tell people when something urgent vs when they can wait.' if section_3_topic == 'problems' else 'Help customers understand what to expect when they hire someone for this work. Walk through what gets checked, what usually gets found, and what changes after the work is done.' if section_3_topic == 'process' else 'Help customers know what results to expect and how to verify the work was done properly. Talk about what people can actually see and verify - no more overflow, lights stop flickering, breakers stop tripping, etc.'}
 
-- Section 4: Use heading "{headings['section4']}"
-  Help customers know what results to expect and how to verify the work was done properly.
-  Talk about what people can actually see and verify - no more overflow, lights stop flickering, breakers stop tripping, etc.
-  This helps them know if they got good service or if they need to follow up with the contractor.
+- Section 4: Topic = {section_4_topic.upper()}. Use heading "{headings['section4']}"
+  {'Help ' + target_audience + 's recognize when they need this service. Talk about what actually goes wrong and when people should call. Most importantly: Tell people when something urgent vs when they can wait.' if section_4_topic == 'problems' else 'Help customers understand what to expect when they hire someone for this work. Walk through what gets checked, what usually gets found, and what changes after the work is done.' if section_4_topic == 'process' else 'Help customers know what results to expect and how to verify the work was done properly. Talk about what people can actually see and verify - no more overflow, lights stop flickering, breakers stop tripping, etc.'}
 
 - Section 5 ("Why This Service" - INSERT AFTER SECTION {why_section_position}): Use heading "{headings['why_section']}"
   UNIQUE CONTENT - NOT REUSABLE ACROSS SERVICES. Cover 3-4 of these topics specific to {data.service}:
@@ -484,14 +609,13 @@ Example headings for "Gutter Installation":
 - "How We Install Gutters: Step by Step"
 - "Why Choose Us for Gutter Installation"
 
-TRADE VOCABULARY REQUIREMENT (CRITICAL):
-Paragraphs 1-3 MUST each include at least 2 service-specific technical terms. Paragraph 4 (why choose us) can focus more on customer satisfaction. Examples:
-- Electrical: breaker, circuit, panel, outlet, wiring, voltage, amp, fuse, junction, conduit
-- Gutter: downspout, fascia, pitch, water flow, debris, soffit, elbow, hanger, seam
-- Roofing: shingles, flashing, underlayment, vents, decking, ridge, valley, eave
-- HVAC: compressor, condenser, evaporator, refrigerant, ductwork, thermostat, filter, coil
-- Plumbing: pipe, drain, trap, valve, fixture, water pressure, sewer line, shutoff
-Use these terms naturally in context. Avoid vague marketing language.
+TRADE VOCABULARY (CRITICAL):
+Paragraphs 1-3 need 2+ technical terms each. Examples:
+- Electrical: breaker, circuit, panel, wiring, voltage
+- Gutter: downspout, fascia, pitch, debris, hanger
+- Roofing: shingles, flashing, underlayment, decking
+- HVAC: compressor, condenser, refrigerant, ductwork
+- Plumbing: pipe, drain, valve, fixture, pressure
 
 REDUCE EXACT-MATCH KEYWORD REPETITION:
 The service name '{data.service}' is required where validation checks for it, but do NOT repeat it mechanically in every sentence.
@@ -513,21 +637,13 @@ WRITING STYLE - SOUND HUMAN, NOT AI:
 - Sound like someone who does this work every day, not someone reading from a script
 - NO template language like "addressing your needs", "focus on providing", "here to ensure"
 
-{num_faqs} FAQs about {data.service}. GENUINELY HELPFUL FOR CUSTOMERS - EACH FAQ ANSWER MUST:
-- Reference a REAL CUSTOMER SITUATION (e.g., "When you notice water pooling near your foundation...")
-- Follow CAUSE→SYMPTOM→CONSEQUENCE→RESOLUTION structure:
-  * Explain the cause (e.g., "...this usually means the downspouts are clogged or disconnected...")
-  * Explain the symptom/what customers see (e.g., "...you'll notice water staining on the fascia...")
-  * Explain the consequence if ignored (e.g., "...which can lead to foundation damage over time...")
-  * Explain how the service resolves it (e.g., "...we clear the blockage and ensure proper drainage away from the house")
-- Be at least 350 characters
-- Demonstrate EXPERIENCE, not just correctness
-- Include one LOCAL DIFFERENTIATOR from the City Differentiation Pack categories
-- Include one TRADE TERM beyond the minimum paragraph requirements
-- Include "WHEN TO ACT TODAY VS MONITOR" guidance (e.g., "If you're seeing active overflow during rain, address this immediately. If it's just minor staining, you can monitor it through the next storm.")
-- CRITICAL: If an FAQ could apply to any city with zero changes, rewrite it with city-specific context
-- Read like you're answering a real customer question you've heard many times
-- TONE: Calm, confident, practical explanation - not marketing reassurance
+{num_faqs} FAQs about {data.service}. Requirements:
+- 350+ characters per answer
+- Structure: CAUSE→SYMPTOM→CONSEQUENCE→RESOLUTION
+- Include local differentiators and trade terms
+- Add "when to act vs monitor" guidance
+- Must include city-specific context - if FAQ applies to any city unchanged, rewrite it
+- Sound experienced, not marketing-focused
 
 ANTI-SYMMETRY RULES (CRITICAL - AVOID TEMPLATE PATTERNS):
 Do NOT reuse these generic sentence templates across cities. Keep the idea but VARY the wording and sentence structure:
@@ -673,14 +789,18 @@ Return JSON only. No extra text."""
         
         # H1 heading (programmatic) - only type, level, text
         blocks.append(self._create_heading_block(h1_text, 1))
-        
-        # 5 sections with H2 headings and paragraphs
+
+        # 6 sections with H2 headings and paragraphs
+        # NOTE: Section 1 should have NO heading (uses H1 above), but AI sometimes generates one anyway
         sections = content_json.get("sections", [])
         for idx, section in enumerate(sections, start=1):
             heading = section.get("heading", "")
             paragraph = section.get("paragraph", "")
-            if heading:
+
+            # Skip heading for Section 1 (it uses the H1 above)
+            if heading and idx != 1:
                 blocks.append(self._create_heading_block(heading, 2))
+
             if paragraph:
                 blocks.append(self._create_paragraph_block(paragraph))
             
@@ -845,21 +965,22 @@ Return JSON only. No extra text."""
         block_counts = {}
         for block in response.blocks:
             block_counts[block.type] = block_counts.get(block.type, 0) + 1
-        
-        # Expect 1 H1 + 6 H2s = 7 headings total (including "Why This Service" and "When to Choose" sections)
-        if block_counts.get("heading", 0) != 7:
-            errors.append(f"Expected 7 headings (1 H1 + 6 H2s), got {block_counts.get('heading', 0)}")
+
+        # Expect 1 H1 + 5 H2s = 6 headings total (Section 1 has NO heading, sections 2-6 have H2s)
+        if block_counts.get("heading", 0) != 6:
+            errors.append(f"Expected 6 headings (1 H1 + 5 H2s, section 1 has no heading), got {block_counts.get('heading', 0)}")
+        # Section 1 paragraph + Sections 2-6 paragraphs = 6 paragraphs total
         if block_counts.get("paragraph", 0) != 6:
             errors.append(f"Expected 6 paragraphs, got {block_counts.get('paragraph', 0)}")
         # Accept 3-5 FAQs for variation
         faq_count = block_counts.get("faq", 0)
         if faq_count < 3 or faq_count > 5:
             errors.append(f"Expected 3-5 FAQs, got {faq_count}")
-        
-        # Validate we have 6 H2 sections (including "Why This Service" and "When to Choose" sections)
+
+        # Validate we have 5 H2 sections (sections 2-6, section 1 has no heading)
         section_count = sum(1 for b in response.blocks if b.type == "heading" and b.level == 2)
-        if section_count != 6:
-            errors.append(f"Expected 6 H2 sections (including Why This Service and When to Choose), got {section_count}")
+        if section_count != 5:
+            errors.append(f"Expected 5 H2 sections (sections 2-6, section 1 has no heading), got {section_count}")
         # NAP is optional - allow 0 or 1 (0 when all optional fields are empty)
         nap_count = block_counts.get("nap", 0)
         if nap_count > 1:
@@ -899,18 +1020,184 @@ Return JSON only. No extra text."""
                 errors.append(f"Block with type 'cta' is not CTABlock instance")
         
         return errors
-    
-    def _repair_output(self, bad_json: Dict[str, Any], validation_errors: List[str], data: PageData) -> Dict[str, Any]:
+
+    def _format_available_research_facts(self, local_data: Dict[str, Any]) -> str:
+        """
+        Format research facts for the repair prompt.
+
+        Returns a bulleted list of available research facts that should be integrated.
+        """
+        if not local_data or not local_data.get("research"):
+            return "No research data available"
+
+        research = local_data["research"]
+        facts = []
+
+        # Building age
+        building_age = research.get("building_age_specificity", {})
+        if building_age.get("median_year"):
+            median_year = building_age["median_year"]
+            city_note = building_age.get("city_specific_note", "")
+            if city_note:
+                facts.append(f"- Building age: Median year {median_year} ({city_note[:80]})")
+            else:
+                facts.append(f"- Building age: Median year {median_year}")
+
+        # Construction eras
+        eras = research.get("major_construction_eras", [])
+        for era in eras[:2]:
+            if isinstance(era, dict):
+                period = era.get("period", "")
+                desc = era.get("description", "")
+                if period:
+                    facts.append(f"- Construction era: {period} - {desc}")
+
+        # Climate factors
+        climate = research.get("climate_factors", {})
+        for factor in climate.get("primary", [])[:3]:
+            facts.append(f"- Climate factor: {factor}")
+
+        # Unique factors
+        unique = research.get("unique_factors", [])
+        for uf in unique[:2]:
+            if isinstance(uf, dict):
+                factor_text = uf.get("factor", "")
+                if factor_text:
+                    facts.append(f"- Unique factor: {factor_text}")
+
+        return "\n".join(facts) if facts else "No specific facts available"
+
+    def _validate_research_usage(self, content: str, local_data: Dict[str, Any]) -> tuple[bool, str]:
+        """
+        Validate that generated content actually uses verified research data.
+
+        IMPROVED VERSION: Requires meaningful research usage, not just single-word matches.
+        Prevents false positives from common words like "due", "with", "severe".
+
+        Args:
+            content: Generated content text (all sections combined)
+            local_data: Local data dict with research facts
+
+        Returns:
+            (is_valid, error_message)
+        """
+        if not local_data or not local_data.get("research"):
+            # No research data available, skip validation
+            return True, ""
+
+        research = local_data["research"]
+
+        # Extract key facts that should appear in content
+        facts_to_check = []
+
+        # Check for construction era mentions (KEEP THIS - works well)
+        construction_eras = research.get("major_construction_eras", [])
+        for era in construction_eras[:2]:  # Check first 2 eras
+            if isinstance(era, dict):
+                period = era.get("period", "")
+                if period and period in content:
+                    facts_to_check.append(f"construction era: {period}")
+
+        # Check for climate factor mentions (IMPROVED)
+        climate = research.get("climate_factors", {})
+        primary_climate = climate.get("primary", [])
+        for factor in primary_climate[:3]:  # Check first 3 climate factors
+            # IMPROVED: Require measurements OR multi-word phrases
+            # No more single-word matching that causes false positives
+
+            # Check for measurements (e.g., "110°F", "+3°F", "20 days/year")
+            import re
+            measurements = re.findall(r'\d+[°\+\-]?[A-Z°]|\d+\s+days|\d+%', factor)
+            if any(m in content for m in measurements):
+                facts_to_check.append(f"climate factor: {factor[:50]}")
+                continue
+
+            # Check for 2+ consecutive words from factor (not just any single word)
+            words = factor.split()
+            if len(words) >= 2:
+                for i in range(len(words) - 1):
+                    two_word_phrase = f"{words[i]} {words[i+1]}"
+                    if two_word_phrase.lower() in content.lower():
+                        facts_to_check.append(f"climate factor: {factor[:50]}")
+                        break
+
+        # Check for building age mentions (KEEP THIS - works well)
+        building_age = research.get("building_age_specificity", {})
+        median_year = building_age.get("median_year")
+        if median_year and str(median_year) in content:
+            facts_to_check.append(f"building age: {median_year}")
+
+        # Check for unique factors (NEW)
+        unique_factors = research.get("unique_factors", [])
+        for factor_obj in unique_factors[:2]:
+            if isinstance(factor_obj, dict):
+                factor_text = factor_obj.get("factor", "")
+                # Look for key phrases (2+ consecutive words)
+                words = factor_text.split()
+                if len(words) >= 2:
+                    for i in range(len(words) - 1):
+                        phrase = f"{words[i]} {words[i+1]}"
+                        if phrase.lower() in content.lower():
+                            facts_to_check.append(f"unique factor: {factor_text[:50]}")
+                            break
+
+        # Require at least 2 facts to be used
+        if len(facts_to_check) >= 2:
+            return True, ""
+        else:
+            return False, (
+                f"Content must use at least 2 specific facts from verified research data. "
+                f"Found {len(facts_to_check)} fact(s). "
+                f"Available: construction eras ({len(construction_eras)}), "
+                f"climate factors ({len(primary_climate)}), "
+                f"building age ({'yes' if median_year else 'no'}), "
+                f"unique factors ({len(unique_factors)})."
+            )
+
+    def _repair_output(self, bad_json: Dict[str, Any], validation_errors: List[str], data: PageData, local_data: Dict[str, Any] = None) -> Dict[str, Any]:
         """Attempt to repair failing content with targeted LLM call."""
         system_prompt = "You are an editor fixing an existing JSON response. Keep the same structure and only change fields that fail the requirements."
-        
+
+        # Format local context if available
+        local_context_reminder = ""
+        if local_data and local_data.get("research"):
+            from app.local_data_fetcher import local_data_fetcher
+            local_context = local_data_fetcher.format_for_prompt(local_data)
+
+            # Format available research facts for repair prompt
+            available_facts = self._format_available_research_facts(local_data)
+
+            local_context_reminder = f"""
+
+⚠️ VALIDATION FAILED: The content did not use enough specific facts from the research data.
+
+Available research facts you MUST integrate:
+{available_facts}
+
+FULL RESEARCH CONTEXT:
+{local_context}
+
+REQUIREMENTS FOR PASSING VALIDATION:
+- Use at least 2 specific facts from the list above
+- Include actual measurements/dates/numbers from the research
+- Use multi-word phrases like "flash flooding", "heat island", "suburban growth"
+- Reference the ACTUAL median building year from research, not a generic year
+
+Examples of passing integration:
+✓ "Properties from {data.city}'s 1990-1995 suburban expansion often have..."
+✓ "The area's localized flash flooding, caused by 1990s drainage infrastructure..."
+✓ "With {data.city}'s urban heat island effect adding 3°F in central areas..."
+
+DO NOT use generic mentions that could apply to any city.
+If validation mentions research data usage, you MUST incorporate at least 2 specific facts from the research above."""
+
         user_prompt = f"""⚠️ CRITICAL: Fix these validation failures:
 {', '.join(validation_errors)}
 
 ⚠️ MANDATORY FIXES:
 - If "First paragraph missing service + city": Rewrite the FIRST SENTENCE to include both "{data.service}" AND "{data.city}"
 - If "Meta description missing service + city": Rewrite meta_description to include both "{data.service}" AND "{data.city}"
-- If "Contains forbidden phrase": Remove ALL instances of the forbidden phrase
+- If "Contains forbidden phrase": Remove ALL instances of the forbidden phrase{local_context_reminder}
 
 We generated JSON but it failed these validations:
 {', '.join(validation_errors)}
