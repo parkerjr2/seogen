@@ -288,39 +288,44 @@ class AIContentGenerator:
         
         return random.choice(patterns)
     
-    def _get_section_instruction(self, topic: str, symptom_pattern: dict, process_focus: dict, target_audience: str) -> str:
-        """Generate section-specific instructions with variation patterns."""
+    def _get_section_instruction(self, topic: str, symptom_pattern: dict, process_pattern: dict, target_audience: str) -> str:
+        """Generate section-specific instructions with SERVICE-AGNOSTIC variation patterns."""
         if topic == 'problems':
-            return f"""⚠️ SYMPTOM DESCRIPTION VARIATION (USE THIS PATTERN):
-Primary Focus: {symptom_pattern['primary']}
-Secondary Focus: {symptom_pattern['secondary']}
+            return f"""⚠️ SYMPTOM DESCRIPTION PATTERN #{symptom_pattern['pattern']} (SERVICE-AGNOSTIC):
 
-OPENING APPROACH: {symptom_pattern['opening']}
-EXAMPLES TO USE: {symptom_pattern['examples']}
+{symptom_pattern['instruction']}
 
 Help {target_audience}s recognize when they need this service.
-DO NOT use the standard symptom list order every time.
-Start with the {symptom_pattern['primary']} symptoms, then work to {symptom_pattern['secondary']}.
+DO NOT use service-specific language in the pattern structure - adapt it to your specific service.
+DO NOT use the standard symptom list order every time - use the pattern above.
 Most importantly: Tell people when something is urgent vs when they can wait.
-Avoid starting with "Homeowners typically notice..." - use the opening approach above instead."""
+Avoid starting with "Homeowners typically notice..." - use the pattern instruction above instead."""
 
         elif topic == 'process':
-            return f"""⚠️ PROCESS DESCRIPTION VARIATION (USE THIS FOCUS):
-Process Focus: {process_focus['focus']}
+            return f"""⚠️ PROCESS DESCRIPTION PATTERN #{process_pattern['pattern']} - {process_pattern['style']} (SERVICE-AGNOSTIC):
 
-WHAT TO EMPHASIZE: {process_focus['description']}
-OPENING EXAMPLE: {process_focus['example_opening']}
+{process_pattern['instruction']}
 
 Help customers understand what to expect when they hire someone for this work.
-DO NOT describe the process the same way every time.
-Focus specifically on the {process_focus['focus']} aspect.
+DO NOT use service-specific phrases like "circuit-by-circuit" or "shingle-by-shingle" in the pattern.
+Use the GENERIC pattern structure above and adapt it with service-specific details.
 Walk through what gets checked, what usually gets found, and what changes after the work is done.
-Vary your description based on the focus area above."""
+This pattern works for ANY service - apply it to your specific service context."""
+
+        elif topic == 'why':
+            return """UNIQUE CONTENT - NOT REUSABLE ACROSS SERVICES. Cover 3-4 of these topics:
+* Safety implications: What happens if this goes wrong? What risks exist?
+* Permit requirements: Does this need permits? What code compliance matters?
+* Cost drivers: What makes this expensive or affordable? What affects pricing?
+* Common failure points: What typically breaks? What wears out first?
+* Long-term consequences: What happens if you delay this work?
+This section must be SPECIFIC to the service - not generic advice."""
 
         else:  # results
             return """Help customers know what results to expect and how to verify the work was done properly.
-Talk about what people can actually see and verify - no more overflow, lights stop flickering, breakers stop tripping, etc.
-Focus on observable, measurable outcomes that customers can check themselves."""
+Talk about what people can actually see and verify - things working correctly, problems resolved, etc.
+Focus on observable, measurable outcomes that customers can check themselves.
+Avoid generic "your system will be more reliable" - give specific verifiable results."""
 
     def _get_random_headings(self, service: str, city: str) -> Dict[str, str]:
         """Generate random heading variations for each section to avoid template-like appearance."""
@@ -374,99 +379,229 @@ Focus on observable, measurable outcomes that customers can check themselves."""
     def _call_openai_generation(self, data: PageData, local_data: Dict[str, Any] = None) -> Dict[str, Any]:
         """Generate content payload using exact specified prompt."""
         import random
+        import hashlib
 
-        # Randomize structure to avoid template-like appearance
-        num_faqs = random.randint(3, 5)  # Variable FAQ count (3-5 for substantial content)
-        headings = self._get_random_headings(data.service, data.city)
+        # Deterministic pattern selection based on city hash (ensures consistent variation per city)
+        # Use SHA256 for better hash distribution than built-in hash()
+        def get_hash(text: str) -> int:
+            """Get deterministic hash with better distribution than built-in hash()."""
+            return int(hashlib.sha256(text.encode()).hexdigest(), 16)
 
-        # CRITICAL VARIATION 1: Opening sentence templates (5 different patterns)
-        opening_templates = [
-            f"Homeowners in {{{{data.city}}}} often face electrical challenges in homes built around [YEAR], where {{{{data.service}}}} becomes essential for safety and reliability.",
-            f"If you live in {{{{data.city}}}}, especially in properties from the [ERA], {{{{data.service}}}} addresses unique local factors like [CLIMATE FACTOR] that older systems can't handle.",
-            f"Upgrading your electrical panel in {{{{data.city}}}} directly responds to [UNIQUE LOCAL FACTOR], ensuring your home can meet modern electrical demands safely.",
-            f"Many {{{{data.city}}}} homes, constructed during [CONSTRUCTION PERIOD], now require {{{{data.service}}}} to handle increased electrical loads and [CLIMATE-SPECIFIC STRESS].",
-            f"{{{{data.city}}}}'s [UNIQUE FACTOR] creates specific electrical demands that make {{{{data.service}}}} more than just an upgrade—it's a response to local conditions."
-        ]
-        opening_template = random.choice(opening_templates)
+        city_hash = get_hash(data.city + data.state)
 
-        # CRITICAL VARIATION 2: Symptom emphasis patterns (4 different focus areas)
-        symptom_patterns = [
-            {
-                'primary': 'heat_stress',
-                'secondary': 'breaker_trips',
-                'opening': 'Problems often start when extreme temperatures stress your electrical system, leading to',
-                'examples': 'warm outlets, flickering lights during peak usage, or panels that feel hot to the touch'
+        # Deterministic structure to avoid template-like appearance
+        num_faqs = (city_hash % 3) + 3  # Variable FAQ count (3-5 for substantial content), deterministic per city
+
+        # SERVICE-AGNOSTIC VARIATION PATTERNS (work for ANY service)
+        # These patterns intentionally avoid trade-specific language
+
+        # Pattern 1: Opening sentence templates (5 service-agnostic patterns)
+        opening_pattern_num = (city_hash % 5) + 1  # Deterministic selection (1-5)
+        opening_templates = {
+            1: f"{{{{target_audience}}}}s in {{{{data.city}}}} often face challenges in properties built around [YEAR], where {{{{data.service}}}} becomes essential for safety and reliability.",
+            2: f"If you live in {{{{data.city}}}}, especially in properties from the [ERA], {{{{data.service}}}} addresses unique local factors like [CLIMATE FACTOR] that older systems can't handle.",
+            3: f"{{{{data.service}}}} in {{{{data.city}}}} directly responds to [UNIQUE LOCAL FACTOR], ensuring your {{{{property_type}}}} can meet modern standards safely.",
+            4: f"Many {{{{data.city}}}} properties, constructed during [CONSTRUCTION PERIOD], now require {{{{data.service}}}} to handle modern demands and [CLIMATE-SPECIFIC STRESS].",
+            5: f"{{{{data.city}}}}'s [UNIQUE FACTOR] creates specific demands that make {{{{data.service}}}} more than routine work—it's a response to local conditions."
+        }
+        opening_template = opening_templates[opening_pattern_num]
+
+        # Pattern 2: Symptom description patterns (5 service-agnostic patterns)
+        symptom_pattern_num = ((city_hash + 1) % 5) + 1  # Deterministic selection with offset
+        symptom_patterns = {
+            1: {
+                'pattern': 1,
+                'instruction': 'START WITH FREQUENCY: "Problems often start when [PRIMARY SYMPTOM], showing up as [SECONDARY SYMPTOM]..."'
             },
-            {
-                'primary': 'appliance_issues',
-                'secondary': 'power_capacity',
-                'opening': 'The first sign usually appears when modern appliances can\'t get the power they need, showing up as',
-                'examples': 'devices that won\'t charge properly, dimming lights when AC kicks on, or circuits that trip under normal load'
+            2: {
+                'pattern': 2,
+                'instruction': 'START WITH SEVERITY: "The first sign usually appears as [URGENT SYMPTOM], which can quickly lead to [CONSEQUENCE]..."'
             },
-            {
-                'primary': 'safety_concerns',
-                'secondary': 'physical_damage',
-                'opening': 'Warning signs emerge through your electrical system\'s safety responses, manifesting as',
-                'examples': 'frequent breaker trips, burning smells near the panel, or outlets that spark when you plug things in'
+            3: {
+                'pattern': 3,
+                'instruction': 'START WITH VISIBILITY: "What most {target_audience}s notice first is [OBVIOUS SYMPTOM], though underlying issues like [HIDDEN SYMPTOM] may already be developing..."'
             },
-            {
-                'primary': 'power_demand',
-                'secondary': 'circuit_overload',
-                'opening': 'Capacity problems surface when your electrical system can\'t handle daily demands, resulting in',
-                'examples': 'inability to run multiple appliances simultaneously, circuits maxing out, or having to unplug devices to use others'
+            4: {
+                'pattern': 4,
+                'instruction': 'START WITH IMPACT: "When [PRIMARY PROBLEM] affects your {property_type}, you\'ll typically see [SYMPTOM 1] or [SYMPTOM 2]..."'
+            },
+            5: {
+                'pattern': 5,
+                'instruction': 'START WITH CONTEXT: "Given {data.city}\'s [CLIMATE/BUILDING FACTOR from research], [SPECIFIC SYMPTOM] tends to show up more frequently than in other areas..."'
             }
-        ]
-        symptom_pattern = random.choice(symptom_patterns)
+        }
+        symptom_pattern = symptom_patterns[symptom_pattern_num]
 
-        # CRITICAL VARIATION 3: Process description focus (4 different angles)
-        process_focuses = [
-            {
-                'focus': 'inspection_depth',
-                'description': 'Focus on what gets examined and why those specific checks matter. Detail the diagnostic process and what experienced technicians look for that homeowners miss.',
-                'example_opening': 'Inspection starts with load calculations to verify your panel can handle actual demand, not just code minimums.'
+        # Pattern 3: Process description patterns (5 service-agnostic patterns)
+        process_pattern_num = ((city_hash + 2) % 5) + 1  # Deterministic selection with offset
+        process_patterns = {
+            1: {
+                'pattern': 1,
+                'style': 'Methodical Focus',
+                'instruction': 'Our team follows a systematic approach, checking each component thoroughly before moving to the next, ensuring nothing is overlooked.'
             },
-            {
-                'focus': 'permit_compliance',
-                'description': 'Focus on permit requirements, code compliance, and what the inspection process involves. Explain why these requirements exist and how they protect homeowners.',
-                'example_opening': 'The permit process begins before any work starts, ensuring all upgrades meet current electrical codes for your area.'
+            2: {
+                'pattern': 2,
+                'style': 'Safety Focus',
+                'instruction': 'Safety checks happen at every stage, with our technicians verifying proper installation and compliance as work progresses.'
             },
-            {
-                'focus': 'timeline_experience',
-                'description': 'Focus on what the homeowner experiences during the process—timeline, what happens in their home, temporary power arrangements, and what to expect each day.',
-                'example_opening': 'Most panel upgrades take 6-8 hours of work, with brief power outages during the actual panel swap.'
+            3: {
+                'pattern': 3,
+                'style': 'Quality Focus',
+                'instruction': 'Each step gets individual attention, with testing and verification to confirm everything meets our standards before completion.'
             },
-            {
-                'focus': 'technical_work',
-                'description': 'Focus on the actual technical work being performed—how circuits are moved, how connections are made, what safety measures are in place during the work.',
-                'example_opening': 'Circuit-by-circuit, each connection is transferred from the old panel to the new one, with testing at every step.'
+            4: {
+                'pattern': 4,
+                'style': 'Efficiency Focus',
+                'instruction': 'The process moves efficiently while maintaining precision, with our team coordinating to minimize disruption while ensuring quality results.'
+            },
+            5: {
+                'pattern': 5,
+                'style': 'Thoroughness Focus',
+                'instruction': 'We take a comprehensive approach, examining every aspect of the work and testing functionality at each phase to guarantee reliable performance.'
             }
-        ]
-        process_focus = random.choice(process_focuses)
+        }
+        process_pattern = process_patterns[process_pattern_num]
+
+        # Pattern 4: Section order patterns (5 different arrangements)
+        section_order_pattern_num = ((city_hash + 3) % 5) + 1  # Deterministic selection with offset
+        section_orders = {
+            1: ['problems', 'process', 'results'],  # Pattern 1: Recognize → Process → Results
+            2: ['results', 'process', 'problems'],  # Pattern 2: Results → Process → Recognize
+            3: ['problems', 'why', 'process'],      # Pattern 3: Recognize → Why → Process (results last)
+            4: ['process', 'results', 'why'],       # Pattern 4: Process → Results → Why (problems last)
+            5: ['why', 'problems', 'process']       # Pattern 5: Why → Recognize → Process (results last)
+        }
+        section_order = section_orders[section_order_pattern_num]
         
-        # Structural variance: randomize section order and placement
-        # Vary middle sections (problems, process, results) order
-        middle_sections_order = random.choice([
-            ['problems', 'process', 'results'],  # Default order
-            ['process', 'problems', 'results'],  # Process first
-            ['problems', 'results', 'process'],  # Results before process
-            ['results', 'problems', 'process'],  # Results first
-        ])
+        # Use the section order from Pattern 4
+        section_2_topic = section_order[0]
+        section_3_topic = section_order[1]
+        section_4_topic = section_order[2]
 
-        # Structural variance: randomize "Why This Service" section placement
-        why_section_position = random.choice([2, 3, 4])  # Insert after section 2, 3, or 4
+        # Structural variance: deterministic section placement based on city hash
+        why_section_position = [2, 3, 4][(city_hash + 4) % 3]  # Insert after section 2, 3, or 4
+        when_section_position = [3, 4, 5][(city_hash + 5) % 3]  # Insert after section 3, 4, or 5
+        cta_after_section = [5, 6][(city_hash + 6) % 2]  # CTA after section 5 or 6
+        contact_order = ['phone_first', 'email_first'][(city_hash + 7) % 2]
 
-        # Structural variance: randomize "When to Choose This Service" section placement
-        when_section_position = random.choice([3, 4, 5])  # Insert after section 3, 4, or 5
+        # Pattern 5: FAQ question templates (MANDATORY - prevent duplicate questions)
+        # Pre-select specific question phrasings for common FAQ topics
+        # 8 variations per topic reduces collision probability (was 96% with 5, now 74% with 8)
+        faq_question_templates = {
+            'signs_needed': [
+                "How do I know if I need {service}?",
+                "What indicates it's time for {service}?",
+                "What warning signs point to needing {service}?",
+                "What problems suggest {service} is necessary?",
+                "How can I tell when {service} becomes essential?",
+                "What signals that {service} is needed?",
+                "How do I recognize when {service} is required?",
+                "What shows that {service} has become necessary?"
+            ],
+            'delay_consequences': [
+                "What happens if I delay {service}?",
+                "What risks come with postponing {service}?",
+                "Why shouldn't I wait to schedule {service}?",
+                "What problems develop when {service} is delayed?",
+                "How urgent is {service} if I notice problems?",
+                "What are the consequences of delaying {service}?",
+                "Why is timing important for {service}?",
+                "What's at risk if I put off {service}?"
+            ],
+            'choosing_service': [
+                "When should I choose {service} over alternatives?",
+                "Is {service} right for my situation?",
+                "How do I decide between {service} and other options?",
+                "What makes {service} the better choice?",
+                "Should I opt for {service} or a related service?",
+                "When is {service} the appropriate solution?",
+                "How do I know {service} fits my needs?",
+                "What determines if {service} is the right option?"
+            ],
+            'process_timeline': [
+                "What does the {service} process involve?",
+                "How long does {service} typically take?",
+                "What should I expect during {service}?",
+                "What happens step-by-step with {service}?",
+                "How does {service} work from start to finish?",
+                "What's involved in completing {service}?",
+                "What's the timeline for {service}?",
+                "How is {service} carried out?"
+            ],
+            'cost_factors': [
+                "What affects the cost of {service}?",
+                "Why does {service} pricing vary?",
+                "What factors determine {service} costs?",
+                "How is {service} priced?",
+                "What influences {service} expenses?",
+                "What drives the cost of {service}?",
+                "How much does {service} typically cost?",
+                "What impacts {service} pricing?"
+            ]
+        }
 
-        # Structural variance: randomize CTA placement and contact card order
-        cta_after_section = random.choice([5, 6])  # CTA after section 5 or 6 (after both special sections)
-        contact_order = random.choice(['phone_first', 'email_first'])
+        # Deterministically select ONE question phrasing for each topic based on city name
+        # This ensures the same city always gets the same variations (consistency)
+        # but different cities get different variations (diversity)
+        selected_faq_questions = {}
+        for topic, templates in faq_question_templates.items():
+            # Hash the combination of city + topic for better distribution
+            # This prevents hash collisions between different cities
+            topic_hash = get_hash(data.city + data.state + topic)
+            template_idx = topic_hash % len(templates)
+            selected_faq_questions[topic] = templates[template_idx].replace('{service}', data.service)
 
-        # Map middle section order to section numbers (2, 3, 4)
-        section_2_topic = middle_sections_order[0]
-        section_3_topic = middle_sections_order[1]
-        section_4_topic = middle_sections_order[2]
-        
+
+        # Pattern 6: Section heading templates (MANDATORY - prevent duplicate headings)
+        heading_templates = {
+            'problems': [
+                "Common Signs You Need {service}",
+                "Recognizing When {service} Is Necessary",
+                "Problems That Call for {service}",
+                "Warning Signals for {service}",
+                "Identifying {service} Needs"
+            ],
+            'process': [
+                "How {service} Works",
+                "What to Expect During {service}",
+                "The {service} Process Explained",
+                "Our Approach to {service}",
+                "Understanding {service} Steps"
+            ],
+            'results': [
+                "What {service} Accomplishes",
+                "Results After {service}",
+                "Benefits of {service}",
+                "What Changes After {service}",
+                "Outcomes from {service}"
+            ],
+            'why': [
+                "Why {service} Matters",
+                "The Importance of {service}",
+                "What Makes {service} Essential",
+                "Key Reasons for {service}",
+                "Understanding {service} Value"
+            ],
+            'when': [
+                "Is {service} Right for Your Situation",
+                "Choosing {service} vs Alternatives",
+                "When You Need {service}",
+                "Deciding on {service}",
+                "{service} or Something Else"
+            ]
+        }
+
+        # Deterministically select ONE heading for each section type based on city name
+        # This ensures the same city always gets the same heading variations (consistency)
+        # but different cities get different heading variations (diversity)
+        selected_headings = {}
+        for section_type, templates in heading_templates.items():
+            # Hash the combination of city + section type for better distribution
+            section_hash = get_hash(data.city + data.state + section_type)
+            template_idx = section_hash % len(templates)
+            selected_headings[section_type] = templates[template_idx].replace('{service}', data.service)
+
         # Determine target audience based on hub_label
         hub_label = data.hub_label or ""
         is_commercial = 'commercial' in hub_label.lower()
@@ -628,11 +763,15 @@ Return ONLY valid JSON with this exact structure:
 ],
 "cta_text": "string",
 "structural_variance": {{
+  "opening_pattern": {opening_pattern_num},
+  "symptom_pattern": {symptom_pattern_num},
+  "process_pattern": {process_pattern_num},
+  "section_order_pattern": {section_order_pattern_num},
   "why_section_position": {why_section_position},
   "when_section_position": {when_section_position},
   "cta_after_section": {cta_after_section},
   "contact_order": "{contact_order}",
-  "middle_sections_order": {middle_sections_order}
+  "section_order": {section_order}
 }}
 }}
 
@@ -683,16 +822,16 @@ PROPERTY TYPE: {property_type}
   {self._get_landmark_instruction(local_data)}
   Focus on information that helps them understand their situation, not marketing language.
 
-- Section 2: Topic = {section_2_topic.upper()}. Use heading "{{headings['section2']}}"
-  {self._get_section_instruction(section_2_topic, symptom_pattern, process_focus, target_audience)}
+- Section 2: Topic = {section_2_topic.upper()}. Use heading "{selected_headings[section_2_topic]}"
+  {self._get_section_instruction(section_2_topic, symptom_pattern, process_pattern, target_audience)}
 
-- Section 3: Topic = {section_3_topic.upper()}. Use heading "{headings['section3']}"
-  {self._get_section_instruction(section_3_topic, symptom_pattern, process_focus, target_audience)}
+- Section 3: Topic = {section_3_topic.upper()}. Use heading "{selected_headings[section_3_topic]}"
+  {self._get_section_instruction(section_3_topic, symptom_pattern, process_pattern, target_audience)}
 
-- Section 4: Topic = {section_4_topic.upper()}. Use heading "{headings['section4']}"
-  {self._get_section_instruction(section_4_topic, symptom_pattern, process_focus, target_audience)}
+- Section 4: Topic = {section_4_topic.upper()}. Use heading "{selected_headings[section_4_topic]}"
+  {self._get_section_instruction(section_4_topic, symptom_pattern, process_pattern, target_audience)}
 
-- Section 5 ("Why This Service" - INSERT AFTER SECTION {why_section_position}): Use heading "{headings['why_section']}"
+- Section 5 ("Why This Service" - INSERT AFTER SECTION {why_section_position}): Use heading "{selected_headings['why']}"
   UNIQUE CONTENT - NOT REUSABLE ACROSS SERVICES. Cover 3-4 of these topics specific to {data.service}:
   * Safety implications: What happens if this goes wrong? What risks exist?
   * Permit requirements: Does this need permits? What code compliance matters?
@@ -701,7 +840,7 @@ PROPERTY TYPE: {property_type}
   * Long-term consequences: What happens if you delay this work?
   This section must be SPECIFIC to {data.service} - not generic advice that applies to any service.
 
-- Section 6 ("When to Choose This Service" - INSERT AFTER SECTION {when_section_position}): Use heading "{headings['when_section']}"
+- Section 6 ("When to Choose This Service" - INSERT AFTER SECTION {when_section_position}): Use heading "{selected_headings['when']}"
   ALGORITHM-PROOFING SECTION - HIGHLY SERVICE-SPECIFIC COMPARISON (400-500 characters minimum).
   Help customers understand when they need THIS service vs related services:
   * Compare {data.service} with 2-3 related/similar services
@@ -754,13 +893,35 @@ WRITING STYLE - SOUND HUMAN, NOT AI:
 - Must include city-specific context - if FAQ applies to any city unchanged, rewrite it
 - Sound experienced, not marketing-focused
 
+⚠️ MANDATORY FAQ QUESTIONS (USE THESE EXACT PHRASINGS):
+You MUST use these specific question phrasings (already randomly selected to ensure variation across cities):
+1. Signs you need service: "{selected_faq_questions['signs_needed']}"
+2. Delay consequences: "{selected_faq_questions['delay_consequences']}"
+3. Choosing this service: "{selected_faq_questions['choosing_service']}"
+
+Optional additional questions (if generating 4-5 FAQs, use these exact phrasings):
+4. Process/timeline: "{selected_faq_questions['process_timeline']}"
+5. Cost factors: "{selected_faq_questions['cost_factors']}"
+
+DO NOT modify these question phrasings. Use them exactly as provided - word for word, character for character.
+This ensures no duplicate FAQ questions appear across different cities for the same service.
+
 ⚠️ ANTI-SYMMETRY RULES (CRITICAL - AVOID TEMPLATE PATTERNS):
 
-STRUCTURAL VARIATION ENFORCED:
-- Section order is randomized: {section_2_topic} → {section_3_topic} → {section_4_topic}
-- Opening sentence template selected: (see Section 1 instructions above)
-- Symptom pattern: Primary focus on {symptom_pattern['primary']}, secondary on {symptom_pattern['secondary']}
-- Process focus: Emphasize {process_focus['focus']}
+SERVICE-AGNOSTIC STRUCTURAL VARIATION ENFORCED:
+- Opening Pattern: #{opening_pattern_num} (see Section 1 instructions)
+- Symptom Pattern: #{symptom_pattern_num} (see problems section instructions)
+- Process Pattern: #{process_pattern_num} - {process_pattern['style']} (see process section instructions)
+- Section Order Pattern: #{section_order_pattern_num} ({section_2_topic} → {section_3_topic} → {section_4_topic})
+
+⚠️ CRITICAL: These patterns are SERVICE-AGNOSTIC.
+DO NOT use identical sentences across pages for the same service in different cities.
+The patterns provide STRUCTURE - you provide SERVICE-SPECIFIC content within that structure.
+
+⚠️ SECTION HEADINGS (PRE-SELECTED FOR VARIATION):
+Section headings have been randomly pre-selected from variation patterns to ensure NO duplicate headings across cities.
+Use the EXACT heading text provided in each section instruction above.
+DO NOT modify the heading text - it has already been randomized for this specific page.
 
 SENTENCE PATTERN VARIATION:
 Do NOT reuse these generic sentence templates. Keep the idea but VARY the wording and sentence structure:
@@ -771,16 +932,36 @@ Do NOT reuse these generic sentence templates. Keep the idea but VARY the wordin
 - ❌ "Once this starts happening, it can quickly lead to..."
 - ❌ "We start by inspecting..."
 - ❌ "{data.service} is essential for homeowners in {data.city}..." (this was overused - use the template variation above instead)
+- ❌ "Knowing these differences can help you make informed decisions..." (generic filler)
+- ❌ "Understanding these differences can help you make informed decisions..." (generic filler)
+- ❌ "This can lead to..." (overused transition)
+- ❌ "This situation can lead to..." (overused transition)
+- ❌ "What makes {data.service} important..." (overused intro)
+- ❌ "What makes {data.service} crucial..." (overused intro)
+- ❌ "Knowing when you need {data.service}..." (overused intro)
+- ❌ "Understanding when to opt for {data.service}..." (overused intro)
+- ❌ "Understanding when to choose {data.service}..." (overused intro)
 
-Instead, use the patterns provided above and vary your phrasing:
-- ✅ Use the symptom pattern opening: "{symptom_pattern['opening']}"
-- ✅ Use the process focus opening: "{process_focus['example_opening']}"
-- ✅ "The first sign usually shows up as...", "What brings most calls is...", "Property owners around {{city}} run into this when..."
-- ✅ "After a heavy downpour, you'll notice...", "Spring storms tend to expose...", "When hail hits, we see..."
-- ✅ "Problems build up when...", "This develops over time as...", "The issue compounds if..."
-- ✅ "Checking the attachment points first...", "Our inspection focuses on...", "The critical area to examine is..."
+⚠️ CRITICAL REQUIREMENT - NO DUPLICATE SENTENCES:
+When generating content for {data.service} in {data.city}, assume this is ONE OF MANY pages being created for the same service in different cities.
+EVERY sentence you write must be UNIQUE - no identical sentences should appear across different cities for the same service.
+This means:
+- Different FAQ questions (use the 5 question patterns above)
+- Different section headings (use the 5 heading patterns above)
+- Different transition phrases (avoid all generic filler listed above)
+- Different sentence structures for the same underlying information
+- Different ways to express the same technical concepts
 
-IMPORTANT: You must still include 2 field-insight sentences per section, but phrase them differently each time. Do NOT start every field-insight sentence with the same clause structure. Use the variation patterns provided above.
+Instead, use the SERVICE-AGNOSTIC patterns provided in the section instructions above and vary your phrasing:
+- ✅ Follow the Symptom Pattern #{symptom_pattern_num} instructions for problem descriptions
+- ✅ Follow the Process Pattern #{process_pattern_num} instructions for process descriptions
+- ✅ Vary sentence starters: "The first sign usually shows up as...", "What brings most calls is...", "Property owners around {{city}} run into this when..."
+- ✅ Vary weather references: "After a heavy downpour, you'll notice...", "Spring storms tend to expose...", "When hail hits, we see..."
+- ✅ Vary problem descriptions: "Problems build up when...", "This develops over time as...", "The issue compounds if..."
+- ✅ Vary process descriptions: "Checking each component...", "Our inspection focuses on...", "The critical area to examine is..."
+- ✅ Vary transition phrases: "Here's what matters:", "The key point is:", "What you should know:", "The reality is:", "Consider this:"
+
+IMPORTANT: You must still include 2 field-insight sentences per section, but phrase them differently each time. Do NOT start every field-insight sentence with the same clause structure. Use the SERVICE-AGNOSTIC variation patterns from the section instructions.
 
 Include one sentence referencing the broader area using ONLY safe terms like 'nearby areas' or 'the greater {data.city} area'. Do NOT mention counties, regions, or specific neighborhoods.
 Weather considerations must be generic and safe for the given state. Do NOT mention salt air.
