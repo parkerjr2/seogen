@@ -288,6 +288,40 @@ class AIContentGenerator:
         
         return random.choice(patterns)
     
+    def _get_section_instruction(self, topic: str, symptom_pattern: dict, process_focus: dict, target_audience: str) -> str:
+        """Generate section-specific instructions with variation patterns."""
+        if topic == 'problems':
+            return f"""⚠️ SYMPTOM DESCRIPTION VARIATION (USE THIS PATTERN):
+Primary Focus: {symptom_pattern['primary']}
+Secondary Focus: {symptom_pattern['secondary']}
+
+OPENING APPROACH: {symptom_pattern['opening']}
+EXAMPLES TO USE: {symptom_pattern['examples']}
+
+Help {target_audience}s recognize when they need this service.
+DO NOT use the standard symptom list order every time.
+Start with the {symptom_pattern['primary']} symptoms, then work to {symptom_pattern['secondary']}.
+Most importantly: Tell people when something is urgent vs when they can wait.
+Avoid starting with "Homeowners typically notice..." - use the opening approach above instead."""
+
+        elif topic == 'process':
+            return f"""⚠️ PROCESS DESCRIPTION VARIATION (USE THIS FOCUS):
+Process Focus: {process_focus['focus']}
+
+WHAT TO EMPHASIZE: {process_focus['description']}
+OPENING EXAMPLE: {process_focus['example_opening']}
+
+Help customers understand what to expect when they hire someone for this work.
+DO NOT describe the process the same way every time.
+Focus specifically on the {process_focus['focus']} aspect.
+Walk through what gets checked, what usually gets found, and what changes after the work is done.
+Vary your description based on the focus area above."""
+
+        else:  # results
+            return """Help customers know what results to expect and how to verify the work was done properly.
+Talk about what people can actually see and verify - no more overflow, lights stop flickering, breakers stop tripping, etc.
+Focus on observable, measurable outcomes that customers can check themselves."""
+
     def _get_random_headings(self, service: str, city: str) -> Dict[str, str]:
         """Generate random heading variations for each section to avoid template-like appearance."""
         import random
@@ -340,10 +374,74 @@ class AIContentGenerator:
     def _call_openai_generation(self, data: PageData, local_data: Dict[str, Any] = None) -> Dict[str, Any]:
         """Generate content payload using exact specified prompt."""
         import random
-        
+
         # Randomize structure to avoid template-like appearance
         num_faqs = random.randint(3, 5)  # Variable FAQ count (3-5 for substantial content)
         headings = self._get_random_headings(data.service, data.city)
+
+        # CRITICAL VARIATION 1: Opening sentence templates (5 different patterns)
+        opening_templates = [
+            f"Homeowners in {{{{data.city}}}} often face electrical challenges in homes built around [YEAR], where {{{{data.service}}}} becomes essential for safety and reliability.",
+            f"If you live in {{{{data.city}}}}, especially in properties from the [ERA], {{{{data.service}}}} addresses unique local factors like [CLIMATE FACTOR] that older systems can't handle.",
+            f"Upgrading your electrical panel in {{{{data.city}}}} directly responds to [UNIQUE LOCAL FACTOR], ensuring your home can meet modern electrical demands safely.",
+            f"Many {{{{data.city}}}} homes, constructed during [CONSTRUCTION PERIOD], now require {{{{data.service}}}} to handle increased electrical loads and [CLIMATE-SPECIFIC STRESS].",
+            f"{{{{data.city}}}}'s [UNIQUE FACTOR] creates specific electrical demands that make {{{{data.service}}}} more than just an upgrade—it's a response to local conditions."
+        ]
+        opening_template = random.choice(opening_templates)
+
+        # CRITICAL VARIATION 2: Symptom emphasis patterns (4 different focus areas)
+        symptom_patterns = [
+            {
+                'primary': 'heat_stress',
+                'secondary': 'breaker_trips',
+                'opening': 'Problems often start when extreme temperatures stress your electrical system, leading to',
+                'examples': 'warm outlets, flickering lights during peak usage, or panels that feel hot to the touch'
+            },
+            {
+                'primary': 'appliance_issues',
+                'secondary': 'power_capacity',
+                'opening': 'The first sign usually appears when modern appliances can\'t get the power they need, showing up as',
+                'examples': 'devices that won\'t charge properly, dimming lights when AC kicks on, or circuits that trip under normal load'
+            },
+            {
+                'primary': 'safety_concerns',
+                'secondary': 'physical_damage',
+                'opening': 'Warning signs emerge through your electrical system\'s safety responses, manifesting as',
+                'examples': 'frequent breaker trips, burning smells near the panel, or outlets that spark when you plug things in'
+            },
+            {
+                'primary': 'power_demand',
+                'secondary': 'circuit_overload',
+                'opening': 'Capacity problems surface when your electrical system can\'t handle daily demands, resulting in',
+                'examples': 'inability to run multiple appliances simultaneously, circuits maxing out, or having to unplug devices to use others'
+            }
+        ]
+        symptom_pattern = random.choice(symptom_patterns)
+
+        # CRITICAL VARIATION 3: Process description focus (4 different angles)
+        process_focuses = [
+            {
+                'focus': 'inspection_depth',
+                'description': 'Focus on what gets examined and why those specific checks matter. Detail the diagnostic process and what experienced technicians look for that homeowners miss.',
+                'example_opening': 'Inspection starts with load calculations to verify your panel can handle actual demand, not just code minimums.'
+            },
+            {
+                'focus': 'permit_compliance',
+                'description': 'Focus on permit requirements, code compliance, and what the inspection process involves. Explain why these requirements exist and how they protect homeowners.',
+                'example_opening': 'The permit process begins before any work starts, ensuring all upgrades meet current electrical codes for your area.'
+            },
+            {
+                'focus': 'timeline_experience',
+                'description': 'Focus on what the homeowner experiences during the process—timeline, what happens in their home, temporary power arrangements, and what to expect each day.',
+                'example_opening': 'Most panel upgrades take 6-8 hours of work, with brief power outages during the actual panel swap.'
+            },
+            {
+                'focus': 'technical_work',
+                'description': 'Focus on the actual technical work being performed—how circuits are moved, how connections are made, what safety measures are in place during the work.',
+                'example_opening': 'Circuit-by-circuit, each connection is transferred from the old panel to the new one, with testing at every step.'
+            }
+        ]
+        process_focus = random.choice(process_focuses)
         
         # Structural variance: randomize section order and placement
         # Vary middle sections (problems, process, results) order
@@ -568,20 +666,31 @@ PROPERTY TYPE: {property_type}
 - Use appropriate context: {property_examples}
 
 - Section 1: NO HEADING (the page already has an H1). Start directly with the paragraph.
-  CRITICAL: The FIRST SENTENCE must include both '{data.service}' and '{data.city}'. Example: "Breaker trips are common with electrical repair in older Tulsa {property_type}."
-  Help {target_audience}s understand what makes {{data.service}} different in {{data.city}} specifically using VERIFIED LOCAL DATA from the research above.
-  {{self._get_landmark_instruction(local_data)}}
+
+  ⚠️ OPENING SENTENCE VARIATION (USE ONE OF THESE TEMPLATES - DO NOT CREATE YOUR OWN):
+  {opening_template}
+
+  INSTRUCTIONS FOR OPENING TEMPLATE:
+  - Replace [YEAR] with the actual median building year from research
+  - Replace [ERA] with the actual construction era period from research (e.g., "1978-1982 oil boom")
+  - Replace [CLIMATE FACTOR] with specific climate data from research (e.g., "110°F heat waves")
+  - Replace [UNIQUE LOCAL FACTOR] with unique factor from research (e.g., "urban heat island effect")
+  - Replace [CONSTRUCTION PERIOD] with construction era description from research
+  - Replace [CLIMATE-SPECIFIC STRESS] with climate impact from research (e.g., "extreme temperature fluctuations")
+
+  After the opening sentence, continue the paragraph using VERIFIED LOCAL DATA from the research above.
+  Help {target_audience}s understand what makes {data.service} different in {data.city} specifically.
+  {self._get_landmark_instruction(local_data)}
   Focus on information that helps them understand their situation, not marketing language.
-  Don't start with "In [city], electrical issues can be..." - start with something specific that includes the service and city immediately.
 
 - Section 2: Topic = {section_2_topic.upper()}. Use heading "{{headings['section2']}}"
-  {'Help ' + target_audience + 's recognize when they need this service. Talk about what actually goes wrong and when people should call. Most importantly: Tell people when something urgent vs when they can wait.' if section_2_topic == 'problems' else 'Help customers understand what to expect when they hire someone for this work. Walk through what gets checked, what usually gets found, and what changes after the work is done.' if section_2_topic == 'process' else 'Help customers know what results to expect and how to verify the work was done properly. Talk about what people can actually see and verify - no more overflow, lights stop flickering, breakers stop tripping, etc.'}
+  {self._get_section_instruction(section_2_topic, symptom_pattern, process_focus, target_audience)}
 
 - Section 3: Topic = {section_3_topic.upper()}. Use heading "{headings['section3']}"
-  {'Help ' + target_audience + 's recognize when they need this service. Talk about what actually goes wrong and when people should call. Most importantly: Tell people when something urgent vs when they can wait.' if section_3_topic == 'problems' else 'Help customers understand what to expect when they hire someone for this work. Walk through what gets checked, what usually gets found, and what changes after the work is done.' if section_3_topic == 'process' else 'Help customers know what results to expect and how to verify the work was done properly. Talk about what people can actually see and verify - no more overflow, lights stop flickering, breakers stop tripping, etc.'}
+  {self._get_section_instruction(section_3_topic, symptom_pattern, process_focus, target_audience)}
 
 - Section 4: Topic = {section_4_topic.upper()}. Use heading "{headings['section4']}"
-  {'Help ' + target_audience + 's recognize when they need this service. Talk about what actually goes wrong and when people should call. Most importantly: Tell people when something urgent vs when they can wait.' if section_4_topic == 'problems' else 'Help customers understand what to expect when they hire someone for this work. Walk through what gets checked, what usually gets found, and what changes after the work is done.' if section_4_topic == 'process' else 'Help customers know what results to expect and how to verify the work was done properly. Talk about what people can actually see and verify - no more overflow, lights stop flickering, breakers stop tripping, etc.'}
+  {self._get_section_instruction(section_4_topic, symptom_pattern, process_focus, target_audience)}
 
 - Section 5 ("Why This Service" - INSERT AFTER SECTION {why_section_position}): Use heading "{headings['why_section']}"
   UNIQUE CONTENT - NOT REUSABLE ACROSS SERVICES. Cover 3-4 of these topics specific to {data.service}:
@@ -645,22 +754,33 @@ WRITING STYLE - SOUND HUMAN, NOT AI:
 - Must include city-specific context - if FAQ applies to any city unchanged, rewrite it
 - Sound experienced, not marketing-focused
 
-ANTI-SYMMETRY RULES (CRITICAL - AVOID TEMPLATE PATTERNS):
-Do NOT reuse these generic sentence templates across cities. Keep the idea but VARY the wording and sentence structure:
+⚠️ ANTI-SYMMETRY RULES (CRITICAL - AVOID TEMPLATE PATTERNS):
+
+STRUCTURAL VARIATION ENFORCED:
+- Section order is randomized: {section_2_topic} → {section_3_topic} → {section_4_topic}
+- Opening sentence template selected: (see Section 1 instructions above)
+- Symptom pattern: Primary focus on {symptom_pattern['primary']}, secondary on {symptom_pattern['secondary']}
+- Process focus: Emphasize {process_focus['focus']}
+
+SENTENCE PATTERN VARIATION:
+Do NOT reuse these generic sentence templates. Keep the idea but VARY the wording and sentence structure:
 - ❌ "Homeowners typically notice..."
 - ❌ "We often see this after the first major storm..."
 - ❌ "Most issues we see start when..."
 - ❌ "In many homes around {{city}}, this usually happens when..."
 - ❌ "Once this starts happening, it can quickly lead to..."
 - ❌ "We start by inspecting..."
+- ❌ "{data.service} is essential for homeowners in {data.city}..." (this was overused - use the template variation above instead)
 
-Instead, vary your phrasing:
+Instead, use the patterns provided above and vary your phrasing:
+- ✅ Use the symptom pattern opening: "{symptom_pattern['opening']}"
+- ✅ Use the process focus opening: "{process_focus['example_opening']}"
 - ✅ "The first sign usually shows up as...", "What brings most calls is...", "Property owners around {{city}} run into this when..."
 - ✅ "After a heavy downpour, you'll notice...", "Spring storms tend to expose...", "When hail hits, we see..."
 - ✅ "Problems build up when...", "This develops over time as...", "The issue compounds if..."
 - ✅ "Checking the attachment points first...", "Our inspection focuses on...", "The critical area to examine is..."
 
-IMPORTANT: You must still include 2 field-insight sentences per section, but phrase them differently each time. Do NOT start every field-insight sentence with the same clause structure.
+IMPORTANT: You must still include 2 field-insight sentences per section, but phrase them differently each time. Do NOT start every field-insight sentence with the same clause structure. Use the variation patterns provided above.
 
 Include one sentence referencing the broader area using ONLY safe terms like 'nearby areas' or 'the greater {data.city} area'. Do NOT mention counties, regions, or specific neighborhoods.
 Weather considerations must be generic and safe for the given state. Do NOT mention salt air.
