@@ -72,17 +72,12 @@ async def publish_scheduled_posts():
     print(f"[{datetime.now()}] Cron run complete\n")
 
 async def main():
-    """Run cron job continuously every minute"""
-    while True:
-        try:
-            await publish_scheduled_posts()
-        except Exception as e:
-            print(f"ERROR in cron job: {e}")
-
-        # Wait 1 minute before next run
-        await asyncio.sleep(60)
+    """Run cron job once (Railway will trigger every 5 minutes)"""
+    try:
+        await publish_scheduled_posts()
+    except Exception as e:
+        print(f"ERROR in cron job: {e}")
 
 if __name__ == "__main__":
     print("Starting SEOgen Railway Cron Publisher...")
-    print("Running every 1 minute\n")
     asyncio.run(main())
