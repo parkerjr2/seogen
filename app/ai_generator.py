@@ -390,22 +390,25 @@ Avoid generic "your system will be more reliable" - give specific verifiable res
         import random
         import hashlib
 
-        # Deterministic pattern selection based on city hash (ensures consistent variation per city)
+        # Deterministic pattern selection based on city + service hash
+        # This ensures variation across BOTH:
+        # - Vertical scaling: same service in different cities (Tulsa vs Broken Arrow)
+        # - Horizontal scaling: different services in same city (Panel Upgrade vs Outlet Installation in Tulsa)
         # Use SHA256 for better hash distribution than built-in hash()
         def get_hash(text: str) -> int:
             """Get deterministic hash with better distribution than built-in hash()."""
             return int(hashlib.sha256(text.encode()).hexdigest(), 16)
 
-        city_hash = get_hash(data.city + data.state)
+        city_service_hash = get_hash(data.city + data.state + data.service)
 
         # Deterministic structure to avoid template-like appearance
-        num_faqs = (city_hash % 3) + 3  # Variable FAQ count (3-5 for substantial content), deterministic per city
+        num_faqs = (city_service_hash % 3) + 3  # Variable FAQ count (3-5), deterministic per city+service combo
 
         # SERVICE-AGNOSTIC VARIATION PATTERNS (work for ANY service)
         # These patterns intentionally avoid trade-specific language
 
         # Pattern 1: Opening sentence templates (5 service-agnostic patterns)
-        opening_pattern_num = (city_hash % 5) + 1  # Deterministic selection (1-5)
+        opening_pattern_num = (city_service_hash % 5) + 1  # Deterministic selection (1-5)
         opening_templates = {
             1: f"{{{{target_audience}}}}s in {{{{data.city}}}} often face challenges in properties built around [YEAR], where {{{{data.service}}}} becomes essential for safety and reliability.",
             2: f"If you live in {{{{data.city}}}}, especially in properties from the [ERA], {{{{data.service}}}} addresses unique local factors like [CLIMATE FACTOR] that older systems can't handle.",
@@ -416,7 +419,7 @@ Avoid generic "your system will be more reliable" - give specific verifiable res
         opening_template = opening_templates[opening_pattern_num]
 
         # Pattern 2: Symptom description patterns (5 service-agnostic patterns)
-        symptom_pattern_num = ((city_hash + 1) % 5) + 1  # Deterministic selection with offset
+        symptom_pattern_num = ((city_service_hash + 1) % 5) + 1  # Deterministic selection with offset
         symptom_patterns = {
             1: {
                 'pattern': 1,
@@ -458,7 +461,7 @@ Make the local connection explicit and specific.'''
         symptom_pattern = symptom_patterns[symptom_pattern_num]
 
         # Pattern 3: Process description patterns (5 service-agnostic patterns - REWRITTEN FOR UNIQUENESS)
-        process_pattern_num = ((city_hash + 2) % 5) + 1  # Deterministic selection with offset
+        process_pattern_num = ((city_service_hash + 2) % 5) + 1  # Deterministic selection with offset
         process_patterns = {
             1: {
                 'pattern': 1,
@@ -511,7 +514,7 @@ Write in natural prose without "START/NEXT/THEN/END" structure.'''
 
         # Pattern 4: Section order patterns (5 different arrangements)
         # NOTE: Sections 5 (why) and 6 (when) are FIXED. Only vary sections 2-4.
-        section_order_pattern_num = ((city_hash + 3) % 5) + 1  # Deterministic selection with offset
+        section_order_pattern_num = ((city_service_hash + 3) % 5) + 1  # Deterministic selection with offset
         section_orders = {
             1: ['problems', 'process', 'results'],  # Pattern 1: Problems → Process → Results
             2: ['results', 'process', 'problems'],  # Pattern 2: Results → Process → Problems
@@ -526,11 +529,11 @@ Write in natural prose without "START/NEXT/THEN/END" structure.'''
         section_3_topic = section_order[1]
         section_4_topic = section_order[2]
 
-        # Structural variance: deterministic section placement based on city hash
-        why_section_position = [2, 3, 4][(city_hash + 4) % 3]  # Insert after section 2, 3, or 4
-        when_section_position = [3, 4, 5][(city_hash + 5) % 3]  # Insert after section 3, 4, or 5
-        cta_after_section = [5, 6][(city_hash + 6) % 2]  # CTA after section 5 or 6
-        contact_order = ['phone_first', 'email_first'][(city_hash + 7) % 2]
+        # Structural variance: deterministic section placement based on city+service hash
+        why_section_position = [2, 3, 4][(city_service_hash + 4) % 3]  # Insert after section 2, 3, or 4
+        when_section_position = [3, 4, 5][(city_service_hash + 5) % 3]  # Insert after section 3, 4, or 5
+        cta_after_section = [5, 6][(city_service_hash + 6) % 2]  # CTA after section 5 or 6
+        contact_order = ['phone_first', 'email_first'][(city_service_hash + 7) % 2]
 
         # Pattern 5: FAQ question templates (MANDATORY - prevent duplicate questions)
         # Pre-select specific question phrasings for common FAQ topics
@@ -588,14 +591,15 @@ Write in natural prose without "START/NEXT/THEN/END" structure.'''
             ]
         }
 
-        # Deterministically select ONE question phrasing for each topic based on city name
-        # This ensures the same city always gets the same variations (consistency)
-        # but different cities get different variations (diversity)
+        # Deterministically select ONE question phrasing for each topic based on city+service+topic
+        # This ensures variation across:
+        # - Same city, different services (different FAQ phrasings)
+        # - Different cities, same service (different FAQ phrasings)
         selected_faq_questions = {}
         for topic, templates in faq_question_templates.items():
-            # Hash the combination of city + topic for better distribution
-            # This prevents hash collisions between different cities
-            topic_hash = get_hash(data.city + data.state + topic)
+            # Hash the combination of city + service + topic for maximum distribution
+            # This prevents hash collisions and ensures variation across all dimensions
+            topic_hash = get_hash(data.city + data.state + data.service + topic)
             template_idx = topic_hash % len(templates)
             selected_faq_questions[topic] = templates[template_idx].replace('{service}', data.service)
 
