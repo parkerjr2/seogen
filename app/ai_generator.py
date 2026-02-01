@@ -420,23 +420,39 @@ Avoid generic "your system will be more reliable" - give specific verifiable res
         symptom_patterns = {
             1: {
                 'pattern': 1,
-                'instruction': 'START WITH FREQUENCY: "Problems often start when [PRIMARY SYMPTOM], showing up as [SECONDARY SYMPTOM]..."'
+                'instruction': '''Describe how problems typically begin with a specific symptom, then escalate to secondary issues. 
+Start your sentence differently each time - avoid generic openings like "problems often start" or "issues typically begin".
+Examples of varied openings: "In {data.city}'s climate...", "Given [LOCAL FACTOR]...", "When [CONDITION] affects your {property_type}..."
+Focus on making the connection between the initial symptom and what it leads to.'''
             },
             2: {
                 'pattern': 2,
-                'instruction': 'START WITH SEVERITY: "The first sign usually appears as [URGENT SYMPTOM], which can quickly lead to [CONSEQUENCE]..."'
+                'instruction': '''Start with the most urgent, severe symptom that requires immediate action. Explain the serious consequences of ignoring it.
+Avoid phrases like "the first sign usually appears" or "you'll typically notice". 
+Instead, vary your opening: "If you experience...", "When [SYMPTOM] happens...", "Urgent attention is needed if..."
+Emphasize time sensitivity and potential dangers.'''
             },
             3: {
                 'pattern': 3,
-                'instruction': 'START WITH VISIBILITY: "What most {target_audience}s notice first is [OBVIOUS SYMPTOM], though underlying issues like [HIDDEN SYMPTOM] may already be developing..."'
+                'instruction': '''Describe the most obvious, visible symptom first, then mention hidden problems developing beneath the surface.
+DO NOT use "what most homeowners notice first" or "what most {target_audience}s notice first" - these phrases are FORBIDDEN and cause duplicates.
+Vary your approach: "Visible signs include...", "The clearest indicator is...", "You'll likely see...", "Obvious symptoms are...", "Common warning signs are..."
+Make it clear that surface problems often indicate deeper issues.'''
             },
             4: {
                 'pattern': 4,
-                'instruction': 'START WITH IMPACT: "When [PRIMARY PROBLEM] affects your {property_type}, you\'ll typically see [SYMPTOM 1] or [SYMPTOM 2]..."'
+                'instruction': '''Explain how a specific problem impacts the property, then list the observable symptoms it causes.
+Avoid "when X affects your {property_type}, you'll typically see" phrasing - this creates templates.
+Use varied structures: "If [PROBLEM] develops...", "[PROBLEM] manifests as...", "This issue shows up through...", "[PROBLEM] creates visible signs like..."
+Connect the root cause to its visible effects.'''
             },
             5: {
                 'pattern': 5,
-                'instruction': 'START WITH CONTEXT: "Given {data.city}\'s [CLIMATE/BUILDING FACTOR from research], [SPECIFIC SYMPTOM] tends to show up more frequently than in other areas..."'
+                'instruction': '''Begin with city-specific context (climate, building age, local factors from research data), then explain how this leads to particular symptoms.
+Reference actual research data: building years, climate measurements, local conditions.
+Avoid "tends to show up more frequently" - vary your phrasing.
+Use different openings: "In {data.city}'s...", "Because of [LOCAL FACTOR]...", "[CITY-SPECIFIC CONDITION] creates...", "{data.city}'s [UNIQUE FACTOR] leads to..."
+Make the local connection explicit and specific.'''
             }
         }
         symptom_pattern = symptom_patterns[symptom_pattern_num]
@@ -447,27 +463,48 @@ Avoid generic "your system will be more reliable" - give specific verifiable res
             1: {
                 'pattern': 1,
                 'style': 'Inspection-First',
-                'instruction': 'START: Begin by thoroughly inspecting the current system to identify specific issues. NEXT: Document what needs attention and explain findings. THEN: Proceed with the necessary work, testing each stage before moving forward. END: Verify everything functions correctly before completing the job.'
+                'instruction': '''Describe a process that begins with thorough inspection, then documentation, then execution with testing, then final verification.
+Do NOT use "START:", "NEXT:", "THEN:", "END:" labels - these create identical templates.
+Do NOT use "begin by thoroughly inspecting" - vary your phrasing each time.
+Examples of varied openings: "The work starts with...", "Initial assessment involves...", "First, we examine...", "Before any work begins..."
+Focus on the inspection phase being the foundation for all subsequent work.
+Each step should flow naturally into the next without template markers.'''
             },
             2: {
                 'pattern': 2,
                 'style': 'Assessment-Based',
-                'instruction': 'START: Evaluate the existing conditions and determine what improvements are needed. NEXT: Develop a plan based on what the assessment reveals. THEN: Execute the work in logical sequence, addressing the most critical items first. END: Confirm the new setup meets all requirements.'
+                'instruction': '''Explain a process that evaluates current conditions first, develops a plan based on findings, then executes in logical sequence.
+Avoid template phrases like "evaluate the existing conditions" or "determine what improvements are needed".
+Use varied openings: "We assess...", "Evaluation reveals...", "By examining...", "Assessment begins with..."
+Emphasize how the assessment drives the entire approach.
+Connect each phase naturally without using "START/NEXT/THEN/END" markers.'''
             },
             3: {
                 'pattern': 3,
                 'style': 'Step-by-Step',
-                'instruction': 'START: Check the current state and measure key factors. NEXT: Remove or disconnect outdated components safely. THEN: Install new components with proper connections and mounting. END: Test the complete system under normal operating conditions.'
+                'instruction': '''Walk through a methodical sequence: check/measure, remove old, install new, test complete system.
+Do NOT use "check the current state and measure" - that's template language that causes duplicates.
+Vary descriptions: "Measurements are taken...", "We document...", "Initial readings show...", "The process begins by..."
+Make each step feel distinct but connected.
+Avoid "START/NEXT/THEN/END" structure - use natural paragraph flow.'''
             },
             4: {
                 'pattern': 4,
                 'style': 'Safety-Centered',
-                'instruction': 'START: Shut down and secure the work area to prevent hazards. NEXT: Examine each component for safety compliance and potential risks. THEN: Make necessary changes following code requirements and manufacturer specs. END: Restore power and verify safe operation.'
+                'instruction': '''Describe a safety-focused approach: secure area, safety inspection, code-compliant changes, verification.
+FORBIDDEN PHRASE: "shut down and secure the work area to prevent hazards" - this exact phrase causes duplicates across cities.
+Use varied safety language: "Safety protocols begin with...", "Work area preparation includes...", "Before any work...", "Initial safety steps involve..."
+Put safety and code compliance at the center of every step.
+Do NOT use "START/NEXT/THEN/END" markers - write in flowing prose.'''
             },
             5: {
                 'pattern': 5,
                 'style': 'Detail-Oriented',
-                'instruction': 'START: Review the scope of work and prepare materials. NEXT: Work through each component methodically, checking measurements and fit. THEN: Secure all connections and verify proper installation. END: Run through a complete operational test to confirm performance.'
+                'instruction': '''Explain a meticulous process: review scope, prepare materials, work methodically through each component, test thoroughly.
+Avoid "review the scope of work and prepare materials" - this template language causes duplicates.
+Vary your approach: "Planning involves...", "Preparation requires...", "Detailed assessment of...", "Meticulous planning begins with..."
+Emphasize precision and attention to detail throughout.
+Write in natural prose without "START/NEXT/THEN/END" structure.'''
             }
         }
         process_pattern = process_patterns[process_pattern_num]
@@ -935,12 +972,24 @@ You MUST use Symptom Pattern #{symptom_pattern_num}.
 You MUST follow Section Order Pattern #{section_order_pattern_num}.
 
 CRITICAL: If you output generic/default phrasing instead of the assigned patterns, validation will FAIL.
-DO NOT use these FORBIDDEN process description phrases:
+DO NOT use these FORBIDDEN process description phrases (these cause duplicates):
 ❌ "The process moves efficiently while maintaining precision..."
 ❌ "Our team follows a systematic approach..."
 ❌ "Safety checks happen at every stage..."
 ❌ "Each step gets individual attention..."
 ❌ "We take a comprehensive approach..."
+❌ "Shut down and secure the work area to prevent hazards" (SEVERE - appears on multiple pages)
+❌ "Begin by thoroughly inspecting the current system"
+❌ "Check the current state and measure key factors"
+❌ "Review the scope of work and prepare materials"
+
+DO NOT use these FORBIDDEN symptom description phrases (these cause duplicates):
+❌ "What most homeowners notice first is..." (SEVERE - appears on multiple pages)
+❌ "What most {target_audience}s notice first is..."
+❌ "The first sign usually appears as..."
+❌ "Problems often start when..."
+❌ "When [X] affects your {property_type}, you'll typically see..."
+❌ "though underlying issues like [X] may already be developing" (SEVERE - appears on multiple pages)
 
 Instead, use the SPECIFIC {process_pattern['style']} pattern instructions provided above.
 
