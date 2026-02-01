@@ -18,11 +18,20 @@ from app import ai_generator_hub
 
 class AIContentGenerator:
     """Robust content generator with programmatic enforcement and repair capabilities."""
-    
+
+    # Known duplicate sentences that have appeared on multiple pages
+    # These will trigger validation failure if detected
+    KNOWN_DUPLICATES = [
+        "What most homeowners notice first is frequent circuit breaker trips, though underlying issues like flickering lights may already be developing",
+        "The process moves efficiently while maintaining precision, with our team coordinating to minimize disruption while ensuring quality results",
+        "Our team follows a systematic approach, checking each component thoroughly before moving to the next, ensuring nothing is overlooked",
+        "Safety checks happen at every stage, with our technicians verifying proper installation and compliance as work progresses",
+    ]
+
     # Forbidden meta-language phrases (case-insensitive)
     # Note: "structure" removed as it's a legitimate construction/building term
     FORBIDDEN_PHRASES = [
-        "seo", "keyword", "word count", "first 100 words", 
+        "seo", "keyword", "word count", "first 100 words",
         "this page", "this article", "in this section"
     ]
     
@@ -1212,7 +1221,67 @@ Return JSON only. No extra text."""
             if term.lower() in text_lower:
                 count += 1
         return count
-    
+
+    def _extract_sentences(self, text: str, min_length: int = 50) -> List[str]:
+        """Extract sentences from text that are at least min_length characters."""
+        # Split on sentence endings
+        sentences = re.split(r'[.!?]+', text)
+        # Filter by length and clean whitespace
+        return [s.strip() for s in sentences if len(s.strip()) >= min_length]
+
+    def _calculate_similarity(self, text1: str, text2: str) -> float:
+        """Calculate similarity ratio between two texts (0.0 to 1.0)."""
+        # Normalize text
+        t1 = text1.lower().strip()
+        t2 = text2.lower().strip()
+
+        # Use simple character-based similarity
+        if t1 == t2:
+            return 1.0
+
+        # Count matching characters in sequence
+        matches = sum(c1 == c2 for c1, c2 in zip(t1, t2))
+        max_len = max(len(t1), len(t2))
+
+        if max_len == 0:
+            return 0.0
+
+        return matches / max_len
+
+    def _check_for_duplicate_sentences(self, response: GeneratePageResponse) -> Tuple[bool, str]:
+        """
+        Check if content contains known duplicate sentences.
+        Returns (is_unique, duplicate_sentence) tuple.
+        """
+        # Extract all text from response
+        all_text = []
+        for block in response.blocks:
+            if hasattr(block, 'text') and block.text:
+                all_text.append(block.text)
+            if hasattr(block, 'question') and block.question:
+                all_text.append(block.question)
+            if hasattr(block, 'answer') and block.answer:
+                all_text.append(block.answer)
+
+        combined_text = " ".join(all_text)
+
+        # Extract sentences (50+ chars)
+        sentences = self._extract_sentences(combined_text, min_length=50)
+
+        # Check against known duplicates
+        for sent in sentences:
+            for known_dup in self.KNOWN_DUPLICATES:
+                # Check for exact match (case-insensitive)
+                if sent.lower().strip() == known_dup.lower().strip():
+                    return False, sent[:100]
+
+                # Check for 95%+ similarity
+                similarity = self._calculate_similarity(sent, known_dup)
+                if similarity > 0.95:
+                    return False, sent[:100]
+
+        return True, ""
+
     def _validate_output(self, response: GeneratePageResponse, data: PageData) -> List[str]:
         """Validate output and return list of validation errors."""
         errors = []
@@ -1260,7 +1329,12 @@ Return JSON only. No extra text."""
         for phrase in self.FORBIDDEN_MARKETING_FILLER:
             if phrase.lower() in combined_text:
                 errors.append(f"Contains forbidden marketing filler: '{phrase}'")
-        
+
+        # Validation 2d: Check for known duplicate sentences
+        is_unique, duplicate_text = self._check_for_duplicate_sentences(response)
+        if not is_unique:
+            errors.append(f"DUPLICATE SENTENCE DETECTED: '{duplicate_text}...' - This exact sentence appears on other pages for this service. Rewrite using different phrasing.")
+
         # Validation 3: First paragraph includes service + city within 150 words
         if paragraph_blocks:
             first_para = paragraph_blocks[0].text or ""
