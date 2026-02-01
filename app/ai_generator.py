@@ -1262,30 +1262,40 @@ Return JSON only. No extra text."""
         #             if term_count < 1:
         #                 errors.append(f"Paragraph {idx+1} has only {term_count} trade-specific terms (need at least 1)")
         
-        # Validation 6: Block count requirements
+        # Validation 6: Block count requirements (flexible for structural variation)
         block_counts = {}
         for block in response.blocks:
             block_counts[block.type] = block_counts.get(block.type, 0) + 1
 
-        # Expect 1 H1 + 5 H2s = 6 headings total (Section 1 has NO heading, sections 2-6 have H2s)
-        if block_counts.get("heading", 0) != 6:
-            errors.append(f"Expected 6 headings (1 H1 + 5 H2s, section 1 has no heading), got {block_counts.get('heading', 0)}")
-        # Section 1 paragraph + Sections 2-6 paragraphs = 6 paragraphs total
-        if block_counts.get("paragraph", 0) != 6:
-            errors.append(f"Expected 6 paragraphs, got {block_counts.get('paragraph', 0)}")
+        # Count headings by level
+        h1_count = sum(1 for b in response.blocks if b.type == "heading" and b.level == 1)
+        h2_count = sum(1 for b in response.blocks if b.type == "heading" and b.level == 2)
+
+        # Must have exactly 1 H1 heading
+        if h1_count != 1:
+            errors.append(f"Expected exactly 1 H1 heading, got {h1_count}")
+
+        # Must have 5-6 H2 headings (flexible based on structural variation)
+        # Note: With structural variation, section order changes but total H2s should be 5-6
+        if h2_count < 5 or h2_count > 6:
+            errors.append(f"Expected 5-6 H2 headings for sections, got {h2_count}")
+
+        # Must have at least 6 content paragraphs (flexible - allows for variation)
+        paragraph_count = block_counts.get("paragraph", 0)
+        if paragraph_count < 6:
+            errors.append(f"Expected at least 6 paragraphs (intro + 5 sections), got {paragraph_count}")
+
         # Accept 3-5 FAQs for variation
         faq_count = block_counts.get("faq", 0)
         if faq_count < 3 or faq_count > 5:
             errors.append(f"Expected 3-5 FAQs, got {faq_count}")
 
-        # Validate we have 5 H2 sections (sections 2-6, section 1 has no heading)
-        section_count = sum(1 for b in response.blocks if b.type == "heading" and b.level == 2)
-        if section_count != 5:
-            errors.append(f"Expected 5 H2 sections (sections 2-6, section 1 has no heading), got {section_count}")
         # NAP is optional - allow 0 or 1 (0 when all optional fields are empty)
         nap_count = block_counts.get("nap", 0)
         if nap_count > 1:
             errors.append(f"Expected 0 or 1 NAP, got {nap_count}")
+
+        # Must have exactly 1 CTA
         if block_counts.get("cta", 0) != 1:
             errors.append(f"Expected 1 CTA, got {block_counts.get('cta', 0)}")
         
