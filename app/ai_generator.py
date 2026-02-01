@@ -432,45 +432,46 @@ Avoid generic "your system will be more reliable" - give specific verifiable res
         }
         symptom_pattern = symptom_patterns[symptom_pattern_num]
 
-        # Pattern 3: Process description patterns (5 service-agnostic patterns)
+        # Pattern 3: Process description patterns (5 service-agnostic patterns - REWRITTEN FOR UNIQUENESS)
         process_pattern_num = ((city_hash + 2) % 5) + 1  # Deterministic selection with offset
         process_patterns = {
             1: {
                 'pattern': 1,
-                'style': 'Methodical Focus',
-                'instruction': 'Our team follows a systematic approach, checking each component thoroughly before moving to the next, ensuring nothing is overlooked.'
+                'style': 'Inspection-First',
+                'instruction': 'START: Begin by thoroughly inspecting the current system to identify specific issues. NEXT: Document what needs attention and explain findings. THEN: Proceed with the necessary work, testing each stage before moving forward. END: Verify everything functions correctly before completing the job.'
             },
             2: {
                 'pattern': 2,
-                'style': 'Safety Focus',
-                'instruction': 'Safety checks happen at every stage, with our technicians verifying proper installation and compliance as work progresses.'
+                'style': 'Assessment-Based',
+                'instruction': 'START: Evaluate the existing conditions and determine what improvements are needed. NEXT: Develop a plan based on what the assessment reveals. THEN: Execute the work in logical sequence, addressing the most critical items first. END: Confirm the new setup meets all requirements.'
             },
             3: {
                 'pattern': 3,
-                'style': 'Quality Focus',
-                'instruction': 'Each step gets individual attention, with testing and verification to confirm everything meets our standards before completion.'
+                'style': 'Step-by-Step',
+                'instruction': 'START: Check the current state and measure key factors. NEXT: Remove or disconnect outdated components safely. THEN: Install new components with proper connections and mounting. END: Test the complete system under normal operating conditions.'
             },
             4: {
                 'pattern': 4,
-                'style': 'Efficiency Focus',
-                'instruction': 'The process moves efficiently while maintaining precision, with our team coordinating to minimize disruption while ensuring quality results.'
+                'style': 'Safety-Centered',
+                'instruction': 'START: Shut down and secure the work area to prevent hazards. NEXT: Examine each component for safety compliance and potential risks. THEN: Make necessary changes following code requirements and manufacturer specs. END: Restore power and verify safe operation.'
             },
             5: {
                 'pattern': 5,
-                'style': 'Thoroughness Focus',
-                'instruction': 'We take a comprehensive approach, examining every aspect of the work and testing functionality at each phase to guarantee reliable performance.'
+                'style': 'Detail-Oriented',
+                'instruction': 'START: Review the scope of work and prepare materials. NEXT: Work through each component methodically, checking measurements and fit. THEN: Secure all connections and verify proper installation. END: Run through a complete operational test to confirm performance.'
             }
         }
         process_pattern = process_patterns[process_pattern_num]
 
         # Pattern 4: Section order patterns (5 different arrangements)
+        # NOTE: Sections 5 (why) and 6 (when) are FIXED. Only vary sections 2-4.
         section_order_pattern_num = ((city_hash + 3) % 5) + 1  # Deterministic selection with offset
         section_orders = {
-            1: ['problems', 'process', 'results'],  # Pattern 1: Recognize → Process → Results
-            2: ['results', 'process', 'problems'],  # Pattern 2: Results → Process → Recognize
-            3: ['problems', 'why', 'process'],      # Pattern 3: Recognize → Why → Process (results last)
-            4: ['process', 'results', 'why'],       # Pattern 4: Process → Results → Why (problems last)
-            5: ['why', 'problems', 'process']       # Pattern 5: Why → Recognize → Process (results last)
+            1: ['problems', 'process', 'results'],  # Pattern 1: Problems → Process → Results
+            2: ['results', 'process', 'problems'],  # Pattern 2: Results → Process → Problems
+            3: ['problems', 'results', 'process'],  # Pattern 3: Problems → Results → Process
+            4: ['process', 'results', 'problems'],  # Pattern 4: Process → Results → Problems
+            5: ['results', 'problems', 'process']   # Pattern 5: Results → Problems → Process
         }
         section_order = section_orders[section_order_pattern_num]
         
@@ -822,6 +823,11 @@ PROPERTY TYPE: {property_type}
   {self._get_landmark_instruction(local_data)}
   Focus on information that helps them understand their situation, not marketing language.
 
+⚠️ CRITICAL - REQUIRED SECTIONS (each appears EXACTLY ONCE):
+The 6 sections below are the ONLY sections you should create. Do NOT create duplicate sections.
+
+- Section 1: NO HEADING. Introduction paragraph only.
+
 - Section 2: Topic = {section_2_topic.upper()}. Use heading "{selected_headings[section_2_topic]}"
   {self._get_section_instruction(section_2_topic, symptom_pattern, process_pattern, target_audience)}
 
@@ -831,7 +837,7 @@ PROPERTY TYPE: {property_type}
 - Section 4: Topic = {section_4_topic.upper()}. Use heading "{selected_headings[section_4_topic]}"
   {self._get_section_instruction(section_4_topic, symptom_pattern, process_pattern, target_audience)}
 
-- Section 5 ("Why This Service" - INSERT AFTER SECTION {why_section_position}): Use heading "{selected_headings['why']}"
+- Section 5: Topic = WHY THIS SERVICE. Use heading "{selected_headings['why']}"
   UNIQUE CONTENT - NOT REUSABLE ACROSS SERVICES. Cover 3-4 of these topics specific to {data.service}:
   * Safety implications: What happens if this goes wrong? What risks exist?
   * Permit requirements: Does this need permits? What code compliance matters?
@@ -840,7 +846,7 @@ PROPERTY TYPE: {property_type}
   * Long-term consequences: What happens if you delay this work?
   This section must be SPECIFIC to {data.service} - not generic advice that applies to any service.
 
-- Section 6 ("When to Choose This Service" - INSERT AFTER SECTION {when_section_position}): Use heading "{selected_headings['when']}"
+- Section 6: Topic = WHEN TO CHOOSE THIS SERVICE. Use heading "{selected_headings['when']}"
   ALGORITHM-PROOFING SECTION - HIGHLY SERVICE-SPECIFIC COMPARISON (400-500 characters minimum).
   Help customers understand when they need THIS service vs related services:
   * Compare {data.service} with 2-3 related/similar services
@@ -913,6 +919,21 @@ SERVICE-AGNOSTIC STRUCTURAL VARIATION ENFORCED:
 - Symptom Pattern: #{symptom_pattern_num} (see problems section instructions)
 - Process Pattern: #{process_pattern_num} - {process_pattern['style']} (see process section instructions)
 - Section Order Pattern: #{section_order_pattern_num} ({section_2_topic} → {section_3_topic} → {section_4_topic})
+
+⚠️ MANDATORY PATTERN USAGE - VALIDATION WILL CHECK:
+You MUST use Process Pattern #{process_pattern_num} ({process_pattern['style']}).
+You MUST use Symptom Pattern #{symptom_pattern_num}.
+You MUST follow Section Order Pattern #{section_order_pattern_num}.
+
+CRITICAL: If you output generic/default phrasing instead of the assigned patterns, validation will FAIL.
+DO NOT use these FORBIDDEN process description phrases:
+❌ "The process moves efficiently while maintaining precision..."
+❌ "Our team follows a systematic approach..."
+❌ "Safety checks happen at every stage..."
+❌ "Each step gets individual attention..."
+❌ "We take a comprehensive approach..."
+
+Instead, use the SPECIFIC {process_pattern['style']} pattern instructions provided above.
 
 ⚠️ CRITICAL: These patterns are SERVICE-AGNOSTIC.
 DO NOT use identical sentences across pages for the same service in different cities.
