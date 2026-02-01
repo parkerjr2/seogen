@@ -224,3 +224,13 @@ class SiteRegisterResponse(BaseModel):
     message: str | None = None
     license_status: str | None = None
     expires_at: str | None = None
+
+class WordPressRegistrationRequest(BaseModel):
+    """Request model for WordPress cron registration."""
+    api_key: str
+    wordpress_url: str
+
+class WordPressRegistrationResponse(BaseModel):
+    """Response model for WordPress cron registration."""
+    status: str
+    wordpress_url: str

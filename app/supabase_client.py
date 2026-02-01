@@ -268,10 +268,10 @@ class SupabaseClient:
     def get_wordpress_callback_credentials(self, api_key_id: str) -> dict | None:
         """
         Get WordPress callback credentials for an API key.
-        
+
         Args:
             api_key_id: The API key ID
-            
+
         Returns:
             Dict with wordpress_rest_url and callback_secret, or None if not found
         """
@@ -281,16 +281,100 @@ class SupabaseClient:
                 f"/rest/v1/api_keys?id=eq.{api_key_id}&select=wordpress_rest_url,callback_secret",
                 timeout=10
             )
-            
+
             if response.status_code == 200:
                 data = response.json()
                 if data and len(data) > 0:
                     return data[0]
             return None
-                
+
         except Exception as e:
             print(f"Error getting callback credentials: {e}")
             return None
+
+    def update_wordpress_cron_registration(self, api_key: str, wordpress_url: str) -> dict | None:
+        """
+        Register WordPress URL for cron publishing.
+        Called when customer activates license in WordPress.
+
+        Args:
+            api_key: The API key (license key)
+            wordpress_url: WordPress site URL
+
+        Returns:
+            Updated API key data if successful, None otherwise
+        """
+        try:
+            response = self._request(
+                "PATCH",
+                f"/rest/v1/api_keys?key=eq.{api_key}",
+                json={
+                    "wordpress_url": wordpress_url,
+                    "cron_enabled": True
+                },
+                timeout=10
+            )
+
+            if response.status_code in (200, 204):
+                print(f"Registered WordPress URL for cron: {wordpress_url} (API key: {api_key[:8]}...)")
+                return {"wordpress_url": wordpress_url, "cron_enabled": True}
+            else:
+                print(f"Failed to register WordPress URL: HTTP {response.status_code}")
+                return None
+
+        except Exception as e:
+            print(f"Error registering WordPress URL: {e}")
+            return None
+
+    def get_cron_enabled_sites(self) -> list[dict]:
+        """
+        Get all WordPress sites with cron enabled.
+        Used by Railway cron to trigger publishing.
+
+        Returns:
+            List of dicts with key, wordpress_url, user_id
+        """
+        try:
+            response = self._request(
+                "GET",
+                "/rest/v1/api_keys?cron_enabled=eq.true&wordpress_url=not.is.null&select=key,wordpress_url,user_id",
+                timeout=10
+            )
+
+            if response.status_code == 200:
+                return response.json()
+            else:
+                print(f"Failed to get cron enabled sites: HTTP {response.status_code}")
+                return []
+
+        except Exception as e:
+            print(f"Error getting cron enabled sites: {e}")
+            return []
+
+    def update_last_cron_run(self, api_key: str, timestamp: str) -> bool:
+        """
+        Update last_cron_run timestamp for an API key.
+
+        Args:
+            api_key: The API key
+            timestamp: ISO timestamp
+
+        Returns:
+            True if updated successfully, False otherwise
+        """
+        try:
+            response = self._request(
+                "PATCH",
+                f"/rest/v1/api_keys?key=eq.{api_key}",
+                json={"last_cron_run": timestamp},
+                timeout=10
+            )
+
+            return response.status_code in (200, 204)
+
+        except Exception as e:
+            print(f"Error updating last_cron_run: {e}")
+            return False
     
     def update_callback_status(self, api_key_id: str, success: bool, error: str = None) -> bool:
         """

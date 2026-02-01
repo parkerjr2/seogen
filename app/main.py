@@ -24,6 +24,8 @@ from app.models import (
     ValidateLicenseResponse,
     SiteRegisterRequest,
     SiteRegisterResponse,
+    WordPressRegistrationRequest,
+    WordPressRegistrationResponse,
 )
 from app.supabase_client import supabase_client
 from app.ai_generator import ai_generator
@@ -117,6 +119,42 @@ async def register_site(request: SiteRegisterRequest):
         raise
     except Exception as e:
         print(f"Error in register_site: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.post("/api/register-wordpress", response_model=WordPressRegistrationResponse)
+async def register_wordpress(request: WordPressRegistrationRequest):
+    """
+    Register WordPress URL for cron publishing.
+    Called automatically when customer activates license in WordPress plugin.
+
+    Args:
+        request: Contains api_key and wordpress_url
+
+    Returns:
+        Registration status and wordpress_url
+
+    Raises:
+        HTTPException: 404 if API key not found, 500 if registration fails
+    """
+    try:
+        # Update api_keys table with WordPress URL and enable cron
+        result = supabase_client.update_wordpress_cron_registration(
+            api_key=request.api_key,
+            wordpress_url=request.wordpress_url
+        )
+
+        if not result:
+            raise HTTPException(status_code=404, detail="API key not found")
+
+        return WordPressRegistrationResponse(
+            status="registered",
+            wordpress_url=request.wordpress_url
+        )
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        print(f"Error in register_wordpress: {e}")
         raise HTTPException(status_code=500, detail=str(e))
 
 @app.post("/validate-license", response_model=ValidateLicenseResponse)
