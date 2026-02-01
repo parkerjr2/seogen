@@ -307,45 +307,69 @@ BANNED WORDS / PHRASES (NEVER USE):
 REQUIRED STRUCTURE (FOLLOW EXACTLY)
 ==================================================
 
-### 1) INTRO — CITY FACTOR CAUSES REAL CONSEQUENCE (2–3 sentences)
-Purpose: Show WHY this type of {trade_name} work shows up the way it does in THIS city.
+TARGET WORD COUNT: 1,000-1,200 words total (across all sections)
 
-Rules:
-- Mention {city} exactly ONCE.
-- Include exactly ONE city factor: building age, inspections, growth, renovations, or weather.
-- Connect that factor to a {trade_name}-SPECIFIC issue or pattern.
-- Show ONE practical consequence that affects:
-  * what gets discovered,
-  * when work is done,
-  * or why issues surface.
-- Do NOT write anything that would still apply unchanged to another city.
-- No landmarks, ZIP codes, or nearby city lists.
-- No sales language.
-- Reference {property_type}, not generic "properties"
-- CRITICAL: The issue/consequence MUST be specific to {trade_name} work
+### 1) CITY-SPECIFIC CONTEXT (200-250 words, 4 paragraphs)
+Purpose: Establish THIS city's unique characteristics and how they affect {trade_name} work.
 
-Use VERIFIED LOCAL RESEARCH from above (construction eras, climate factors) to explain city-specific service patterns.
-Avoid generic statements like "properties vary in age" - use specific data from the research.
+**Paragraph 1 - Housing Stock & Construction Era (3-4 sentences, ~60 words)**
+- Use SPECIFIC data from local research (median year built, construction boom periods)
+- Mention {city} by name
+- Connect construction era to current {trade_name} challenges
+- Example pattern: "In {city}, the majority of {property_type} were built during [era], which means [specific {trade_name} consequence]..."
+- DO NOT write anything that could apply to any city
 
-### 2) SERVICES CONTEXT — REAL TRIGGERS (1–2 sentences)
+**Paragraph 2 - Climate & Environmental Factors (3-4 sentences, ~60 words)**
+- Use SPECIFIC weather/climate data from local research
+- Connect climate to {trade_name} stress factors
+- Example pattern: "The area experiences [specific climate factor], which creates [specific {trade_name} issue]..."
+- Must include measurable data (temperatures, storm frequency, etc.)
+
+**Paragraph 3 - Common Issues That Result (3-4 sentences, ~60 words)**
+- Connect housing age + climate to specific {trade_name} problems
+- Describe what typically fails, wears out, or needs updating
+- Reference {trade_name}-specific components
+- Show cause-and-effect from local factors
+
+**Paragraph 4 - Neighborhood Coverage (2-3 sentences, ~50 words)**
+- Mention at least 2 specific landmarks or neighborhoods from local research
+- Describe service coverage area naturally
+- Example pattern: "From {property_type} near [landmark] to properties around [landmark]..."
+- NO generic "serving the area" language
+
+### 2) COMMON {trade_name.upper()} ISSUES IN {city.upper()} (150-200 words, 2 paragraphs)
+Purpose: Describe city-specific problems based on local factors.
+
+**Paragraph 1 - Primary Issues (4-5 sentences, ~80-100 words)**
+- Describe the MOST common {trade_name} issues in {city}
+- Use housing age data to explain WHY these issues occur
+- Include specific examples of what fails or needs updating
+- Reference {trade_name} components directly
+- Connect to local factors (age, climate, construction era)
+
+**Paragraph 2 - Secondary Issues (3-4 sentences, ~70-100 words)**
+- Describe issues related to climate or specific construction methods from that era
+- Explain how these issues typically present themselves
+- Describe when they're usually discovered (inspections, renovations, failures)
+- Must be specific to {trade_name} work
+
+### 3) SERVICES CONTEXT — REAL TRIGGERS (1-2 sentences, ~30 words)
 Purpose: Describe what actually prompts calls WITHOUT naming services.
 
 Rules:
-- Do NOT name or list services.
-- Describe real situations or moments of uncertainty.
-- Avoid vague phrases like "many {target_audience}s" or "people often".
-- Use {target_audience} context appropriately.
+- Do NOT name or list services
+- Describe real situations or moments of uncertainty
+- Avoid vague phrases like "many {target_audience}s" or "people often"
 
 GOOD STYLE:
 "Calls usually come in after something stops working, a remodel uncovers an issue, or an inspection raises questions that weren't obvious beforehand."
 
-### 3) DECISION TENSION — WHY LOOK DEEPER (ONE sentence)
+### 4) DECISION TENSION — WHY LOOK DEEPER (ONE sentence, ~20 words)
 Purpose: Explain WHY someone would need to explore service pages.
 
 Rules:
 - ONE sentence only
 - No service names
-- Describe a real moment of uncertainty or decision
 - Must feel spoken, not written
 
 GOOD PATTERNS (rotate, do NOT reuse verbatim):
@@ -353,88 +377,131 @@ GOOD PATTERNS (rotate, do NOT reuse verbatim):
 - "What looks like a small problem can sometimes point to a larger update, which is why the details matter."
 - "Once you know what's happening, the next step is understanding which type of work actually applies."
 
-BAD PATTERNS:
-- "Below are our services"
-- "Explore our services"
-- "We offer a range of services"
-
-### 4) SERVICE LINKS INSERTION POINT (MANDATORY)
+### 5) SERVICE LINKS INSERTION POINT (MANDATORY)
 On its OWN LINE, output EXACTLY the following token and nothing else:
 
 {{{{CITY_SERVICE_LINKS}}}}
 
 Rules:
-- Do NOT wrap this token in a paragraph.
-- Do NOT add text on the same line.
-- This will be replaced later with natural inline service links.
+- Do NOT wrap this token in a paragraph
+- Do NOT add text on the same line
+- This will be replaced later with natural inline service links
 
-### 5) WHY CHOOSE US — EXPERIENCED, NOT GENERIC (ONE PARAGRAPH, 4–6 sentences)
+### 6) HOW WE HANDLE {city.upper()} PROPERTIES (150-200 words, 2 paragraphs)
+Purpose: City-specific approach based on local building characteristics.
+
+**Paragraph 1 - Approach Differences (4-5 sentences, ~80-100 words)**
+- Explain how approach differs based on {city}'s housing stock
+- Describe specific considerations for {property_type} built in {city}'s construction era
+- Mention common updates or modifications needed in {city}
+- Reference {trade_name} systems typical of that era
+- Connect to local building practices or code history
+
+**Paragraph 2 - Permits & Timeline (3-4 sentences, ~70-100 words)**
+- Describe permit requirements specific to {city}, {state}
+- Explain inspection patterns or requirements
+- Set timeline expectations for {city}
+- Mention any local code considerations
+
+### 7) OUR PROCESS (200-250 words, 3 paragraphs)
 Purpose: Describe what actually happens when someone calls — not values, not claims.
 
-This paragraph MUST include ALL FOUR:
-1) A discovery moment (what is checked or figured out first)
-2) A decision moment (when something is recommended vs deferred)
-3) An explanation moment (how options or findings are explained)
-4) An expectation moment (timing, permits, inspections, or follow-up)
+**Paragraph 1 - Initial Assessment (4-5 sentences, ~70-90 words)**
+- Describe what's checked first
+- Explain how {city}'s building characteristics affect assessment
+- Mention common discoveries in {city} properties
+- Reference specific {trade_name} components that are checked
+- Must describe ACTIONS, not values
 
-CRITICAL VARIATION RULE:
-- Do NOT reuse the same phrasing across pages
-- Rotate emphasis between:
-  * diagnosis-first ("When someone calls, the first step is figuring out...")
-  * planning-first ("Before recommending anything, we look at...")
-  * compliance-first ("If permits or inspections apply, that's discussed early...")
-  * prevention-first ("Sometimes what looks urgent can wait, and what looks minor needs attention...")
+**Paragraph 2 - Recommendations & Options (4-5 sentences, ~70-90 words)**
+- Explain how options are presented
+- Describe decision factors specific to {city}'s housing stock
+- Show when immediate action is needed vs. when planning is appropriate
+- Reference how findings are explained
+- Include reasoning process, not just claims
+
+**Paragraph 3 - Execution & Follow-up (3-4 sentences, ~60-70 words)**
+- Describe permit/inspection requirements in {city}
+- Set timeline expectations
+- Explain what happens after completion
+- Mention any follow-up or documentation provided
+
+CRITICAL VARIATION RULE FOR ALL 3 PARAGRAPHS:
+- Do NOT reuse the same phrasing across different city pages
+- Rotate emphasis between diagnosis-first, planning-first, compliance-first, prevention-first
 - Sentence structure must differ per city
+- No marketing language or generic professionalism
 
-Rules:
-- ONE paragraph only.
-- 4–6 sentences.
-- No bullets.
-- No city name.
-- No marketing language.
-- No generic professionalism ("quality", "trusted", "customer-focused").
-- Must describe ACTIONS, not values.
-- If ANY of the 4 moments are missing, the output is INVALID.
+### 8) FREQUENTLY ASKED QUESTIONS (150-200 words, 3-4 FAQs)
+Purpose: Address city-specific questions.
 
-UNACCEPTABLE:
-"We focus on clear communication and doing the job right."
+Generate 3-4 FAQ blocks with city-specific answers:
 
-GOLD-STANDARD EXAMPLE (STYLE ONLY — DO NOT COPY):
-"When someone calls, the first step is figuring out whether the issue is isolated or part of a larger update. Sometimes that means opening things up or testing further before recommending anything. If it's something that can wait, that's said plainly. If it's likely to create problems down the line, the reasons are explained along with options. When permits or inspections are involved, that's discussed early so expectations are clear before work begins."
+Questions should cover:
+- Permits/inspections specific to {city}
+- Timeline expectations for {city}
+- What makes {city} properties different
+- Common concerns for {city}'s housing stock
 
-Your output must match the realism and specificity of this example,
-but must NOT reuse its wording or structure.
-
-### 6) CTA — LOW PRESSURE (1–2 sentences)
-Purpose: Guide without selling.
-
-Rules:
-- Calm, neutral tone.
-- No urgency or hype.
-- No repetition of city name.
+Each answer: 2-3 sentences with specific local details
+Reference local factors, construction eras, or {city}-specific requirements
+NO generic answers that could apply anywhere
 
 ==================================================
 OUTPUT JSON SCHEMA
 ==================================================
 {{
   "blocks": [
-    {{"type": "paragraph", "text": "2-3 sentence intro with city factor + consequence"}},
+    // CITY-SPECIFIC CONTEXT (200-250 words)
+    {{"type": "paragraph", "text": "Housing stock paragraph (3-4 sentences, ~60 words)"}},
+    {{"type": "paragraph", "text": "Climate factors paragraph (3-4 sentences, ~60 words)"}},
+    {{"type": "paragraph", "text": "Common issues paragraph (3-4 sentences, ~60 words)"}},
+    {{"type": "paragraph", "text": "Neighborhood coverage paragraph (2-3 sentences, ~50 words)"}},
+    
+    // COMMON ISSUES (150-200 words)
+    {{"type": "heading", "level": 2, "text": "Common {trade_name} Issues in {city}"}},
+    {{"type": "paragraph", "text": "Primary issues paragraph (4-5 sentences, ~80-100 words)"}},
+    {{"type": "paragraph", "text": "Secondary issues paragraph (3-4 sentences, ~70-100 words)"}},
+    
+    // SERVICES (current structure)
     {{"type": "heading", "level": 2, "text": "Services We Offer Locally"}},
-    {{"type": "paragraph", "text": "1-2 sentence real triggers - NO service names"}},
-    {{"type": "paragraph", "text": "ONE sentence decision tension - WHY look deeper"}},
+    {{"type": "paragraph", "text": "Real triggers (1-2 sentences, ~30 words)"}},
+    {{"type": "paragraph", "text": "Decision tension (1 sentence, ~20 words)"}},
     {{"type": "paragraph", "text": "{{{{CITY_SERVICE_LINKS}}}}"}},
-    {{"type": "heading", "level": 2, "text": "Why Choose Us"}},
-    {{"type": "paragraph", "text": "ONE paragraph, 4-6 sentences, real process with natural variation patterns"}},
+    
+    // CITY-SPECIFIC APPROACH (150-200 words)
+    {{"type": "heading", "level": 2, "text": "How We Handle {city} Properties"}},
+    {{"type": "paragraph", "text": "Approach differences paragraph (4-5 sentences, ~80-100 words)"}},
+    {{"type": "paragraph", "text": "Permits & timeline paragraph (3-4 sentences, ~70-100 words)"}},
+    
+    // PROCESS (200-250 words)
+    {{"type": "heading", "level": 2, "text": "Our Process"}},
+    {{"type": "paragraph", "text": "Assessment paragraph (4-5 sentences, ~70-90 words)"}},
+    {{"type": "paragraph", "text": "Recommendations paragraph (4-5 sentences, ~70-90 words)"}},
+    {{"type": "paragraph", "text": "Execution paragraph (3-4 sentences, ~60-70 words)"}},
+    
+    // FAQ (150-200 words)
+    {{"type": "heading", "level": 2, "text": "Frequently Asked Questions"}},
+    {{"type": "faq", "question": "City-specific question 1?", "answer": "2-3 sentence answer with local details"}},
+    {{"type": "faq", "question": "City-specific question 2?", "answer": "2-3 sentence answer with local details"}},
+    {{"type": "faq", "question": "City-specific question 3?", "answer": "2-3 sentence answer with local details"}},
+    {{"type": "faq", "question": "City-specific question 4?", "answer": "2-3 sentence answer with local details"}},
+    
     {{"type": "cta", "text": "{data.cta_text}", "phone": "{data.phone or ''}"}}
   ]
 }}
 
-CRITICAL CONTEXT:
-City Hub pages explain why this work shows up in this city and how situations are handled.
-Avoid advice-style language, values, or generic professionalism."""
+TOTAL TARGET: 1,000-1,200 words across all sections
+
+CRITICAL REMINDERS:
+- Use local research data EXTENSIVELY - every section should reference specific local factors
+- NO duplicate boilerplate - each city page must be substantively unique
+- Focus on {trade_name} work only - no other trades
+- Describe ACTIONS and SITUATIONS, not values or claims
+- Vary sentence structure across different city pages"""
 
     try:
-        result = generator._call_openai_json(system_prompt, user_prompt, max_tokens=3000)
+        result = generator._call_openai_json(system_prompt, user_prompt, max_tokens=6000)
         return result
     except Exception as e:
         print(f"City hub generation error: {e}")
