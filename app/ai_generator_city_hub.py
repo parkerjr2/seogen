@@ -78,7 +78,7 @@ def generate_city_hub_content(generator, data: PageData) -> GeneratePageResponse
     trade_name = profile["trade_name"]
 
     # Fetch comprehensive local data (Census + landmarks + research)
-    # Note: CITY_HUB research uses "General" trade type for cross-trade insights
+    # Note: Uses trade-specific research (building ages/climate are same across trades)
     local_data = None
     try:
         try:
@@ -89,7 +89,7 @@ def generate_city_hub_content(generator, data: PageData) -> GeneratePageResponse
                 local_data_fetcher.get_all_local_data(
                     data.city,
                     data.state,
-                    "General"  # Use "General" trade type for city-level research
+                    trade_name  # Use actual trade to get rich research data
                 )
             )
     except Exception as e:
