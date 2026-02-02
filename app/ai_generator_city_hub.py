@@ -544,6 +544,23 @@ These phrases create duplicate content across cities. NEVER use them:
 ❌ "Given the age of many homes"
 ❌ Any exact phrase from the examples in this prompt
 
+BANNED OPENING PATTERNS (do NOT start your content with these):
+❌ "In the area, many homes were constructed"
+❌ "In the area, the majority of homes were built"
+❌ "In the area, most homes were built"
+❌ "In [city], many homes were built"
+❌ "In [city], the majority of homes date from"
+
+REQUIRED: Each city MUST start differently. Use these variation patterns:
+✅ "{city}'s housing boom centered on [year]..."
+✅ "Most {city} homes date from [year]..."
+✅ "The {city} area saw major construction around [year]..."
+✅ "{city} experienced rapid growth in [year]..."
+✅ "Construction in {city} peaked during [year]..."
+✅ "Housing development in {city} concentrated around [year]..."
+
+Pick ONE pattern and make it unique with specific local data.
+
 VARIATION RULES - Apply to EVERY sentence:
 - If City A says "Many homes were built in 1979" → City B must say "Housing stock dates primarily from the late 1970s"
 - If City A says "humid subtropical climate" → City B must say "hot summers with frequent storms"
