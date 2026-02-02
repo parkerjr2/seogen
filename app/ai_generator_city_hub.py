@@ -501,7 +501,7 @@ CRITICAL REMINDERS:
 - Vary sentence structure across different city pages"""
 
     try:
-        result = generator._call_openai_json(system_prompt, user_prompt, max_tokens=8000)
+        result = generator._call_openai_json(system_prompt, user_prompt, max_tokens=6000)
 
         # Validate FAQ presence
         blocks = result.get('blocks', [])
