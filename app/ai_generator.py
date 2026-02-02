@@ -1781,9 +1781,9 @@ From "marketing reassurance" to "experienced local explanation"
 Rules:
 Return ONLY valid JSON in the same structure.
 Fix only the failing fields.
-Remove any forbidden meta-language terms.
-Remove any forbidden marketing filler phrases: "top-notch", "premier", "high-quality solutions", "trusted experts", "we understand the importance of", "industry-leading", "best-in-class", "cutting-edge", "state-of-the-art", "world-class", "best in the area", "leading provider", "your trusted", "your go-to", "number one choice"
-Remove any forbidden regional references and unsafe geography (south florida, miami-dade, broward, salt air, coastal).
+Remove any forbidden meta-language terms: {', '.join([f'"{p}"' for p in self.FORBIDDEN_PHRASES])}
+Remove any forbidden marketing filler phrases: {', '.join([f'"{p}"' for p in self.FORBIDDEN_MARKETING_FILLER])}
+Remove any forbidden regional references and unsafe geography: {', '.join([f'"{p}"' for p in self.FORBIDDEN_REGION_PHRASES])}
 Do NOT mention specific regions (e.g., South Florida, Midwest, Pacific Northwest).
 Do NOT mention salt air.
 If state is TX, keep weather references limited to heat, hail, wind, heavy rain, and storms.
