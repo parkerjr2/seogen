@@ -122,11 +122,14 @@ class AIContentGenerator:
                 except RuntimeError:
                     # No event loop running, safe to use asyncio.run()
                     # NEW: Use get_all_local_data to include research data
+                    # Use trade_name from profile (e.g., "electrical") not vertical name (e.g., "electrician")
+                    # to ensure consistent cache keys across service pages and city hubs
+                    trade_name = get_trade_name(data.vertical)
                     local_data = asyncio.run(
                         local_data_fetcher.get_all_local_data(
                             data.city,
                             data.state,
-                            data.vertical  # Pass vertical as trade_type
+                            trade_name  # Use trade_name from profile for consistent caching
                         )
                     )
             except Exception as e:

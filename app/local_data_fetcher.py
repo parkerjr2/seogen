@@ -444,7 +444,6 @@ Return ONLY valid JSON in this exact format:
       "specificity_note": "Why this is unique to {city_name}"
     }}
   ],
-  "sources": ["https://url1.com", "https://url2.com"],
   "differentiation_score": 8,
   "self_validation": {{
     "is_city_specific": true,
@@ -465,9 +464,10 @@ SELF-VALIDATE before returning:
 4. Do service triggers reference SPECIFIC local events/patterns? (Reject if universal)
 5. Differentiation score: Rate 1-10 how unique this data is (8+ = good, <6 = too generic)
 
-Include 3-6 verifiable source URLs with city-specific data."""
+Base your research on your knowledge of {city_name}, {state} geography, climate, and building patterns."""
 
-                # Call OpenAI GPT-4o (not mini) with web search capability
+                # Call OpenAI GPT-4o (not mini) for detailed city research
+                # Note: Uses model's training data, not real-time web search
                 payload = {
                     "model": "gpt-4o",  # Use GPT-4o, NOT gpt-4o-mini
                     "messages": [
