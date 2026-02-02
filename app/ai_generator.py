@@ -127,44 +127,71 @@ class AIContentGenerator:
         """
         import copy
         sanitized = copy.deepcopy(content_json)
+        print("DEBUG: _sanitize_forbidden_phrases() called")
 
-        # Phrases to remove/replace (case-insensitive patterns)
-        # Maps pattern -> replacement
+        # Phrases to remove/replace - ALL patterns now use re.IGNORECASE
+        # Order matters: specific phrases first, then catch-all patterns
         sanitize_patterns = [
-            # SEO-related phrases the model keeps generating
-            (r'\bSEO\b', ''),
+            # SEO-related phrases - specific phrases first
+            (r'\bsearch engine optimization\b', ''),
+            (r'\bSEO-optimized\b', 'optimized'),
+            (r'\bSEO-friendly\b', ''),
+            (r'\blocal SEO\b', 'local visibility'),
+            (r'\bfor SEO\b', ''),
+            (r'\bimprove your SEO\b', 'improve your online presence'),
+            (r'\bboost(?:ing)? (?:your )?SEO\b', 'boost your visibility'),
+            (r'\bSEO (?:strategy|tactics|techniques|tips|benefits|purposes?|reasons?)\b', ''),
+            # CATCH-ALL: Remove any remaining standalone "seo" (case-insensitive)
             (r'\bseo\b', ''),
-            (r'\bsearch engine optimization\b', '', re.IGNORECASE),
-            (r'\bSEO-optimized\b', 'optimized', re.IGNORECASE),
-            (r'\bSEO-friendly\b', '', re.IGNORECASE),
-            (r'\blocal SEO\b', 'local visibility', re.IGNORECASE),
-            (r'\bfor SEO\b', '', re.IGNORECASE),
-            (r'\bimprove your SEO\b', 'improve your online presence', re.IGNORECASE),
             # Other forbidden phrases
-            (r'\bkeyword\b', 'term', re.IGNORECASE),
-            (r'\bword count\b', '', re.IGNORECASE),
-            (r'\bfirst 100 words\b', '', re.IGNORECASE),
-            (r'\bthis page\b', 'this information', re.IGNORECASE),
-            (r'\bthis article\b', 'this guide', re.IGNORECASE),
-            (r'\bin this section\b', 'here', re.IGNORECASE),
+            (r'\bkeyword(?:s)?\b', 'term'),
+            (r'\bword count\b', ''),
+            (r'\bfirst 100 words\b', ''),
+            (r'\bthis page\b', 'this information'),
+            (r'\bthis article\b', 'this guide'),
+            (r'\bin this section\b', 'here'),
         ]
 
         def sanitize_text(text: str) -> str:
             if not text:
                 return text
             result = text
-            for pattern_tuple in sanitize_patterns:
-                if len(pattern_tuple) == 3:
-                    pattern, replacement, flags = pattern_tuple
-                    result = re.sub(pattern, replacement, result, flags=flags)
-                else:
-                    pattern, replacement = pattern_tuple
-                    result = re.sub(pattern, replacement, result)
+            # Apply all patterns with IGNORECASE flag
+            for pattern, replacement in sanitize_patterns:
+                result = re.sub(pattern, replacement, result, flags=re.IGNORECASE)
             # Clean up double spaces that may result from removals
             result = re.sub(r'  +', ' ', result)
             # Clean up space before punctuation
             result = re.sub(r' ([.,!?])', r'\1', result)
             return result.strip()
+
+        # Check if content contains 'seo' before sanitization (for debugging)
+        def check_for_seo(content_dict):
+            all_text = []
+            if 'meta_description' in content_dict:
+                all_text.append(content_dict.get('meta_description', ''))
+            for section in content_dict.get('sections', []):
+                all_text.append(section.get('heading', ''))
+                all_text.append(section.get('paragraph', ''))
+            for faq in content_dict.get('faqs', []):
+                all_text.append(faq.get('question', ''))
+                all_text.append(faq.get('answer', ''))
+            all_text.append(content_dict.get('cta_text', ''))
+            combined = ' '.join([t for t in all_text if t]).lower()
+            if 'seo' in combined:
+                # Find where it appears
+                for field_name, text in [('meta_description', content_dict.get('meta_description', ''))] + \
+                        [(f'section_{i}', s.get('paragraph', '')) for i, s in enumerate(content_dict.get('sections', []))] + \
+                        [(f'faq_{i}', f.get('answer', '')) for i, f in enumerate(content_dict.get('faqs', []))]:
+                    if text and 'seo' in text.lower():
+                        # Find the context around 'seo'
+                        idx = text.lower().find('seo')
+                        context = text[max(0, idx-30):idx+33]
+                        print(f"DEBUG SANITIZE: Found 'seo' in {field_name}: '...{context}...'")
+                return True
+            return False
+
+        had_seo_before = check_for_seo(sanitized)
 
         # Sanitize meta_description
         if 'meta_description' in sanitized:
@@ -189,6 +216,14 @@ class AIContentGenerator:
         # Sanitize CTA
         if 'cta_text' in sanitized:
             sanitized['cta_text'] = sanitize_text(sanitized['cta_text'])
+
+        # Debug: Check if 'seo' was successfully removed
+        if had_seo_before:
+            has_seo_after = check_for_seo(sanitized)
+            if has_seo_after:
+                print("⚠️ SANITIZE WARNING: 'seo' still present after sanitization!")
+            else:
+                print("✓ SANITIZE SUCCESS: 'seo' was removed from content")
 
         return sanitized
 
