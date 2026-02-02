@@ -382,8 +382,15 @@ Rules:
 - Describe real situations or moments of uncertainty
 - Avoid vague phrases like "many {target_audience}s" or "people often"
 
-GOOD STYLE:
-"Calls usually come in after something stops working, a remodel uncovers an issue, or an inspection raises questions that weren't obvious beforehand."
+⚠️ CRITICAL: Create UNIQUE variations for each city - DO NOT copy these examples:
+
+STYLE GUIDANCE - Create your own unique variations:
+Example variety (DO NOT copy these - make your own):
+- City A: "after a breaker trips repeatedly, an outlet stops working, or a renovation reveals outdated wiring"
+- City B: "when lights flicker during storms, appliances trip circuits, or home inspections flag safety concerns"
+- City C: "following power surges, when adding new appliances, or after noticing burning smells"
+
+Your sentence must be COMPLETELY DIFFERENT from all examples above and from other cities.
 
 ### 4) DECISION TENSION — WHY LOOK DEEPER (ONE sentence, ~20 words)
 Purpose: Explain WHY someone would need to explore service pages.
@@ -453,20 +460,30 @@ CRITICAL VARIATION RULE FOR ALL 3 PARAGRAPHS:
 - Sentence structure must differ per city
 - No marketing language or generic professionalism
 
-### 8) FREQUENTLY ASKED QUESTIONS (200-250 words, 4 FAQs)
+### 8) FREQUENTLY ASKED QUESTIONS (200-250 words, 4 FAQs) ⚠️ MANDATORY - CANNOT BE OMITTED
 Purpose: Address city-specific questions.
 
-Generate EXACTLY 4 FAQ blocks with city-specific answers:
+🚨 CRITICAL: You MUST generate EXACTLY 4 complete FAQ blocks. Output is INVALID without them.
 
-Questions should cover:
-- Permits/inspections specific to {city}
-- Timeline expectations for {city}
-- What makes {city} properties different
-- Common concerns for {city}'s housing stock
+Generate exactly 4 FAQ blocks - this is NON-NEGOTIABLE:
 
-Each answer: 2-3 sentences with specific local details
-Reference local factors, construction eras, or {city}-specific requirements
-NO generic answers that could apply anywhere
+REQUIRED FAQ TOPICS (you must include 4):
+1. "Do I need a permit for {trade_name} work in {city}?"
+   - Answer MUST reference {city}, {state} specific permit requirements
+2. "How long does {trade_name} work typically take in {city}?"
+   - Answer MUST reference {city}-specific timelines and factors
+3. "What makes {city} properties different for {trade_name} work?"
+   - Answer MUST reference {city}'s construction era (use actual years from local data)
+4. "What are the most common {trade_name} problems in {city}?"
+   - Answer MUST reference {city}-specific housing age and climate factors
+
+Each answer MUST:
+- Be 2-3 sentences minimum
+- Include specific local details (construction year, climate data, permit info)
+- Reference {city} by name at least once
+- Be completely unique to this city (NO generic answers)
+
+⚠️ BEFORE SUBMITTING: Count your FAQ blocks. If you have fewer than 4, ADD MORE NOW.
 
 ==================================================
 OUTPUT JSON SCHEMA
@@ -514,12 +531,55 @@ OUTPUT JSON SCHEMA
 
 TOTAL TARGET: 1,000-1,200 words across all sections
 
+==================================================
+ABSOLUTELY BANNED PHRASES (IMMEDIATE REJECTION)
+==================================================
+These phrases create duplicate content across cities. NEVER use them:
+
+❌ "Calls usually come in after something stops working, a remodel uncovers an issue"
+❌ "We're expanding our service coverage in this area"
+❌ "In the area, many homes were built"
+❌ "In the area, the majority of homes"
+❌ "The area experiences a humid subtropical climate"
+❌ "Given the age of many homes"
+❌ Any exact phrase from the examples in this prompt
+
+VARIATION RULES - Apply to EVERY sentence:
+- If City A says "Many homes were built in 1979" → City B must say "Housing stock dates primarily from the late 1970s"
+- If City A says "humid subtropical climate" → City B must say "hot summers with frequent storms"
+- Every sentence structure must be COMPLETELY DIFFERENT across cities
+- NO sentence should work if you simply swap the city name
+- Use different vocabulary, different sentence starters, different clause order
+
+==================================================
+FINAL VALIDATION CHECKLIST (VERIFY BEFORE SUBMITTING)
+==================================================
+Before outputting your JSON, verify:
+
+✓ 1. FAQ CHECK: Do I have EXACTLY 4 complete FAQ blocks with questions AND answers?
+   → If NO: ADD THEM NOW before outputting
+
+✓ 2. BANNED PHRASES: Did I use any of the banned phrases listed above?
+   → If YES: REWRITE those sentences completely
+
+✓ 3. SENTENCE VARIETY: Do multiple sentences start the same way?
+   → If YES: VARY the sentence structures and starters
+
+✓ 4. CITY SPECIFICITY: Would any sentence still make sense if I swapped the city name?
+   → If YES: ADD MORE SPECIFIC LOCAL DETAILS (years, landmarks, climate data)
+
+✓ 5. LOCAL DATA: Does every major paragraph reference specific local factors?
+   → If NO: ADD SPECIFIC DATA from the local research provided
+
+If you fail ANY check above, FIX IT NOW before outputting.
+
 CRITICAL REMINDERS:
 - Use local research data EXTENSIVELY - every section should reference specific local factors
 - NO duplicate boilerplate - each city page must be substantively unique
 - Focus on {trade_name} work only - no other trades
 - Describe ACTIONS and SITUATIONS, not values or claims
-- Vary sentence structure across different city pages"""
+- Vary sentence structure across different city pages
+- You MUST generate 4 complete FAQs - this is non-negotiable"""
 
     try:
         result = generator._call_openai_json(system_prompt, user_prompt, max_tokens=6000)
@@ -561,11 +621,11 @@ def _generate_fallback_city_hub_content(data: PageData, profile: dict) -> dict:
         },
         {
             "type": "paragraph",
-            "text": "Calls usually come in after something stops working, a remodel uncovers an issue, or an inspection raises questions that weren't obvious beforehand."
+            "text": f"Work requests typically follow equipment failures, renovation discoveries, or inspection findings that need professional assessment in {city}."
         },
         {
             "type": "paragraph",
-            "text": "The tricky part is figuring out whether what you're seeing is a one-off issue or part of something bigger."
+            "text": f"Determining whether an issue requires immediate attention or can be addressed during planned updates depends on the specific situation and {city}'s local building requirements."
         },
         {
             "type": "paragraph",
