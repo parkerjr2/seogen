@@ -198,36 +198,12 @@ def _call_openai_city_hub_generation(generator, data: PageData, profile: dict, l
     # Note: We do NOT pass service names to the AI to avoid enumeration
     # The shortcode will handle service discovery and display
     
-    system_prompt = f"""You are an expert {trade_name} content writer creating a city hub page.
+    system_prompt = f"""You are an expert {trade_name} content writer. Write EXCLUSIVELY about {trade_name.upper()} work.
 
-⚠️ CRITICAL TRADE FOCUS - IMMEDIATE REJECTION IF VIOLATED ⚠️
-You are writing EXCLUSIVELY about {trade_name.upper()} work.
-NEVER mention: {_get_banned_trades(trade_name)}
+⚠️ NEVER mention: {_get_banned_trades(trade_name)} or terms like "heating", "HVAC", "plumbing", "roofing", or other trades.
+Use ONLY {trade_name} vocabulary: {', '.join(vocabulary[:10])}
 
-SPECIFIC BANNED TERMS (these will cause automatic rejection):
-- "heating", "air conditioning", "HVAC", "furnace", "AC unit", "ductwork"
-- "plumbing", "pipes", "drains", "water heater", "faucets"
-- "roofing", "shingles", "gutters", "roof repair"
-- Any mention of other trades or their work
-
-ONLY discuss {trade_name}-specific components, issues, and systems.
-Use ONLY vocabulary from this list: {', '.join(vocabulary[:10])}
-
-BAD EXAMPLE (DO NOT DO THIS):
-"Homes in this area commonly need electrical, plumbing, and HVAC updates."
-❌ This mentions plumbing and HVAC - REJECTED
-
-GOOD EXAMPLE:
-"Homes in this area commonly need panel upgrades, outlet additions, and code compliance work."
-✅ Only mentions electrical work - APPROVED
-
-CRITICAL RULES:
-1. Mention {city}, {state} naturally but sparingly (2-3 times total in intro)
-2. Do NOT mention any other cities or towns
-3. Use trade-specific vocabulary: {', '.join(vocabulary[:10])}
-4. Write like a real contractor, not marketing copy
-5. Output ONLY valid JSON matching the schema below
-6. Do NOT output any HTML lists (<ul>, <ol>, bullets, or numbered lists)
+RULES: Mention {city}, {state} naturally. Write like a contractor, not marketing. Output ONLY valid JSON. No HTML lists.
 
 BANNED PHRASES (never use these):
 - "locally" / "local property owners" / "serving the local area" / "in your area"
@@ -325,278 +301,77 @@ BANNED WORDS / PHRASES (NEVER USE):
 - "we offer the following services", "services include"
 
 ==================================================
-REQUIRED STRUCTURE (FOLLOW EXACTLY)
+STRUCTURE (1,100-1,300 words):
 ==================================================
 
-TARGET WORD COUNT: 1,100-1,300 words total (across all sections)
+1) CITY CONTEXT (4 paragraphs, 200-250w)
+   - Housing: Median year, construction eras → {trade_name} impacts (60w)
+   - Climate: Specific weather data → {trade_name} stress (60w)
+   - Issues: What fails from age + climate (60w)
+   - Coverage: 2+ landmarks from research (50w)
 
-### 1) CITY-SPECIFIC CONTEXT (200-250 words, 4 paragraphs)
-Purpose: Establish THIS city's unique characteristics and how they affect {trade_name} work.
+2) COMMON ISSUES (2 paragraphs, 150-200w)
+   - Primary: {trade_name} problems, WHY (100w)
+   - Secondary: Climate issues, when found (80w)
 
-**Paragraph 1 - Housing Stock & Construction Era (3-4 sentences, ~60 words)**
-- Use SPECIFIC data from local research (median year built, construction boom periods)
-- Mention {city} by name
-- Connect construction era to current {trade_name} challenges
-- Example pattern: "In {city}, the majority of {property_type} were built during [era], which means [specific {trade_name} consequence]..."
-- DO NOT write anything that could apply to any city
+3) TRIGGERS (30w): What prompts calls. NO service names. Unique per city.
 
-**Paragraph 2 - Climate & Environmental Factors (3-4 sentences, ~60 words)**
-- Use SPECIFIC weather/climate data from local research
-- Connect climate to {trade_name} stress factors
-- Example pattern: "The area experiences [specific climate factor], which creates [specific {trade_name} issue]..."
-- Must include measurable data (temperatures, storm frequency, etc.)
+4) DECISION (20w): Why explore services. Spoken tone.
 
-**Paragraph 3 - Common Issues That Result (3-4 sentences, ~60 words)**
-- Connect housing age + climate to specific {trade_name} problems
-- Describe what typically fails, wears out, or needs updating
-- Reference {trade_name}-specific components
-- Show cause-and-effect from local factors
+5) SERVICE LINKS: Output EXACTLY: {{{{CITY_SERVICE_LINKS}}}}
 
-**Paragraph 4 - Neighborhood Coverage (2-3 sentences, ~50 words)**
-- Mention at least 2 specific landmarks or neighborhoods from local research
-- Describe service coverage area naturally
-- Example pattern: "From {property_type} near [landmark] to properties around [landmark]..."
-- NO generic "serving the area" language
+6) {city.upper()} PROPERTIES (2 paragraphs, 150-200w)
+   - Approach for {city}'s stock (90w)
+   - {city}, {state} permits (80w)
 
-### 2) COMMON {trade_name.upper()} ISSUES IN {city.upper()} (150-200 words, 2 paragraphs)
-Purpose: Describe city-specific problems based on local factors.
+7) PROCESS (3 paragraphs, 200-250w)
+   - Assessment (80w)
+   - Recommendations (80w)
+   - Execution (70w)
 
-**Paragraph 1 - Primary Issues (5-6 sentences, ~100-120 words)**
-- Describe the MOST common {trade_name} issues in {city}
-- Use housing age data to explain WHY these issues occur
-- Include specific examples of what fails or needs updating
-- Reference {trade_name} components directly
-- Connect to local factors (age, climate, construction era)
+8) FAQs (4 COMPLETE BLOCKS, 200-250w) 🚨 MANDATORY
+   1. "Do I need a permit for {trade_name} work in {city}?"
+   2. "How long does {trade_name} work take in {city}?"
+   3. "What makes {city} properties different?"
+   4. "What are common {trade_name} problems in {city}?"
+   Each: 2-3 sentences with city-specific details.
 
-**Paragraph 2 - Secondary Issues (3-4 sentences, ~70-100 words)**
-- Describe issues related to climate or specific construction methods from that era
-- Explain how these issues typically present themselves
-- Describe when they're usually discovered (inspections, renovations, failures)
-- Must be specific to {trade_name} work
+BANNED: "locally", "serving the area", "trusted", "quality service"
+BANNED OPENINGS: "In the area, many homes"
+REQUIRED: "{city}'s housing boom centered on [year]" pattern
 
-### 3) SERVICES CONTEXT — REAL TRIGGERS (1-2 sentences, ~30 words)
-Purpose: Describe what actually prompts calls WITHOUT naming services.
-
-Rules:
-- Do NOT name or list services
-- Describe real situations or moments of uncertainty
-- Avoid vague phrases like "many {target_audience}s" or "people often"
-
-⚠️ CRITICAL: Create UNIQUE variations for each city - DO NOT copy these examples:
-
-STYLE GUIDANCE - Create your own unique variations:
-Example variety (DO NOT copy these - make your own):
-- City A: "after a breaker trips repeatedly, an outlet stops working, or a renovation reveals outdated wiring"
-- City B: "when lights flicker during storms, appliances trip circuits, or home inspections flag safety concerns"
-- City C: "following power surges, when adding new appliances, or after noticing burning smells"
-
-Your sentence must be COMPLETELY DIFFERENT from all examples above and from other cities.
-
-### 4) DECISION TENSION — WHY LOOK DEEPER (ONE sentence, ~20 words)
-Purpose: Explain WHY someone would need to explore service pages.
-
-Rules:
-- ONE sentence only
-- No service names
-- Must feel spoken, not written
-
-GOOD PATTERNS (rotate, do NOT reuse verbatim):
-- "The tricky part is figuring out whether what you're seeing is a one-off issue or part of something bigger."
-- "What looks like a small problem can sometimes point to a larger update, which is why the details matter."
-- "Once you know what's happening, the next step is understanding which type of work actually applies."
-
-### 5) SERVICE LINKS INSERTION POINT (MANDATORY)
-On its OWN LINE, output EXACTLY the following token and nothing else:
-
-{{{{CITY_SERVICE_LINKS}}}}
-
-Rules:
-- Do NOT wrap this token in a paragraph
-- Do NOT add text on the same line
-- This will be replaced later with natural inline service links
-
-### 6) HOW WE HANDLE {city.upper()} PROPERTIES (150-200 words, 2 paragraphs)
-Purpose: City-specific approach based on local building characteristics.
-
-**Paragraph 1 - Approach Differences (4-5 sentences, ~80-100 words)**
-- Explain how approach differs based on {city}'s housing stock
-- Describe specific considerations for {property_type} built in {city}'s construction era
-- Mention common updates or modifications needed in {city}
-- Reference {trade_name} systems typical of that era
-- Connect to local building practices or code history
-
-**Paragraph 2 - Permits & Timeline (3-4 sentences, ~70-100 words)**
-- Describe permit requirements specific to {city}, {state}
-- Explain inspection patterns or requirements
-- Set timeline expectations for {city}
-- Mention any local code considerations
-
-### 7) OUR PROCESS (200-250 words, 3 paragraphs)
-Purpose: Describe what actually happens when someone calls — not values, not claims.
-
-**Paragraph 1 - Initial Assessment (4-5 sentences, ~70-90 words)**
-- Describe what's checked first
-- Explain how {city}'s building characteristics affect assessment
-- Mention common discoveries in {city} properties
-- Reference specific {trade_name} components that are checked
-- Must describe ACTIONS, not values
-
-**Paragraph 2 - Recommendations & Options (4-5 sentences, ~70-90 words)**
-- Explain how options are presented
-- Describe decision factors specific to {city}'s housing stock
-- Show when immediate action is needed vs. when planning is appropriate
-- Reference how findings are explained
-- Include reasoning process, not just claims
-
-**Paragraph 3 - Execution & Follow-up (3-4 sentences, ~60-70 words)**
-- Describe permit/inspection requirements in {city}
-- Set timeline expectations
-- Explain what happens after completion
-- Mention any follow-up or documentation provided
-
-CRITICAL VARIATION RULE FOR ALL 3 PARAGRAPHS:
-- Do NOT reuse the same phrasing across different city pages
-- Rotate emphasis between diagnosis-first, planning-first, compliance-first, prevention-first
-- Sentence structure must differ per city
-- No marketing language or generic professionalism
-
-### 8) FREQUENTLY ASKED QUESTIONS (200-250 words, 4 FAQs) ⚠️ MANDATORY - CANNOT BE OMITTED
-Purpose: Address city-specific questions.
-
-🚨 CRITICAL: You MUST generate EXACTLY 4 complete FAQ blocks. Output is INVALID without them.
-
-Generate exactly 4 FAQ blocks - this is NON-NEGOTIABLE:
-
-REQUIRED FAQ TOPICS (you must include 4):
-1. "Do I need a permit for {trade_name} work in {city}?"
-   - Answer MUST reference {city}, {state} specific permit requirements
-2. "How long does {trade_name} work typically take in {city}?"
-   - Answer MUST reference {city}-specific timelines and factors
-3. "What makes {city} properties different for {trade_name} work?"
-   - Answer MUST reference {city}'s construction era (use actual years from local data)
-4. "What are the most common {trade_name} problems in {city}?"
-   - Answer MUST reference {city}-specific housing age and climate factors
-
-Each answer MUST:
-- Be 2-3 sentences minimum
-- Include specific local details (construction year, climate data, permit info)
-- Reference {city} by name at least once
-- Be completely unique to this city (NO generic answers)
-
-⚠️ BEFORE SUBMITTING: Count your FAQ blocks. If you have fewer than 4, ADD MORE NOW.
-
-==================================================
-OUTPUT JSON SCHEMA
-==================================================
+JSON SCHEMA:
 {{
   "blocks": [
-    // CITY-SPECIFIC CONTEXT (200-250 words)
-    {{"type": "paragraph", "text": "Housing stock paragraph (3-4 sentences, ~60 words)"}},
-    {{"type": "paragraph", "text": "Climate factors paragraph (3-4 sentences, ~60 words)"}},
-    {{"type": "paragraph", "text": "Common issues paragraph (3-4 sentences, ~60 words)"}},
-    {{"type": "paragraph", "text": "Neighborhood coverage paragraph (2-3 sentences, ~50 words)"}},
-    
-    // COMMON ISSUES (150-200 words)
+    {{"type": "paragraph", "text": "Housing"}},
+    {{"type": "paragraph", "text": "Climate"}},
+    {{"type": "paragraph", "text": "Issues"}},
+    {{"type": "paragraph", "text": "Coverage"}},
     {{"type": "heading", "level": 2, "text": "Common {trade_name} Issues in {city}"}},
-    {{"type": "paragraph", "text": "Primary issues paragraph (4-5 sentences, ~80-100 words)"}},
-    {{"type": "paragraph", "text": "Secondary issues paragraph (3-4 sentences, ~70-100 words)"}},
-    
-    // SERVICES (current structure)
+    {{"type": "paragraph", "text": "Primary"}},
+    {{"type": "paragraph", "text": "Secondary"}},
     {{"type": "heading", "level": 2, "text": "Services Available in {city}"}},
-    {{"type": "paragraph", "text": "Real triggers (1-2 sentences, ~30 words)"}},
-    {{"type": "paragraph", "text": "Decision tension (1 sentence, ~20 words)"}},
+    {{"type": "paragraph", "text": "Triggers"}},
+    {{"type": "paragraph", "text": "Decision"}},
     {{"type": "paragraph", "text": "{{{{CITY_SERVICE_LINKS}}}}"}},
-    
-    // CITY-SPECIFIC APPROACH (150-200 words)
     {{"type": "heading", "level": 2, "text": "How We Handle {city} Properties"}},
-    {{"type": "paragraph", "text": "Approach differences paragraph (4-5 sentences, ~80-100 words)"}},
-    {{"type": "paragraph", "text": "Permits & timeline paragraph (3-4 sentences, ~70-100 words)"}},
-    
-    // PROCESS (200-250 words)
+    {{"type": "paragraph", "text": "Approach"}},
+    {{"type": "paragraph", "text": "Permits"}},
     {{"type": "heading", "level": 2, "text": "Our Process"}},
-    {{"type": "paragraph", "text": "Assessment paragraph (4-5 sentences, ~70-90 words)"}},
-    {{"type": "paragraph", "text": "Recommendations paragraph (4-5 sentences, ~70-90 words)"}},
-    {{"type": "paragraph", "text": "Execution paragraph (3-4 sentences, ~60-70 words)"}},
-    
-    // FAQ (150-200 words)
+    {{"type": "paragraph", "text": "Assessment"}},
+    {{"type": "paragraph", "text": "Recommendations"}},
+    {{"type": "paragraph", "text": "Execution"}},
     {{"type": "heading", "level": 2, "text": "Frequently Asked Questions"}},
-    {{"type": "faq", "question": "City-specific question 1?", "answer": "2-3 sentence answer with local details"}},
-    {{"type": "faq", "question": "City-specific question 2?", "answer": "2-3 sentence answer with local details"}},
-    {{"type": "faq", "question": "City-specific question 3?", "answer": "2-3 sentence answer with local details"}},
-    {{"type": "faq", "question": "City-specific question 4?", "answer": "2-3 sentence answer with local details"}},
-    
+    {{"type": "faq", "question": "Q1?", "answer": "A1"}},
+    {{"type": "faq", "question": "Q2?", "answer": "A2"}},
+    {{"type": "faq", "question": "Q3?", "answer": "A3"}},
+    {{"type": "faq", "question": "Q4?", "answer": "A4"}},
     {{"type": "cta", "text": "{data.cta_text}", "phone": "{data.phone or ''}"}}
   ]
 }}
 
-TOTAL TARGET: 1,000-1,200 words across all sections
-
-==================================================
-ABSOLUTELY BANNED PHRASES (IMMEDIATE REJECTION)
-==================================================
-These phrases create duplicate content across cities. NEVER use them:
-
-❌ "Calls usually come in after something stops working, a remodel uncovers an issue"
-❌ "We're expanding our service coverage in this area"
-❌ "In the area, many homes were built"
-❌ "In the area, the majority of homes"
-❌ "The area experiences a humid subtropical climate"
-❌ "Given the age of many homes"
-❌ Any exact phrase from the examples in this prompt
-
-BANNED OPENING PATTERNS (do NOT start your content with these):
-❌ "In the area, many homes were constructed"
-❌ "In the area, the majority of homes were built"
-❌ "In the area, most homes were built"
-❌ "In [city], many homes were built"
-❌ "In [city], the majority of homes date from"
-
-REQUIRED: Each city MUST start differently. Use these variation patterns:
-✅ "{city}'s housing boom centered on [year]..."
-✅ "Most {city} homes date from [year]..."
-✅ "The {city} area saw major construction around [year]..."
-✅ "{city} experienced rapid growth in [year]..."
-✅ "Construction in {city} peaked during [year]..."
-✅ "Housing development in {city} concentrated around [year]..."
-
-Pick ONE pattern and make it unique with specific local data.
-
-VARIATION RULES - Apply to EVERY sentence:
-- If City A says "Many homes were built in 1979" → City B must say "Housing stock dates primarily from the late 1970s"
-- If City A says "humid subtropical climate" → City B must say "hot summers with frequent storms"
-- Every sentence structure must be COMPLETELY DIFFERENT across cities
-- NO sentence should work if you simply swap the city name
-- Use different vocabulary, different sentence starters, different clause order
-
-==================================================
-FINAL VALIDATION CHECKLIST (VERIFY BEFORE SUBMITTING)
-==================================================
-Before outputting your JSON, verify:
-
-✓ 1. FAQ CHECK: Do I have EXACTLY 4 complete FAQ blocks with questions AND answers?
-   → If NO: ADD THEM NOW before outputting
-
-✓ 2. BANNED PHRASES: Did I use any of the banned phrases listed above?
-   → If YES: REWRITE those sentences completely
-
-✓ 3. SENTENCE VARIETY: Do multiple sentences start the same way?
-   → If YES: VARY the sentence structures and starters
-
-✓ 4. CITY SPECIFICITY: Would any sentence still make sense if I swapped the city name?
-   → If YES: ADD MORE SPECIFIC LOCAL DETAILS (years, landmarks, climate data)
-
-✓ 5. LOCAL DATA: Does every major paragraph reference specific local factors?
-   → If NO: ADD SPECIFIC DATA from the local research provided
-
-If you fail ANY check above, FIX IT NOW before outputting.
-
-CRITICAL REMINDERS:
-- Use local research data EXTENSIVELY - every section should reference specific local factors
-- NO duplicate boilerplate - each city page must be substantively unique
-- Focus on {trade_name} work only - no other trades
-- Describe ACTIONS and SITUATIONS, not values or claims
-- Vary sentence structure across different city pages
-- You MUST generate 4 complete FAQs - this is non-negotiable"""
+Use local research extensively. Each city must be unique. COUNT FAQ BLOCKS - must have 4.
+"""
 
     max_retries = 2
     for attempt in range(max_retries):
