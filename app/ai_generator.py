@@ -1659,7 +1659,7 @@ Return JSON only. No extra text."""
             if idx == 1 and data.page_mode == 'service_city':
                 blocks.append({
                     "type": "paragraph",
-                    "text": "[seogen_city_hub_link]"
+                    "text": "[CITY_HUB_LINK]"
                 })
 
             # Insert CTA after specified section (structural variance)
