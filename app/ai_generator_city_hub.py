@@ -219,6 +219,58 @@ BANNED PHRASES (never use these):
     property_type = "commercial properties" if is_commercial else "homes"
     business_type = f"{hub_label.lower()} {trade_name}" if hub_label else trade_name
 
+    # Generate deterministic FAQ questions (ensures variation across cities)
+    # Use hash of city + state + hub_key to select question phrasings
+    def get_hash(text: str) -> int:
+        """Simple hash function for deterministic variation."""
+        import hashlib
+        return int(hashlib.md5(text.encode()).hexdigest(), 16)
+
+    city_hub_hash = get_hash(data.city + data.state + data.hub_key)
+
+    # FAQ question templates with 6 variations per topic
+    faq_templates = {
+        'permits': [
+            f"Do I need a permit for {trade_name} work in {city}?",
+            f"What permits are required for {trade_name} projects in {city}?",
+            f"Are permits necessary for {trade_name} work in {city}?",
+            f"When do I need a permit for {trade_name} in {city}?",
+            f"Does {city} require permits for {trade_name} work?",
+            f"How does {city} handle permits for {trade_name} projects?",
+        ],
+        'timeline': [
+            f"How long does {trade_name} work take in {city}?",
+            f"What's the typical timeline for {trade_name} in {city}?",
+            f"How much time should I expect for {trade_name} work in {city}?",
+            f"What determines how long {trade_name} takes in {city}?",
+            f"How quickly can {trade_name} work be completed in {city}?",
+            f"What affects {trade_name} project duration in {city}?",
+        ],
+        'local_factors': [
+            f"What makes {city} properties different?",
+            f"How do {city} properties affect {trade_name} work?",
+            f"What's unique about {trade_name} in {city}?",
+            f"How does {city}'s housing stock affect {trade_name}?",
+            f"What should {city} property owners know about {trade_name}?",
+            f"Why is {trade_name} different in {city}?",
+        ],
+        'common_issues': [
+            f"What are common {trade_name} problems in {city}?",
+            f"What {trade_name} issues do {city} properties face?",
+            f"What {trade_name} problems are typical in {city}?",
+            f"What causes {trade_name} issues in {city}?",
+            f"What {trade_name} failures happen most in {city}?",
+            f"What drives demand for {trade_name} in {city}?",
+        ],
+    }
+
+    # Select one question per topic based on hash
+    selected_faq_questions = {}
+    for topic, templates in faq_templates.items():
+        topic_hash = get_hash(data.city + data.state + data.hub_key + topic)
+        template_idx = topic_hash % len(templates)
+        selected_faq_questions[topic] = templates[template_idx]
+
     # Format local data if available
     local_facts = ""
     if local_data:
@@ -330,11 +382,18 @@ STRUCTURE (1,100-1,300 words):
    - Execution (70w)
 
 8) FAQs (4 COMPLETE BLOCKS, 200-250w) 🚨 MANDATORY
-   1. "Do I need a permit for {trade_name} work in {city}?"
-   2. "How long does {trade_name} work take in {city}?"
-   3. "What makes {city} properties different?"
-   4. "What are common {trade_name} problems in {city}?"
-   Each: 2-3 sentences with city-specific details.
+
+⚠️ MANDATORY FAQ QUESTIONS (USE THESE EXACT PHRASINGS):
+You MUST use these specific question phrasings (pre-selected for variation):
+1. Permits: "{selected_faq_questions['permits']}"
+2. Timeline: "{selected_faq_questions['timeline']}"
+3. Local factors: "{selected_faq_questions['local_factors']}"
+4. Common issues: "{selected_faq_questions['common_issues']}"
+
+DO NOT modify these question phrasings. Use them exactly as provided - word for word, character for character.
+This ensures unique FAQ questions across different cities.
+
+Each answer: 3-4 sentences with city-specific details, trade-specific terminology, and local factors from research data.
 
 BANNED: "locally", "serving the area", "trusted", "quality service"
 BANNED OPENINGS: "In the area, many homes"
@@ -387,8 +446,8 @@ Use local research extensively. Each city must be unique. COUNT FAQ BLOCKS - mus
                     print(f"⚠️  RETRY {attempt + 1}/{max_retries}: No FAQs generated for {data.city}, {data.hub_label} - retrying with stronger emphasis")
                     # Modify prompt to emphasize FAQs even more for retry
                     user_prompt = user_prompt.replace(
-                        "### 8) FREQUENTLY ASKED QUESTIONS",
-                        "### 8) ⚠️⚠️⚠️ FREQUENTLY ASKED QUESTIONS - GENERATE NOW OR OUTPUT IS INVALID ⚠️⚠️⚠️"
+                        "8) FAQs (4 COMPLETE BLOCKS, 200-250w) 🚨 MANDATORY",
+                        "8) ⚠️⚠️⚠️ FAQs (4 COMPLETE BLOCKS, 200-250w) 🚨🚨🚨 MANDATORY - GENERATE ALL 4 NOW OR OUTPUT IS INVALID ⚠️⚠️⚠️"
                     )
                     continue
                 else:
@@ -415,12 +474,12 @@ Use local research extensively. Each city must be unique. COUNT FAQ BLOCKS - mus
 
 def _generate_fallback_city_hub_content(data: PageData, profile: dict) -> dict:
     """Generate fallback city hub content if AI generation fails."""
-    
+
     trade_name = profile["trade_name"]
     hub_label = data.hub_label or "Services"
     city = data.city or "Your City"
     state = data.state or "ST"
-    
+
     blocks = [
         {
             "type": "paragraph",
@@ -451,6 +510,31 @@ def _generate_fallback_city_hub_content(data: PageData, profile: dict) -> dict:
         {
             "type": "paragraph",
             "text": "Most jobs start by figuring out whether the issue is isolated or part of something bigger. If it's something that can wait, that's said clearly. If it's likely to cause trouble later, the reason is explained along with options. When permits or inspections are involved, that's discussed up front so there are no surprises. The goal is to leave the work done correctly and make sure the customer understands what changed."
+        },
+        {
+            "type": "heading",
+            "level": 2,
+            "text": "Frequently Asked Questions"
+        },
+        {
+            "type": "faq",
+            "question": f"Do I need a permit for {trade_name} work in {city}?",
+            "answer": f"Permit requirements in {city} depend on the scope of work. Significant {trade_name} projects typically require permits, while minor repairs may not. Local building codes in {state} set specific thresholds for when permits are needed. It's best to verify requirements before starting work to avoid compliance issues."
+        },
+        {
+            "type": "faq",
+            "question": f"How long does {trade_name} work take in {city}?",
+            "answer": f"Project duration in {city} varies based on scope and complexity. Smaller {trade_name} projects may take a few hours to a day, while larger work can span several days or weeks. Permit processing times in {city} can also affect schedules. Weather and material availability are additional factors that influence timelines."
+        },
+        {
+            "type": "faq",
+            "question": f"What makes {city} properties different?",
+            "answer": f"Properties in {city} reflect the area's construction history and local building patterns. Older homes may have outdated systems requiring updates, while newer construction follows current codes. Local climate conditions affect wear patterns and maintenance needs. Understanding these factors helps determine the right approach for each property."
+        },
+        {
+            "type": "faq",
+            "question": f"What are common {trade_name} problems in {city}?",
+            "answer": f"Common {trade_name} issues in {city} often stem from aging infrastructure and local environmental factors. Routine wear and climate conditions contribute to typical failure patterns. Properties built during certain eras may have characteristic issues related to construction methods used at the time. Regular maintenance helps identify problems before they become serious."
         },
     ]
     
