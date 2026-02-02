@@ -9,6 +9,7 @@ import logging
 from datetime import datetime
 import hashlib
 import json
+import time
 from app.config import settings
 from app.supabase_client import SupabaseClient
 
@@ -340,13 +341,18 @@ Example format: ["University of Tulsa", "Woodward Park", "Tulsa Arts District"]"
             logger.warning("OpenAI API key not configured - cannot perform research")
             return self._get_fallback_research(city_name, state, trade_type)
 
-        try:
-            async with httpx.AsyncClient(timeout=45.0) as client:  # Longer timeout for thorough research
+        # Retry configuration
+        max_retries = 3
+        retry_delays = [1, 2, 4]  # Exponential backoff: 1s, 2s, 4s
 
-                # Construct aggressive research prompt focused on differentiation
-                # Handle "General" trade type for city hub pages
-                if trade_type == "General":
-                    system_prompt = f"""You are researching {city_name}, {state} to find data that makes it DIFFERENT from other cities in the region.
+        for attempt in range(max_retries):
+            try:
+                async with httpx.AsyncClient(timeout=45.0) as client:  # Longer timeout for thorough research
+
+                    # Construct aggressive research prompt focused on differentiation
+                    # Handle "General" trade type for city hub pages
+                    if trade_type == "General":
+                        system_prompt = f"""You are researching {city_name}, {state} to find data that makes it DIFFERENT from other cities in the region.
 
 CRITICAL: Generic regional data (applicable to any city in {state}) is USELESS.
 Find specific local factors that create service demand patterns across MULTIPLE service industries (roofing, HVAC, electrical, plumbing, garage doors, etc.).
@@ -354,18 +360,18 @@ Find specific local factors that create service demand patterns across MULTIPLE 
 Focus on construction patterns, climate factors, and economic trends that affect MULTIPLE trades, not just one specific service type.
 
 Your research must uncover what makes {city_name} DISTINCT - not what it shares with nearby cities."""
-                else:
-                    system_prompt = f"""You are researching {city_name}, {state} to find data that makes it DIFFERENT from other cities in the region.
+                    else:
+                        system_prompt = f"""You are researching {city_name}, {state} to find data that makes it DIFFERENT from other cities in the region.
 
 CRITICAL: Generic regional data (applicable to any city in {state}) is USELESS.
 Find specific local factors that create unique service patterns for {trade_type} businesses.
 
 Your research must uncover what makes {city_name} DISTINCT - not what it shares with nearby cities."""
 
-                # Adjust search strategy based on trade type
-                if trade_type == "General":
-                    search_focus = "service businesses across multiple trades"
-                    user_prompt = f"""Research {city_name}, {state} for general service business insights across multiple trades (roofing, HVAC, electrical, plumbing, etc.).
+                    # Adjust search strategy based on trade type
+                    if trade_type == "General":
+                        search_focus = "service businesses across multiple trades"
+                        user_prompt = f"""Research {city_name}, {state} for general service business insights across multiple trades (roofing, HVAC, electrical, plumbing, etc.).
 
 SEARCH STRATEGY - Execute these specific searches:
 1. "{city_name} {state} building permits commercial construction" - Find permit trends, inspection requirements
@@ -376,8 +382,8 @@ SEARCH STRATEGY - Execute these specific searches:
 6. "{city_name} {state} demographics housing" - Population changes creating service demand
 7. "{city_name} neighborhood service demand patterns" - Specific districts/areas with unique needs
 8. "{city_name} {state} vs [nearby city] differences" - Direct comparison to highlight uniqueness"""
-                else:
-                    user_prompt = f"""Research {city_name}, {state} for {trade_type} service businesses.
+                    else:
+                        user_prompt = f"""Research {city_name}, {state} for {trade_type} service businesses.
 
 SEARCH STRATEGY - Execute these specific searches:
 1. "{city_name} {state} building permits {trade_type}" - Find permit trends, inspection requirements
@@ -466,79 +472,104 @@ SELF-VALIDATE before returning:
 
 Base your research on your knowledge of {city_name}, {state} geography, climate, and building patterns."""
 
-                # Call OpenAI GPT-4o (not mini) for detailed city research
-                # Note: Uses model's training data, not real-time web search
-                payload = {
-                    "model": "gpt-4o",  # Use GPT-4o, NOT gpt-4o-mini
-                    "messages": [
-                        {"role": "system", "content": system_prompt},
-                        {"role": "user", "content": user_prompt}
-                    ],
-                    "temperature": 0.15,  # Very low temperature for factual research
-                    "max_tokens": 2000,  # More tokens for detailed responses
-                    "response_format": {"type": "json_object"}  # Enforce JSON response
-                }
-
-                response = await client.post(
-                    "https://api.openai.com/v1/chat/completions",
-                    json=payload,
-                    headers={
-                        "Authorization": f"Bearer {self.openai_api_key}",
-                        "Content-Type": "application/json"
+                    # Call OpenAI GPT-4o (not mini) for detailed city research
+                    # Note: Uses model's training data, not real-time web search
+                    payload = {
+                        "model": "gpt-4o",  # Use GPT-4o, NOT gpt-4o-mini
+                        "messages": [
+                            {"role": "system", "content": system_prompt},
+                            {"role": "user", "content": user_prompt}
+                        ],
+                        "temperature": 0.15,  # Very low temperature for factual research
+                        "max_tokens": 2000,  # More tokens for detailed responses
+                        "response_format": {"type": "json_object"}  # Enforce JSON response
                     }
-                )
 
-                if response.status_code != 200:
-                    logger.error(f"OpenAI API returned {response.status_code} for city research: {response.text}")
-                    return self._get_fallback_research(city_name, state, trade_type)
+                    response = await client.post(
+                        "https://api.openai.com/v1/chat/completions",
+                        json=payload,
+                        headers={
+                            "Authorization": f"Bearer {self.openai_api_key}",
+                            "Content-Type": "application/json"
+                        }
+                    )
 
-                data = response.json()
-                content = data["choices"][0]["message"]["content"].strip()
-
-                # Parse JSON response
-                try:
-                    research_data = json.loads(content)
-
-                    # Validate required fields (updated structure)
-                    required_fields = [
-                        "building_age_specificity", "major_construction_eras", "climate_factors",
-                        "service_triggers", "permit_requirements", "unique_factors",
-                        "differentiation_score", "self_validation",
-                        "researched_at", "city_name", "state", "trade_type"
-                    ]
-
-                    if all(field in research_data for field in required_fields):
-                        # Check differentiation score
-                        diff_score = research_data.get("differentiation_score", 0)
-                        self_val = research_data.get("self_validation", {})
-
-                        logger.info(f"Successfully researched {city_name}, {state} for {trade_type}")
-                        logger.info(f"Differentiation score: {diff_score}/10")
-                        logger.info(f"Self-validation: {self_val}")
-
-                        # Flag low-quality research but still return it
-                        if diff_score < 6:
-                            logger.warning(f"Low differentiation score ({diff_score}) - data may be too generic")
-                            research_data["quality_warning"] = "low_differentiation_score"
-
-                        if not self_val.get("is_city_specific", False):
-                            logger.warning(f"Self-validation flagged data as not city-specific")
-                            research_data["quality_warning"] = "not_city_specific"
-
-                        return research_data
-                    else:
-                        missing = [f for f in required_fields if f not in research_data]
-                        logger.warning(f"Research response missing required fields: {missing}")
+                    if response.status_code != 200:
+                        error_msg = f"OpenAI API returned {response.status_code} for city research: {response.text}"
+                        logger.error(error_msg)
+                        if attempt < max_retries - 1:
+                            delay = retry_delays[attempt]
+                            logger.warning(f"Retrying in {delay}s... (attempt {attempt + 1}/{max_retries})")
+                            await asyncio.sleep(delay)
+                            continue
                         return self._get_fallback_research(city_name, state, trade_type)
 
-                except json.JSONDecodeError as e:
-                    logger.error(f"Failed to parse research JSON: {e}")
-                    logger.error(f"Response content: {content}")
-                    return self._get_fallback_research(city_name, state, trade_type)
+                    data = response.json()
+                    content = data["choices"][0]["message"]["content"].strip()
 
-        except Exception as e:
-            logger.error(f"City research failed for {city_name}, {state}: {e}")
-            return self._get_fallback_research(city_name, state, trade_type)
+                    # Parse JSON response
+                    try:
+                        research_data = json.loads(content)
+
+                        # Validate required fields (updated structure)
+                        required_fields = [
+                            "building_age_specificity", "major_construction_eras", "climate_factors",
+                            "service_triggers", "permit_requirements", "unique_factors",
+                            "differentiation_score", "self_validation",
+                            "researched_at", "city_name", "state", "trade_type"
+                        ]
+
+                        if all(field in research_data for field in required_fields):
+                            # Check differentiation score
+                            diff_score = research_data.get("differentiation_score", 0)
+                            self_val = research_data.get("self_validation", {})
+
+                            logger.info(f"Successfully researched {city_name}, {state} for {trade_type}")
+                            logger.info(f"Differentiation score: {diff_score}/10")
+                            logger.info(f"Self-validation: {self_val}")
+
+                            # Flag low-quality research but still return it
+                            if diff_score < 6:
+                                logger.warning(f"Low differentiation score ({diff_score}) - data may be too generic")
+                                research_data["quality_warning"] = "low_differentiation_score"
+
+                            if not self_val.get("is_city_specific", False):
+                                logger.warning(f"Self-validation flagged data as not city-specific")
+                                research_data["quality_warning"] = "not_city_specific"
+
+                            return research_data
+                        else:
+                            missing = [f for f in required_fields if f not in research_data]
+                            logger.warning(f"Research response missing required fields: {missing}")
+                            if attempt < max_retries - 1:
+                                delay = retry_delays[attempt]
+                                logger.warning(f"Retrying in {delay}s... (attempt {attempt + 1}/{max_retries})")
+                                await asyncio.sleep(delay)
+                                continue
+                            return self._get_fallback_research(city_name, state, trade_type)
+
+                    except json.JSONDecodeError as e:
+                        logger.error(f"Failed to parse research JSON: {e}")
+                        logger.error(f"Response content: {content}")
+                        if attempt < max_retries - 1:
+                            delay = retry_delays[attempt]
+                            logger.warning(f"Retrying in {delay}s... (attempt {attempt + 1}/{max_retries})")
+                            await asyncio.sleep(delay)
+                            continue
+                        return self._get_fallback_research(city_name, state, trade_type)
+
+            except Exception as e:
+                logger.error(f"City research failed for {city_name}, {state} (attempt {attempt + 1}/{max_retries}): {e}")
+                if attempt < max_retries - 1:
+                    delay = retry_delays[attempt]
+                    logger.warning(f"Retrying in {delay}s...")
+                    await asyncio.sleep(delay)
+                    continue
+                return self._get_fallback_research(city_name, state, trade_type)
+
+        # All retries exhausted
+        logger.error(f"All {max_retries} retry attempts failed for {city_name}, {state}")
+        return self._get_fallback_research(city_name, state, trade_type)
 
     def _get_fallback_research(
         self,
