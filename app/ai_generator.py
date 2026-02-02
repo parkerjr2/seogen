@@ -76,7 +76,40 @@ class AIContentGenerator:
         "salt air",
         "coastal",
     ]
-    
+
+    # Cross-industry forbidden terms: terms that should NOT appear for a given industry
+    # Key = industry/vertical, Value = list of terms from OTHER industries that shouldn't appear
+    CROSS_INDUSTRY_FORBIDDEN = {
+        "electrical": [
+            "heating", "hvac", "furnace", "air conditioning", "air conditioner", "a/c unit",
+            "ductwork", "refrigerant", "compressor", "condenser", "evaporator", "thermostat",
+            "plumbing", "pipe", "drain", "sewer", "water heater", "faucet", "toilet",
+            "roofing", "shingles", "roof repair", "roof replacement", "gutters", "downspout",
+            "siding", "window installation", "door installation",
+        ],
+        "hvac": [
+            "electrical panel", "circuit breaker", "wiring", "outlet", "electrical repair",
+            "plumbing", "pipe", "drain", "sewer", "water heater", "faucet", "toilet",
+            "roofing", "shingles", "roof repair", "roof replacement", "gutters", "downspout",
+        ],
+        "plumbing": [
+            "electrical panel", "circuit breaker", "wiring", "outlet", "electrical repair",
+            "heating", "hvac", "furnace", "air conditioning", "ductwork", "refrigerant",
+            "roofing", "shingles", "roof repair", "roof replacement", "gutters", "downspout",
+        ],
+        "roofing": [
+            "electrical panel", "circuit breaker", "wiring", "outlet", "electrical repair",
+            "heating", "hvac", "furnace", "air conditioning", "ductwork", "refrigerant",
+            "plumbing", "pipe", "drain", "sewer", "water heater", "faucet", "toilet",
+        ],
+        "gutter": [
+            "electrical panel", "circuit breaker", "wiring", "outlet", "electrical repair",
+            "heating", "hvac", "furnace", "air conditioning", "ductwork", "refrigerant",
+            "plumbing", "pipe", "drain", "sewer", "water heater", "faucet", "toilet",
+            "shingles", "roof replacement",
+        ],
+    }
+
     def __init__(self):
         """Initialize with OpenAI configuration."""
         self.api_key = settings.openai_api_key
@@ -85,7 +118,227 @@ class AIContentGenerator:
         
         if not self.api_key:
             raise ValueError("OPENAI_API_KEY environment variable is required")
-    
+
+    def _sanitize_forbidden_phrases(self, content_json: Dict[str, Any]) -> Dict[str, Any]:
+        """
+        Programmatically remove forbidden phrases from content JSON.
+        This runs BEFORE validation to fix common LLM mistakes that the model
+        fails to avoid despite prompt instructions.
+        """
+        import copy
+        sanitized = copy.deepcopy(content_json)
+
+        # Phrases to remove/replace (case-insensitive patterns)
+        # Maps pattern -> replacement
+        sanitize_patterns = [
+            # SEO-related phrases the model keeps generating
+            (r'\bSEO\b', ''),
+            (r'\bseo\b', ''),
+            (r'\bsearch engine optimization\b', '', re.IGNORECASE),
+            (r'\bSEO-optimized\b', 'optimized', re.IGNORECASE),
+            (r'\bSEO-friendly\b', '', re.IGNORECASE),
+            (r'\blocal SEO\b', 'local visibility', re.IGNORECASE),
+            (r'\bfor SEO\b', '', re.IGNORECASE),
+            (r'\bimprove your SEO\b', 'improve your online presence', re.IGNORECASE),
+            # Other forbidden phrases
+            (r'\bkeyword\b', 'term', re.IGNORECASE),
+            (r'\bword count\b', '', re.IGNORECASE),
+            (r'\bfirst 100 words\b', '', re.IGNORECASE),
+            (r'\bthis page\b', 'this information', re.IGNORECASE),
+            (r'\bthis article\b', 'this guide', re.IGNORECASE),
+            (r'\bin this section\b', 'here', re.IGNORECASE),
+        ]
+
+        def sanitize_text(text: str) -> str:
+            if not text:
+                return text
+            result = text
+            for pattern_tuple in sanitize_patterns:
+                if len(pattern_tuple) == 3:
+                    pattern, replacement, flags = pattern_tuple
+                    result = re.sub(pattern, replacement, result, flags=flags)
+                else:
+                    pattern, replacement = pattern_tuple
+                    result = re.sub(pattern, replacement, result)
+            # Clean up double spaces that may result from removals
+            result = re.sub(r'  +', ' ', result)
+            # Clean up space before punctuation
+            result = re.sub(r' ([.,!?])', r'\1', result)
+            return result.strip()
+
+        # Sanitize meta_description
+        if 'meta_description' in sanitized:
+            sanitized['meta_description'] = sanitize_text(sanitized['meta_description'])
+
+        # Sanitize sections
+        if 'sections' in sanitized:
+            for section in sanitized['sections']:
+                if 'heading' in section:
+                    section['heading'] = sanitize_text(section['heading'])
+                if 'paragraph' in section:
+                    section['paragraph'] = sanitize_text(section['paragraph'])
+
+        # Sanitize FAQs
+        if 'faqs' in sanitized:
+            for faq in sanitized['faqs']:
+                if 'question' in faq:
+                    faq['question'] = sanitize_text(faq['question'])
+                if 'answer' in faq:
+                    faq['answer'] = sanitize_text(faq['answer'])
+
+        # Sanitize CTA
+        if 'cta_text' in sanitized:
+            sanitized['cta_text'] = sanitize_text(sanitized['cta_text'])
+
+        return sanitized
+
+    def _get_industry_from_service(self, service: str) -> str:
+        """
+        Determine the industry category from a service name.
+        Returns the industry key used in CROSS_INDUSTRY_FORBIDDEN.
+        """
+        service_lower = service.lower()
+
+        # Electrical industry
+        if any(term in service_lower for term in [
+            "electrical", "electric", "wiring", "circuit", "panel", "outlet",
+            "lighting", "generator", "surge", "breaker"
+        ]):
+            return "electrical"
+
+        # HVAC industry
+        if any(term in service_lower for term in [
+            "hvac", "heating", "cooling", "air conditioning", "furnace",
+            "heat pump", "ductwork", "ventilation", "ac repair", "ac installation"
+        ]):
+            return "hvac"
+
+        # Plumbing industry
+        if any(term in service_lower for term in [
+            "plumbing", "plumber", "pipe", "drain", "sewer", "water heater",
+            "faucet", "toilet", "leak", "clog"
+        ]):
+            return "plumbing"
+
+        # Roofing industry
+        if any(term in service_lower for term in [
+            "roofing", "roof", "shingle", "flat roof", "metal roof",
+            "roof repair", "roof replacement", "roof inspection"
+        ]):
+            return "roofing"
+
+        # Gutter industry
+        if any(term in service_lower for term in [
+            "gutter", "downspout", "gutter guard", "gutter cleaning",
+            "gutter repair", "gutter installation"
+        ]):
+            return "gutter"
+
+        return None
+
+    def _validate_industry_content(self, content_json: Dict[str, Any], data: PageData) -> List[str]:
+        """
+        Validate that content doesn't contain terms from other industries.
+        Returns list of validation errors.
+        """
+        errors = []
+
+        # Determine the industry from the service
+        industry = self._get_industry_from_service(data.service)
+        if not industry or industry not in self.CROSS_INDUSTRY_FORBIDDEN:
+            return errors  # No cross-industry validation for unknown industries
+
+        forbidden_terms = self.CROSS_INDUSTRY_FORBIDDEN[industry]
+
+        # Collect all text content
+        all_text = []
+        if 'meta_description' in content_json:
+            all_text.append(content_json['meta_description'])
+        if 'sections' in content_json:
+            for section in content_json['sections']:
+                if section.get('heading'):
+                    all_text.append(section['heading'])
+                if section.get('paragraph'):
+                    all_text.append(section['paragraph'])
+        if 'faqs' in content_json:
+            for faq in content_json['faqs']:
+                if faq.get('question'):
+                    all_text.append(faq['question'])
+                if faq.get('answer'):
+                    all_text.append(faq['answer'])
+        if 'cta_text' in content_json:
+            all_text.append(content_json['cta_text'])
+
+        combined_text = " ".join(all_text).lower()
+
+        # Check for forbidden cross-industry terms
+        found_terms = []
+        for term in forbidden_terms:
+            # Use word boundary matching to avoid false positives
+            pattern = r'\b' + re.escape(term.lower()) + r'\b'
+            if re.search(pattern, combined_text):
+                found_terms.append(term)
+
+        if found_terms:
+            errors.append(
+                f"AI generated wrong industry content: {found_terms} found in {industry} page. "
+                f"Content must only discuss {industry}-related work."
+            )
+
+        return errors
+
+    def _sanitize_industry_content(self, content_json: Dict[str, Any], data: PageData) -> Dict[str, Any]:
+        """
+        Remove cross-industry terms from content.
+        This is a best-effort sanitization - some removals may affect readability.
+        """
+        import copy
+        sanitized = copy.deepcopy(content_json)
+
+        industry = self._get_industry_from_service(data.service)
+        if not industry or industry not in self.CROSS_INDUSTRY_FORBIDDEN:
+            return sanitized
+
+        forbidden_terms = self.CROSS_INDUSTRY_FORBIDDEN[industry]
+
+        def remove_industry_terms(text: str) -> str:
+            if not text:
+                return text
+            result = text
+            for term in forbidden_terms:
+                # Remove the term (case-insensitive, word boundary)
+                pattern = r'\b' + re.escape(term) + r'\b'
+                result = re.sub(pattern, '', result, flags=re.IGNORECASE)
+            # Clean up artifacts
+            result = re.sub(r'  +', ' ', result)  # Double spaces
+            result = re.sub(r' ([.,!?])', r'\1', result)  # Space before punctuation
+            result = re.sub(r'\s*,\s*,', ',', result)  # Double commas
+            result = re.sub(r'\s+([,.])', r'\1', result)  # Space before comma/period
+            return result.strip()
+
+        # Sanitize all text fields
+        if 'meta_description' in sanitized:
+            sanitized['meta_description'] = remove_industry_terms(sanitized['meta_description'])
+
+        if 'sections' in sanitized:
+            for section in sanitized['sections']:
+                if 'heading' in section:
+                    section['heading'] = remove_industry_terms(section['heading'])
+                if 'paragraph' in section:
+                    section['paragraph'] = remove_industry_terms(section['paragraph'])
+
+        if 'faqs' in sanitized:
+            for faq in sanitized['faqs']:
+                if 'question' in faq:
+                    faq['question'] = remove_industry_terms(faq['question'])
+                if 'answer' in faq:
+                    faq['answer'] = remove_industry_terms(faq['answer'])
+
+        if 'cta_text' in sanitized:
+            sanitized['cta_text'] = remove_industry_terms(sanitized['cta_text'])
+
+        return sanitized
+
     def generate_page_content(self, data: PageData) -> GeneratePageResponse:
         """
         Generate complete page content with validation and repair.
@@ -138,7 +391,13 @@ class AIContentGenerator:
             
             # Step 1: Generate content via LLM (NOT title/slug/H1)
             content_json = self._call_openai_generation(data, local_data)
-            
+
+            # Step 1.5: Sanitize forbidden phrases programmatically (fixes LLM mistakes)
+            content_json = self._sanitize_forbidden_phrases(content_json)
+
+            # Step 1.6: Sanitize cross-industry content (prevents wrong industry terms)
+            content_json = self._sanitize_industry_content(content_json, data)
+
             # Step 2: Assemble complete response with programmatic fields
             response = self._assemble_response(content_json, data)
             
@@ -163,8 +422,13 @@ class AIContentGenerator:
             if validation_errors:
                 print(f"Validation failed: {validation_errors}")
                 repaired_content = self._repair_output(content_json, validation_errors, data, local_data)
+
+                # Sanitize repaired content as well
+                repaired_content = self._sanitize_forbidden_phrases(repaired_content)
+                repaired_content = self._sanitize_industry_content(repaired_content, data)
+
                 response = self._assemble_response(repaired_content, data)
-                
+
                 # Re-validate after repair
                 final_validation_errors = self._validate_output(response, data)
                 if final_validation_errors:
@@ -194,6 +458,11 @@ class AIContentGenerator:
         
         try:
             content_json = self._call_openai_generation_preview(data)
+
+            # Sanitize forbidden phrases programmatically
+            content_json = self._sanitize_forbidden_phrases(content_json)
+            content_json = self._sanitize_industry_content(content_json, data)
+
             response = self._assemble_response(content_json, data)
 
             validation_errors = self._validate_preview_output(response)
@@ -214,8 +483,126 @@ class AIContentGenerator:
         # Cap at 60 characters
         return slug[:60].rstrip('-')
     
-    def _call_openai_json(self, system_prompt: str, user_prompt: str, *, max_tokens: int = 4000, timeout: int = 60, temperature: float = 0.4) -> Dict[str, Any]:
-        """Call OpenAI API via httpx and return parsed JSON."""
+    def _repair_truncated_json(self, content: str) -> str:
+        """
+        Attempt to repair truncated JSON that was cut off mid-response.
+        Common issues: unclosed strings, missing brackets/braces, trailing commas.
+        """
+        if not content:
+            return content
+
+        original = content
+
+        # Step 1: Try to find where valid JSON ends and truncation began
+        # Look for common truncation patterns
+
+        # Remove any trailing incomplete string (cut off mid-value)
+        # Pattern: ..."text that got cut
+        incomplete_string_pattern = r',\s*"[^"]*$'
+        content = re.sub(incomplete_string_pattern, '', content)
+
+        # Remove trailing incomplete key-value pairs
+        # Pattern: , "key": "incomplete  OR  , "key":  OR  , "key
+        incomplete_kv_patterns = [
+            r',\s*"[^"]+"\s*:\s*"[^"]*$',  # "key": "incomplete
+            r',\s*"[^"]+"\s*:\s*$',         # "key":
+            r',\s*"[^"]*$',                  # "key (incomplete key)
+        ]
+        for pattern in incomplete_kv_patterns:
+            content = re.sub(pattern, '', content)
+
+        # Remove trailing incomplete array element
+        # Pattern: , { "key": "value"  (no closing brace)
+        incomplete_obj_pattern = r',\s*\{[^}]*$'
+        content = re.sub(incomplete_obj_pattern, '', content)
+
+        # Step 2: Count and balance brackets/braces
+        open_braces = content.count('{')
+        close_braces = content.count('}')
+        open_brackets = content.count('[')
+        close_brackets = content.count(']')
+
+        # Step 3: Remove trailing commas before closing brackets
+        content = re.sub(r',\s*}', '}', content)
+        content = re.sub(r',\s*]', ']', content)
+
+        # Step 4: Close any unclosed strings
+        # Count quotes - if odd number, we have an unclosed string
+        quote_count = content.count('"') - content.count('\\"')
+        if quote_count % 2 == 1:
+            # Find the last quote and close the string
+            last_quote = content.rfind('"')
+            if last_quote > 0 and content[last_quote-1] != '\\':
+                # Check if this is an opening quote (odd position in sequence)
+                content = content[:last_quote+1] + '"'
+                # Re-clean trailing comma
+                content = re.sub(r',\s*}', '}', content)
+                content = re.sub(r',\s*]', ']', content)
+
+        # Step 5: Add missing closing brackets/braces
+        # Recalculate after fixes
+        open_braces = content.count('{')
+        close_braces = content.count('}')
+        open_brackets = content.count('[')
+        close_brackets = content.count(']')
+
+        missing_braces = open_braces - close_braces
+        missing_brackets = open_brackets - close_brackets
+
+        # Add closing brackets/braces in the right order
+        # Analyze the structure to determine correct order
+        if missing_brackets > 0 or missing_braces > 0:
+            # Simple heuristic: close arrays first if we're inside an array context
+            # Check what the last significant character is
+            stripped = content.rstrip()
+
+            # Build closing sequence based on structure analysis
+            closings = []
+            temp = content
+            for _ in range(missing_brackets + missing_braces):
+                # Find the last unclosed opener
+                last_open_brace = temp.rfind('{')
+                last_open_bracket = temp.rfind('[')
+
+                # Find corresponding closers after each opener
+                if last_open_brace > last_open_bracket:
+                    # Check if this brace is closed
+                    after_brace = temp[last_open_brace+1:]
+                    if after_brace.count('}') < 1 + after_brace.count('{'):
+                        closings.append('}')
+                        temp = temp[:last_open_brace] + temp[last_open_brace+1:]
+                    else:
+                        temp = temp[:last_open_brace] + temp[last_open_brace+1:]
+                elif last_open_bracket > -1:
+                    after_bracket = temp[last_open_bracket+1:]
+                    if after_bracket.count(']') < 1 + after_bracket.count('['):
+                        closings.append(']')
+                        temp = temp[:last_open_bracket] + temp[last_open_bracket+1:]
+                    else:
+                        temp = temp[:last_open_bracket] + temp[last_open_bracket+1:]
+
+            # Actually append the closings
+            for _ in range(missing_brackets):
+                content += ']'
+            for _ in range(missing_braces):
+                content += '}'
+
+        # Final cleanup - remove any trailing commas that might have appeared
+        content = re.sub(r',(\s*[}\]])', r'\1', content)
+
+        # Validate the repair worked
+        try:
+            json.loads(content)
+            if content != original:
+                print(f"✓ JSON repair successful (fixed truncation)")
+            return content
+        except json.JSONDecodeError:
+            # Repair failed, return original to get proper error message
+            print(f"⚠️ JSON repair attempted but failed")
+            return original
+
+    def _call_openai_json(self, system_prompt: str, user_prompt: str, *, max_tokens: int = 5500, timeout: int = 60, temperature: float = 0.4) -> Dict[str, Any]:
+        """Call OpenAI API via httpx and return parsed JSON. Increased max_tokens from 4000 to 5500 to prevent truncation."""
         headers = {
             "Authorization": f"Bearer {self.api_key}",
             "Content-Type": "application/json"
@@ -245,6 +632,11 @@ class AIContentGenerator:
                 
                 result = response.json()
                 content = result["choices"][0]["message"]["content"]
+                finish_reason = result["choices"][0].get("finish_reason", "unknown")
+
+                # Check if response was truncated due to max_tokens
+                if finish_reason == "length":
+                    print(f"⚠️ OpenAI response truncated (hit max_tokens={max_tokens})")
 
                 # Strip markdown code blocks if present (OpenAI sometimes wraps JSON in ```json ... ```)
                 content = content.strip()
@@ -256,14 +648,23 @@ class AIContentGenerator:
                     content = content[:-3]  # Remove trailing ```
                 content = content.strip()
 
-                # Debug: Log what OpenAI actually returned if JSON parsing fails
+                # Try to parse JSON
                 try:
                     return json.loads(content)
                 except json.JSONDecodeError as e:
-                    print(f"\n⚠️  OpenAI returned non-JSON content:")
+                    # JSON parsing failed - attempt repair
+                    print(f"\n⚠️ OpenAI returned invalid JSON (finish_reason={finish_reason}):")
                     print(f"First 500 chars: {content[:500]}")
                     print(f"JSON Error: {str(e)}")
-                    raise Exception(f"OpenAI returned invalid JSON: {str(e)}")
+
+                    # Attempt to repair truncated JSON
+                    repaired_content = self._repair_truncated_json(content)
+
+                    try:
+                        return json.loads(repaired_content)
+                    except json.JSONDecodeError as repair_error:
+                        # Repair failed too - raise with original error for clarity
+                        raise Exception(f"OpenAI returned invalid JSON: {str(e)}")
 
         except json.JSONDecodeError as e:
             raise Exception(f"OpenAI returned invalid JSON: {str(e)}")
@@ -1420,6 +1821,21 @@ Return JSON only. No extra text."""
         if not is_unique:
             errors.append(f"DUPLICATE SENTENCE DETECTED: '{duplicate_text}...' - This exact sentence appears on other pages for this service. Rewrite using different phrasing.")
 
+        # Validation 2e: Check for cross-industry content contamination
+        industry = self._get_industry_from_service(data.service)
+        if industry and industry in self.CROSS_INDUSTRY_FORBIDDEN:
+            forbidden_terms = self.CROSS_INDUSTRY_FORBIDDEN[industry]
+            found_terms = []
+            for term in forbidden_terms:
+                pattern = r'\b' + re.escape(term.lower()) + r'\b'
+                if re.search(pattern, combined_text):
+                    found_terms.append(term)
+            if found_terms:
+                errors.append(
+                    f"AI generated wrong industry content: '{found_terms[0]}' found in {industry} page. "
+                    f"Content must only discuss {industry}-related work."
+                )
+
         # Validation 3: First paragraph includes service + city within 150 words
         if paragraph_blocks:
             first_para = paragraph_blocks[0].text or ""
@@ -1798,3 +2214,4 @@ Return JSON only."""
     
 # Global AI generator instance
 ai_generator = AIContentGenerator()
+
