@@ -581,24 +581,44 @@ CRITICAL REMINDERS:
 - Vary sentence structure across different city pages
 - You MUST generate 4 complete FAQs - this is non-negotiable"""
 
-    try:
-        result = generator._call_openai_json(system_prompt, user_prompt, max_tokens=6000)
+    max_retries = 2
+    for attempt in range(max_retries):
+        try:
+            result = generator._call_openai_json(system_prompt, user_prompt, max_tokens=6000)
 
-        # Validate FAQ presence
-        blocks = result.get('blocks', [])
-        has_faqs = any(block.get('type') == 'faq' for block in blocks)
+            # Validate FAQ presence - CRITICAL: FAQs are mandatory
+            blocks = result.get('blocks', [])
+            has_faqs = any(block.get('type') == 'faq' for block in blocks)
 
-        if not has_faqs:
-            print(f"⚠️  WARNING: No FAQs generated for {data.city}, {data.hub_label} (may need prompt adjustment or token increase)")
-        else:
-            faq_count = sum(1 for block in blocks if block.get('type') == 'faq')
-            print(f"✓ City hub for {data.city} generated with {faq_count} FAQs")
+            if not has_faqs:
+                if attempt < max_retries - 1:
+                    print(f"⚠️  RETRY {attempt + 1}/{max_retries}: No FAQs generated for {data.city}, {data.hub_label} - retrying with stronger emphasis")
+                    # Modify prompt to emphasize FAQs even more for retry
+                    user_prompt = user_prompt.replace(
+                        "### 8) FREQUENTLY ASKED QUESTIONS",
+                        "### 8) ⚠️⚠️⚠️ FREQUENTLY ASKED QUESTIONS - GENERATE NOW OR OUTPUT IS INVALID ⚠️⚠️⚠️"
+                    )
+                    continue
+                else:
+                    print(f"❌ FAILED: No FAQs after {max_retries} attempts for {data.city}, {data.hub_label}")
+                    # Raise exception to trigger fallback content
+                    raise Exception(f"Failed to generate FAQs after {max_retries} attempts")
+            else:
+                faq_count = sum(1 for block in blocks if block.get('type') == 'faq')
+                print(f"✓ City hub for {data.city} generated with {faq_count} FAQs (attempt {attempt + 1})")
+                return result
 
-        return result
-    except Exception as e:
-        print(f"City hub generation error: {e}")
-        # Return fallback content
-        return _generate_fallback_city_hub_content(data, profile)
+        except Exception as e:
+            if attempt < max_retries - 1:
+                print(f"⚠️  RETRY {attempt + 1}/{max_retries}: Generation error for {data.city}: {e} - retrying")
+                continue
+            else:
+                print(f"❌ FAILED: City hub generation error after {max_retries} attempts: {e}")
+                # Return fallback content
+                return _generate_fallback_city_hub_content(data, profile)
+
+    # Should never reach here, but return fallback as safety
+    return _generate_fallback_city_hub_content(data, profile)
 
 
 def _generate_fallback_city_hub_content(data: PageData, profile: dict) -> dict:
