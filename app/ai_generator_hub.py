@@ -539,6 +539,7 @@ FORBIDDEN PATTERNS:
 - Do NOT create thin content with only service name differences
 - Do NOT mention specific cities or neighborhoods
 - No marketing fluff: "top-notch", "premier", "best-in-class"
+- No SEO terminology: "SEO", "search engine optimization"
 """
 
     try:
