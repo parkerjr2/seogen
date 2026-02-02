@@ -307,7 +307,7 @@ BANNED WORDS / PHRASES (NEVER USE):
 REQUIRED STRUCTURE (FOLLOW EXACTLY)
 ==================================================
 
-TARGET WORD COUNT: 1,000-1,200 words total (across all sections)
+TARGET WORD COUNT: 1,100-1,300 words total (across all sections)
 
 ### 1) CITY-SPECIFIC CONTEXT (200-250 words, 4 paragraphs)
 Purpose: Establish THIS city's unique characteristics and how they affect {trade_name} work.
@@ -340,7 +340,7 @@ Purpose: Establish THIS city's unique characteristics and how they affect {trade
 ### 2) COMMON {trade_name.upper()} ISSUES IN {city.upper()} (150-200 words, 2 paragraphs)
 Purpose: Describe city-specific problems based on local factors.
 
-**Paragraph 1 - Primary Issues (4-5 sentences, ~80-100 words)**
+**Paragraph 1 - Primary Issues (5-6 sentences, ~100-120 words)**
 - Describe the MOST common {trade_name} issues in {city}
 - Use housing age data to explain WHY these issues occur
 - Include specific examples of what fails or needs updating
@@ -432,10 +432,10 @@ CRITICAL VARIATION RULE FOR ALL 3 PARAGRAPHS:
 - Sentence structure must differ per city
 - No marketing language or generic professionalism
 
-### 8) FREQUENTLY ASKED QUESTIONS (150-200 words, 3-4 FAQs)
+### 8) FREQUENTLY ASKED QUESTIONS (200-250 words, 4 FAQs)
 Purpose: Address city-specific questions.
 
-Generate 3-4 FAQ blocks with city-specific answers:
+Generate EXACTLY 4 FAQ blocks with city-specific answers:
 
 Questions should cover:
 - Permits/inspections specific to {city}
@@ -464,7 +464,7 @@ OUTPUT JSON SCHEMA
     {{"type": "paragraph", "text": "Secondary issues paragraph (3-4 sentences, ~70-100 words)"}},
     
     // SERVICES (current structure)
-    {{"type": "heading", "level": 2, "text": "Services We Offer Locally"}},
+    {{"type": "heading", "level": 2, "text": "Services Available in {city}"}},
     {{"type": "paragraph", "text": "Real triggers (1-2 sentences, ~30 words)"}},
     {{"type": "paragraph", "text": "Decision tension (1 sentence, ~20 words)"}},
     {{"type": "paragraph", "text": "{{{{CITY_SERVICE_LINKS}}}}"}},
@@ -501,7 +501,18 @@ CRITICAL REMINDERS:
 - Vary sentence structure across different city pages"""
 
     try:
-        result = generator._call_openai_json(system_prompt, user_prompt, max_tokens=6000)
+        result = generator._call_openai_json(system_prompt, user_prompt, max_tokens=8000)
+
+        # Validate FAQ presence
+        blocks = result.get('blocks', [])
+        has_faqs = any(block.get('type') == 'faq' for block in blocks)
+
+        if not has_faqs:
+            print(f"⚠️  WARNING: No FAQs generated for {data.city}, {data.hub_label} (may need prompt adjustment or token increase)")
+        else:
+            faq_count = sum(1 for block in blocks if block.get('type') == 'faq')
+            print(f"✓ City hub for {data.city} generated with {faq_count} FAQs")
+
         return result
     except Exception as e:
         print(f"City hub generation error: {e}")
@@ -525,7 +536,7 @@ def _generate_fallback_city_hub_content(data: PageData, profile: dict) -> dict:
         {
             "type": "heading",
             "level": 2,
-            "text": f"Services We Offer in {city}, {state}"
+            "text": f"Services Available in {city}"
         },
         {
             "type": "paragraph",
