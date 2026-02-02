@@ -278,6 +278,21 @@ BANNED PHRASES (never use these):
         if local_data.get("housing_facts") or local_data.get("landmarks") or local_data.get("research"):
             local_facts = "\n\n" + local_data_fetcher.format_for_prompt(local_data)
 
+    # Check if we have building age data (median year)
+    has_building_age_data = False
+    if local_data and local_data.get("research"):
+        building_age = local_data["research"].get("building_age_specificity", {})
+        median_year = building_age.get("median_year")
+        has_building_age_data = median_year is not None and median_year != ""
+
+    # Build conditional housing requirement based on data availability
+    if has_building_age_data:
+        housing_requirement = f'REQUIRED: "{city}\'s housing boom centered on [year]" pattern (use the EXACT median year from research data)'
+        housing_instruction = f"Median year, construction eras → {trade_name} impacts (60w)"
+    else:
+        housing_requirement = "OPTIONAL: If building age data is available in research, mention it. If not available (median_year is null), focus on other local factors instead. DO NOT invent or guess years."
+        housing_instruction = f"Focus on other local factors from research (climate, permits, unique characteristics) → {trade_name} impacts (60w)"
+
     # Build "USING VERIFIED LOCAL CONTEXT" section if research data exists
     using_context_section = ""
     if local_data and local_data.get("research"):
@@ -357,7 +372,7 @@ STRUCTURE (1,100-1,300 words):
 ==================================================
 
 1) CITY CONTEXT (4 paragraphs, 200-250w)
-   - Housing: Median year, construction eras → {trade_name} impacts (60w)
+   - Housing: {housing_instruction}
    - Climate: Specific weather data → {trade_name} stress (60w)
    - Issues: What fails from age + climate (60w)
    - Coverage: 2+ landmarks from research (50w)
@@ -397,7 +412,7 @@ Each answer: 3-4 sentences with city-specific details, trade-specific terminolog
 
 BANNED: "locally", "serving the area", "trusted", "quality service"
 BANNED OPENINGS: "In the area, many homes"
-REQUIRED: "{city}'s housing boom centered on [year]" pattern
+{housing_requirement}
 
 JSON SCHEMA:
 {{
