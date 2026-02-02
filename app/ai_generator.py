@@ -411,15 +411,37 @@ Avoid generic "your system will be more reliable" - give specific verifiable res
         # These patterns intentionally avoid trade-specific language
 
         # Pattern 1: Opening sentence templates (5 service-agnostic patterns)
-        opening_pattern_num = (city_service_hash % 5) + 1  # Deterministic selection (1-5)
-        opening_templates = {
+        # Check if we have building age data to determine which templates are available
+        has_building_age_data = False
+        if local_data and local_data.get("research"):
+            building_age = local_data["research"].get("building_age_specificity", {})
+            median_year = building_age.get("median_year")
+            construction_eras = local_data["research"].get("major_construction_eras", [])
+            has_building_age_data = (median_year is not None and median_year != "") or len(construction_eras) > 0
+
+        # Define all templates
+        all_opening_templates = {
             1: f"{{{{target_audience}}}}s in {{{{data.city}}}} often face challenges in properties built around [YEAR], where {{{{data.service}}}} becomes essential for safety and reliability.",
             2: f"If you live in {{{{data.city}}}}, especially in properties from the [ERA], {{{{data.service}}}} addresses unique local factors like [CLIMATE FACTOR] that older systems can't handle.",
             3: f"{{{{data.service}}}} in {{{{data.city}}}} directly responds to [UNIQUE LOCAL FACTOR], ensuring your {{{{property_type}}}} can meet modern standards safely.",
             4: f"Many {{{{data.city}}}} properties, constructed during [CONSTRUCTION PERIOD], now require {{{{data.service}}}} to handle modern demands and [CLIMATE-SPECIFIC STRESS].",
             5: f"{{{{data.city}}}}'s [UNIQUE FACTOR] creates specific demands that make {{{{data.service}}}} more than routine work—it's a response to local conditions."
         }
-        opening_template = opening_templates[opening_pattern_num]
+
+        # Filter templates based on data availability
+        # Templates 1, 2, 4 require building age data (mention [YEAR], [ERA], [CONSTRUCTION PERIOD])
+        # Templates 3, 5 work without building age data (mention [UNIQUE LOCAL FACTOR])
+        if has_building_age_data:
+            available_templates = all_opening_templates  # All templates available
+            opening_pattern_num = (city_service_hash % 5) + 1
+        else:
+            # Only use templates that don't require building age data
+            available_templates = {3: all_opening_templates[3], 5: all_opening_templates[5]}
+            # Map hash to available template keys (3 or 5)
+            template_keys = list(available_templates.keys())
+            opening_pattern_num = template_keys[city_service_hash % len(template_keys)]
+
+        opening_template = available_templates[opening_pattern_num]
 
         # Pattern 2: Symptom description patterns (5 service-agnostic patterns)
         symptom_pattern_num = ((city_service_hash + 1) % 5) + 1  # Deterministic selection with offset
@@ -744,8 +766,8 @@ EXAMPLES OF CORRECT USAGE:
 You MUST use at least 2 specific facts from the VERIFIED LOCAL CONTEXT above.
 
 ACCEPTABLE FACT USAGE (these will pass validation):
-✓ Reference the ACTUAL median building year: {median_year_text.strip() if median_year_text else "Use the exact year from research"}
-✓ Reference construction era with dates: {construction_era_text.strip() if construction_era_text else "Use specific periods from research"}
+✓ Reference the ACTUAL median building year: {median_year_text.strip() if median_year_text else "NOT AVAILABLE - do not mention building ages or years"}
+✓ Reference construction era with dates: {construction_era_text.strip() if construction_era_text else "NOT AVAILABLE - do not mention construction periods"}
 ✓ Include climate measurements: "With {data.city} experiencing [specific number/measurement]..."
 ✓ Use 2+ consecutive words from climate factors: "flash flooding", "heat island effect"
 ✓ Reference unique local factors with key phrases: "suburban growth patterns", specific local events
