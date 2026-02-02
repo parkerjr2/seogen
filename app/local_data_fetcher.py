@@ -503,7 +503,7 @@ Base your research on your knowledge of {city_name}, {state} geography, climate,
                     required_fields = [
                         "building_age_specificity", "major_construction_eras", "climate_factors",
                         "service_triggers", "permit_requirements", "unique_factors",
-                        "sources", "differentiation_score", "self_validation",
+                        "differentiation_score", "self_validation",
                         "researched_at", "city_name", "state", "trade_type"
                     ]
 
@@ -515,7 +515,6 @@ Base your research on your knowledge of {city_name}, {state} geography, climate,
                         logger.info(f"Successfully researched {city_name}, {state} for {trade_type}")
                         logger.info(f"Differentiation score: {diff_score}/10")
                         logger.info(f"Self-validation: {self_val}")
-                        logger.info(f"Sources: {research_data.get('sources', [])}")
 
                         # Flag low-quality research but still return it
                         if diff_score < 6:
@@ -571,7 +570,6 @@ Base your research on your knowledge of {city_name}, {state} geography, climate,
                 "specificity_note": None
             },
             "unique_factors": [],
-            "sources": [],
             "differentiation_score": 0,  # Lowest score = fallback
             "self_validation": {
                 "is_city_specific": False,
