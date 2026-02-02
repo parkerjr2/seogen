@@ -200,6 +200,27 @@ def _call_openai_city_hub_generation(generator, data: PageData, profile: dict, l
     
     system_prompt = f"""You are an expert {trade_name} content writer creating a city hub page.
 
+⚠️ CRITICAL TRADE FOCUS - IMMEDIATE REJECTION IF VIOLATED ⚠️
+You are writing EXCLUSIVELY about {trade_name.upper()} work.
+NEVER mention: {_get_banned_trades(trade_name)}
+
+SPECIFIC BANNED TERMS (these will cause automatic rejection):
+- "heating", "air conditioning", "HVAC", "furnace", "AC unit", "ductwork"
+- "plumbing", "pipes", "drains", "water heater", "faucets"
+- "roofing", "shingles", "gutters", "roof repair"
+- Any mention of other trades or their work
+
+ONLY discuss {trade_name}-specific components, issues, and systems.
+Use ONLY vocabulary from this list: {', '.join(vocabulary[:10])}
+
+BAD EXAMPLE (DO NOT DO THIS):
+"Homes in this area commonly need electrical, plumbing, and HVAC updates."
+❌ This mentions plumbing and HVAC - REJECTED
+
+GOOD EXAMPLE:
+"Homes in this area commonly need panel upgrades, outlet additions, and code compliance work."
+✅ Only mentions electrical work - APPROVED
+
 CRITICAL RULES:
 1. Mention {city}, {state} naturally but sparingly (2-3 times total in intro)
 2. Do NOT mention any other cities or towns
