@@ -210,6 +210,7 @@ BANNED PHRASES (never use these):
 - "trusted by" / "top-rated" / "best in" / "#1 choice"
 - "we offer the following services" / "services include"
 - "premier" / "top-notch" / "best-in-class"
+- "SEO" / "search engine optimization"
 - No meta-language like "this page", "this article"
 """
 
@@ -366,6 +367,7 @@ BANNED WORDS / PHRASES (NEVER USE):
 - "serving the area", "in your area"
 - "trusted", "top-rated", "best", "premier", "award-winning"
 - "we offer the following services", "services include"
+- "SEO", "search engine optimization"
 
 ==================================================
 STRUCTURE (1,100-1,300 words):
