@@ -787,7 +787,7 @@ VALIDATION WILL VERIFY:
         user_prompt = f"""⚠️ CRITICAL VALIDATION REQUIREMENTS (MUST PASS OR GENERATION FAILS):
 1. First paragraph MUST include both "{data.service}" AND "{data.city}" in the first sentence
 2. Meta description MUST include both "{data.service}" AND "{data.city}"
-3. Do NOT use forbidden phrases: "structure", "top-notch", "premier", "trusted experts"{landmark_requirement}
+3. Do NOT use forbidden phrases: "structure", "top-notch", "premier", "trusted experts", "SEO", "search engine optimization"{landmark_requirement}
 
 ⚠️ CRITICAL - UNDERSTAND THE SERVICE FIRST (READ THIS CAREFULLY):
 The service name is "{data.service}". Before writing ANYTHING, determine what this service ACTUALLY does:
