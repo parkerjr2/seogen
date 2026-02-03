@@ -377,7 +377,7 @@ Use local research extensively. Each city must be unique.
 """
 
     try:
-        result = generator._call_openai_json(system_prompt, user_prompt, max_tokens=6000)
+        result = generator._call_openai_json(system_prompt, user_prompt, max_tokens=8000)
         print(f"✓ City hub for {data.city} generated successfully")
         return result
 
