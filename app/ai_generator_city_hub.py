@@ -250,20 +250,44 @@ BANNED PHRASES (never use these):
         if local_data.get("housing_facts") or local_data.get("landmarks") or local_data.get("research"):
             local_facts = "\n\n" + local_data_fetcher.format_for_prompt(local_data)
 
-    # Check if we have building age data (median year)
+    # Check if we have building age data (median year or construction era)
     has_building_age_data = False
+    building_year_info = None
+
     if local_data and local_data.get("research"):
-        building_age = local_data["research"].get("building_age_specificity", {})
+        research = local_data["research"]
+        building_age = research.get("building_age_specificity", {})
         median_year = building_age.get("median_year")
-        has_building_age_data = median_year is not None and median_year != ""
+
+        if median_year is not None and median_year != "":
+            # We have a specific median year
+            has_building_age_data = True
+            building_year_info = str(median_year)
+            print(f"[CityHub] Using median_year: {median_year}")
+        else:
+            # No median year - check for major_construction_eras as fallback
+            construction_eras = research.get("major_construction_eras", [])
+            if construction_eras and len(construction_eras) > 0:
+                first_era = construction_eras[0]
+                era_period = first_era.get("period", "")
+                if era_period:
+                    has_building_age_data = True
+                    building_year_info = era_period  # e.g., "1985-1990"
+                    print(f"[CityHub] Using construction era: {era_period}")
+
+            if not has_building_age_data:
+                print(f"[CityHub] No building age data available for {city}")
 
     # Build conditional housing requirement based on data availability
-    if has_building_age_data:
-        housing_requirement = f'REQUIRED: "{city}\'s housing boom centered on {median_year}" - use this EXACT year ({median_year}), do not change or invent a different year'
-        housing_instruction = f"Use median year {median_year}, construction eras → {trade_name} impacts (60w)"
+    if has_building_age_data and building_year_info:
+        housing_requirement = f'REQUIRED: "{city}\'s housing boom centered on {building_year_info}" - use this EXACT year/period ({building_year_info}), do not change or invent a different year'
+        housing_instruction = f"Use year/period {building_year_info}, construction eras → {trade_name} impacts (60w)"
     else:
-        housing_requirement = "OPTIONAL: If building age data is available in research, mention it. If not available (median_year is null), focus on other local factors instead. DO NOT invent or guess years."
-        housing_instruction = f"Focus on other local factors from research (climate, permits, unique characteristics) → {trade_name} impacts (60w)"
+        housing_requirement = f"""⚠️ CRITICAL: NO BUILDING AGE DATA EXISTS FOR {city.upper()}.
+You MUST NOT mention any specific years like "1979", "1980s", "built around 19XX", etc.
+Instead, use phrases like "older homes", "aging infrastructure", "established neighborhoods".
+ANY mention of a specific year will be REJECTED as hallucination."""
+        housing_instruction = f"Focus on other local factors from research (climate, permits, unique characteristics) → {trade_name} impacts (60w). NO YEARS."
 
     # Build "USING VERIFIED LOCAL CONTEXT" section if research data exists
     using_context_section = ""
