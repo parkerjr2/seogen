@@ -11,8 +11,11 @@ def _validate_industry_content(blocks: list, trade_name: str, vertical: str) -> 
     """
     Validate that AI-generated content doesn't contain wrong industry terms.
     Raises exception if wrong industry content is detected.
+
+    Note: Only checks for HIGHLY SPECIFIC terms that would indicate complete industry
+    mismatch. Generic terms like "lighting", "heating" are allowed since they can appear
+    in legitimate cross-industry contexts (electricians do lighting work, etc).
     """
-    # Define wrong industry terms that should never appear
     # Map vertical names to their industry keys
     vertical_to_industry = {
         "electrician": "electrical",
@@ -21,29 +24,46 @@ def _validate_industry_content(blocks: list, trade_name: str, vertical: str) -> 
         "roofer": "roofing",
         "painter": "painting",
         "flooring": "flooring",
-        "lighting": "lighting"
+        "lighting": "lighting",
+        "handyman": "handyman",
+        "landscaper": "landscaping",
+        "concrete": "concrete",
+        "siding": "siding",
+        "locksmith": "locksmith",
+        "cleaning": "cleaning",
+        "garage-door": "garage-door",
+        "windows": "windows",
+        "pest-control": "pest-control"
     }
-    
-    wrong_terms = {
-        "lighting": ["lighting", "light fixture", "led retrofit", "illumination"],
-        "electrical": ["electrical", "wiring", "circuit", "panel", "breaker"],
-        "plumbing": ["plumbing", "pipe", "drain", "faucet", "water heater"],
-        "hvac": ["hvac", "air conditioning", "heating", "furnace", "ductwork"],
-        "roofing": ["roofing", "shingle", "membrane", "flashing"],
-        "painting": ["painting", "paint", "coating"],
-        "flooring": ["flooring", "carpet", "tile", "hardwood"]
+
+    # Define SIGNATURE terms that are HIGHLY SPECIFIC to each industry
+    # These terms would only appear if AI completely misunderstood the industry
+    # Avoid generic terms that could legitimately appear across industries
+    signature_terms = {
+        "plumbing": ["sewer line replacement", "drain snaking", "toilet installation", "septic tank"],
+        "roofing": ["shingle replacement", "roof membrane", "soffit repair", "gutter installation", "roof deck"],
+        "painting": ["interior painting", "exterior painting", "paint prep", "primer coat"],
+        "flooring": ["hardwood refinishing", "carpet installation", "tile grout", "laminate flooring"],
+        "landscaping": ["lawn mowing", "tree trimming", "mulching", "irrigation system"],
+        "concrete": ["concrete pouring", "foundation repair", "stamped concrete", "concrete slab"],
+        "siding": ["vinyl siding", "siding replacement", "hardie board", "fiber cement"],
+        "locksmith": ["lock picking", "key cutting", "deadbolt installation", "lock rekey"],
+        "cleaning": ["deep cleaning", "carpet cleaning", "window washing", "janitorial"],
+        "garage-door": ["garage door opener", "garage door spring", "garage door panel"],
+        "windows": ["window replacement", "double pane", "window frame", "glass replacement"],
+        "pest-control": ["termite treatment", "rodent control", "pest extermination", "bed bug"]
     }
-    
+
     # Get the industry key for this vertical
     current_industry = vertical_to_industry.get(vertical.lower(), vertical.lower())
-    
+
     # Get terms to check based on vertical (exclude own industry)
     terms_to_check = []
-    for industry, terms in wrong_terms.items():
+    for industry, terms in signature_terms.items():
         # Don't check for terms from the same industry
         if industry != current_industry:
             terms_to_check.extend(terms)
-    
+
     # Check all paragraph blocks for wrong terms
     for block in blocks:
         if block.get("type") == "paragraph":
