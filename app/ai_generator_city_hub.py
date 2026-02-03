@@ -256,23 +256,32 @@ THIS IS YOUR PRIMARY FAILURE POINT FROM PREVIOUS ATTEMPTS.
 The exact phrase "In the area" or "in the area" is ABSOLUTELY FORBIDDEN.
 You have FAILED this task 100% of the time by using this phrase.
 
-❌ NEVER write: "When working In the area"
-❌ NEVER write: "In the area, we often encounter"
-❌ NEVER write: "The climate In the area"
-❌ NEVER write: "Properties In the area"
+❌ NEVER write ANY of these (ALL CONTEXTS BANNED):
+- "In the area," (starting a sentence)
+- "in the area" (anywhere in any sentence)
+- "homes in the area" → write "{city} homes" instead
+- "properties in the area" → write "properties in {city}" instead
+- "The age of many homes In the area" → write "The age of many {city} homes"
+- "In the area, permits..." → write "In {city}, permits..."
 
 ✅ ALWAYS write instead:
-- "When working in {city}"
-- "For {city} properties"
-- "Throughout {city}"
-- "In {city}"
-- "{city} homeowners"
+- "In {city}" (NOT "In the area")
+- "Throughout {city}" (NOT "throughout the area")
+- "For {city} properties" (NOT "for properties in the area")
+- "{city} homes" (NOT "homes in the area")
+- "Many {city} homes" (NOT "many homes in the area")
+- "Properties in {city}" (NOT "properties in the area")
+
+⚠️ THE PHRASE "IN THE AREA" IS BANNED IN ALL CONTEXTS - NO EXCEPTIONS:
+- ❌ "In the area, permits..." → ✅ "In {city}, permits..."
+- ❌ "Homes in the area" → ✅ "{city} homes"
+- ❌ "The climate in the area" → ✅ "The {city} climate" or "{city}'s climate"
 
 If you write "In the area" ANYWHERE in your response, you will FAIL and be regenerated.
-This phrase has appeared in Section 6 ("How We Handle {city} Properties") in 100% of failures.
 
 BANNED PHRASES (never use these):
-- "in the area" / "In the area" / "locally" / "local property owners" / "serving the local area" / "in your area"
+- "in the area" / "In the area" / "the area" - BANNED IN ALL CONTEXTS
+- "locally" / "local property owners" / "serving the local area" / "in your area"
 - "trusted by" / "top-rated" / "best in" / "#1 choice"
 - "we offer the following services" / "services include"
 - "premier" / "top-notch" / "best-in-class"
@@ -515,6 +524,8 @@ If ANY section is under its minimum, you have FAILED. EXPAND IT before submittin
      * Add extra detail about the approach
    
    - Permits paragraph: Local requirements specific to {city}, {state} (130-150w)
+     * ❌ NEVER START WITH: "In the area," - this is BANNED
+     * ✅ START WITH: "In {city}," or "{city} requires" or "The {city} permit process"
      * Specific permit processes
      * Local code requirements
      * City-specific regulations
