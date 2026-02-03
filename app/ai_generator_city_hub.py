@@ -348,6 +348,9 @@ BANNED: "locally", "serving the area", "trusted", "quality service"
 BANNED OPENINGS: "In the area, many homes"
 {housing_requirement}
 
+⚠️ CRITICAL JSON FORMAT: Your output MUST use a "blocks" array with objects containing "type" keys.
+DO NOT use "sections". DO NOT use "heading"/"paragraph" as keys. Use "type": "paragraph" or "type": "heading".
+
 JSON SCHEMA:
 {{
   "blocks": [
