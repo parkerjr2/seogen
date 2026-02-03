@@ -1658,7 +1658,7 @@ Return JSON only. No extra text."""
             # Insert city hub link after Section 1 (intro) for service_city pages
             if idx == 1 and data.page_mode == 'service_city':
                 blocks.append({
-                    "type": "paragraph",
+                    "type": "shortcode",
                     "text": "[CITY_HUB_LINK]"
                 })
 
