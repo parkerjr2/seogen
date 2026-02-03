@@ -79,10 +79,24 @@ def generate_city_hub_content(generator, data: PageData) -> GeneratePageResponse
     # Note: Uses trade-specific research (building ages/climate are same across trades)
     local_data = None
     try:
+        # Check if we're in an existing event loop (e.g., called from async worker)
         try:
-            asyncio.get_running_loop()
-            local_data = None  # Skip if already in event loop
+            loop = asyncio.get_running_loop()
+            # We're in an async context - need to run in a new thread to avoid nested loop issues
+            import concurrent.futures
+            with concurrent.futures.ThreadPoolExecutor() as pool:
+                future = pool.submit(
+                    asyncio.run,
+                    local_data_fetcher.get_all_local_data(
+                        data.city,
+                        data.state,
+                        trade_name
+                    )
+                )
+                local_data = future.result(timeout=30)
+            print(f"[CityHub] Fetched local data (async context) for {data.city}, {data.state}")
         except RuntimeError:
+            # No running event loop - safe to use asyncio.run() directly
             local_data = asyncio.run(
                 local_data_fetcher.get_all_local_data(
                     data.city,
@@ -90,8 +104,19 @@ def generate_city_hub_content(generator, data: PageData) -> GeneratePageResponse
                     trade_name  # Use actual trade to get rich research data
                 )
             )
+            print(f"[CityHub] Fetched local data (sync context) for {data.city}, {data.state}")
+
+        # Debug: Log what we got
+        if local_data and local_data.get("research"):
+            research = local_data["research"]
+            building_age = research.get("building_age_specificity", {})
+            median_year = building_age.get("median_year")
+            print(f"[CityHub] Research data for {data.city}: median_year={median_year}")
+        else:
+            print(f"[CityHub] WARNING: No research data found for {data.city}, {data.state}")
+
     except Exception as e:
-        print(f"Warning: Could not fetch local data for {data.city}, {data.state}: {e}")
+        print(f"[CityHub] ERROR fetching local data for {data.city}, {data.state}: {e}")
         local_data = None
 
     # Build title programmatically
