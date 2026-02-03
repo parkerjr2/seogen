@@ -25,6 +25,7 @@ import json
 from typing import List, Dict, Any, Set, Tuple
 from app.models import GeneratePageResponse, PageData
 from app.vertical_profiles import get_vertical_profile, get_trade_name
+from app.text_utils import validate_grammar
 
 
 # Global registry to track generated hub structures (in-memory for session)
@@ -639,17 +640,18 @@ def _generate_fallback_content(section_plan: Dict, exclusive_section: Dict, sema
 
 
 def _convert_to_blocks(ai_content: Dict, h1_text: str, data: PageData, cta_text: str) -> List[Dict]:
-    """Convert AI-generated content to block format."""
+    """Convert AI-generated content to block format with grammar validation."""
     blocks = []
-    
+    city = data.city or ""
+
     # H1
     blocks.append({
         "type": "heading",
         "level": 1,
         "text": h1_text
     })
-    
-    # Sections
+
+    # Sections - apply grammar validation to paragraphs
     for section in ai_content.get("sections", []):
         if section.get("heading"):
             blocks.append({
@@ -660,10 +662,10 @@ def _convert_to_blocks(ai_content: Dict, h1_text: str, data: PageData, cta_text:
         if section.get("paragraph"):
             blocks.append({
                 "type": "paragraph",
-                "text": section["paragraph"]
+                "text": validate_grammar(section["paragraph"], city)
             })
-    
-    # FAQs
+
+    # FAQs - apply grammar validation to answers
     faqs = ai_content.get("faqs", [])
     if faqs:
         blocks.append({
@@ -676,14 +678,14 @@ def _convert_to_blocks(ai_content: Dict, h1_text: str, data: PageData, cta_text:
                 blocks.append({
                     "type": "faq",
                     "question": faq["question"],
-                    "answer": faq["answer"]
+                    "answer": validate_grammar(faq["answer"], city)
                 })
-    
+
     # CTA
     blocks.append({
         "type": "cta",
         "text": cta_text,
         "phone": data.phone or ""
     })
-    
+
     return blocks

@@ -15,6 +15,7 @@ from app.models import PageData, GeneratePageResponse, PageBlock, HeadingBlock, 
 from app.local_data_fetcher import local_data_fetcher
 from app.vertical_profiles import get_vertical_profile, get_trade_name
 from app import ai_generator_hub
+from app.text_utils import validate_grammar, normalize_whitespace
 
 class AIContentGenerator:
     """Robust content generator with programmatic enforcement and repair capabilities."""
@@ -227,6 +228,46 @@ class AIContentGenerator:
 
         return sanitized
 
+    def _validate_grammar_content(self, content_json: Dict[str, Any], data: PageData) -> Dict[str, Any]:
+        """
+        Apply grammar validation to all text content.
+        Fixes subject-verb agreement, incomplete comparatives, missing relative pronouns, etc.
+        """
+        import copy
+        validated = copy.deepcopy(content_json)
+        city = data.city or ""
+
+        def validate_text(text: str) -> str:
+            if not text:
+                return text
+            return validate_grammar(text, city)
+
+        # Validate meta_description
+        if 'meta_description' in validated:
+            validated['meta_description'] = validate_text(validated['meta_description'])
+
+        # Validate sections
+        if 'sections' in validated:
+            for section in validated['sections']:
+                if 'heading' in section:
+                    section['heading'] = validate_text(section['heading'])
+                if 'paragraph' in section:
+                    section['paragraph'] = validate_text(section['paragraph'])
+
+        # Validate FAQs
+        if 'faqs' in validated:
+            for faq in validated['faqs']:
+                if 'question' in faq:
+                    faq['question'] = validate_text(faq['question'])
+                if 'answer' in faq:
+                    faq['answer'] = validate_text(faq['answer'])
+
+        # Validate CTA
+        if 'cta_text' in validated:
+            validated['cta_text'] = validate_text(validated['cta_text'])
+
+        return validated
+
     def _get_industry_from_service(self, service: str) -> str:
         """
         Determine the industry category from a service name.
@@ -433,6 +474,9 @@ class AIContentGenerator:
             # Step 1.6: Sanitize cross-industry content (prevents wrong industry terms)
             content_json = self._sanitize_industry_content(content_json, data)
 
+            # Step 1.7: Validate and fix grammar issues
+            content_json = self._validate_grammar_content(content_json, data)
+
             # Step 2: Assemble complete response with programmatic fields
             response = self._assemble_response(content_json, data)
             
@@ -461,6 +505,7 @@ class AIContentGenerator:
                 # Sanitize repaired content as well
                 repaired_content = self._sanitize_forbidden_phrases(repaired_content)
                 repaired_content = self._sanitize_industry_content(repaired_content, data)
+                repaired_content = self._validate_grammar_content(repaired_content, data)
 
                 response = self._assemble_response(repaired_content, data)
 
@@ -497,6 +542,7 @@ class AIContentGenerator:
             # Sanitize forbidden phrases programmatically
             content_json = self._sanitize_forbidden_phrases(content_json)
             content_json = self._sanitize_industry_content(content_json, data)
+            content_json = self._validate_grammar_content(content_json, data)
 
             response = self._assemble_response(content_json, data)
 

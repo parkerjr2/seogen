@@ -7,6 +7,7 @@ import re
 
 from app.models import GeneratePageResponse, PageData
 from app.vertical_profiles import get_vertical_profile, get_trade_name
+from app.text_utils import validate_grammar, normalize_whitespace, fix_banned_phrases
 
 
 def _validate_industry_content(blocks: list, trade_name: str, vertical: str) -> None:
@@ -224,10 +225,10 @@ def _get_banned_trades(current_trade: str) -> str:
     """Get list of banned trade names excluding the current trade."""
     all_trades = ["electrical", "plumbing", "HVAC", "lighting", "roofing", "painting", "flooring", "concrete", "siding"]
     current_trade_lower = current_trade.lower()
-    
+
     # Remove the current trade from banned list
     banned = [t for t in all_trades if t.lower() != current_trade_lower]
-    
+
     return ", ".join(banned)
 
 
@@ -687,6 +688,9 @@ Use local research extensively. Each city must be unique.
                         text = re.sub(r'\bcooling systems\s+systems\b', 'cooling systems', text, flags=re.IGNORECASE)
                         text = re.sub(r'\bcooling systems\s+units\b', 'cooling equipment', text, flags=re.IGNORECASE)
                         text = re.sub(r'\b(\w+)\s+\1\b', r'\1', text)
+
+                        # Grammar validation (subject-verb agreement, incomplete comparatives, etc.)
+                        text = validate_grammar(text, city)
 
                         block[field] = text
 
