@@ -288,8 +288,8 @@ BANNED PHRASES (never use these):
 
     # Build conditional housing requirement based on data availability
     if has_building_age_data:
-        housing_requirement = f'REQUIRED: "{city}\'s housing boom centered on [year]" pattern (use the EXACT median year from research data)'
-        housing_instruction = f"Median year, construction eras → {trade_name} impacts (60w)"
+        housing_requirement = f'REQUIRED: "{city}\'s housing boom centered on {median_year}" - use this EXACT year ({median_year}), do not change or invent a different year'
+        housing_instruction = f"Use median year {median_year}, construction eras → {trade_name} impacts (60w)"
     else:
         housing_requirement = "OPTIONAL: If building age data is available in research, mention it. If not available (median_year is null), focus on other local factors instead. DO NOT invent or guess years."
         housing_instruction = f"Focus on other local factors from research (climate, permits, unique characteristics) → {trade_name} impacts (60w)"
