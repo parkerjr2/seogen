@@ -3,6 +3,8 @@ City Hub page generation for AI content generator.
 This module generates city-localized hub pages (e.g., "Electrician in Tulsa, OK").
 """
 
+import re
+
 from app.models import GeneratePageResponse, PageData
 from app.vertical_profiles import get_vertical_profile, get_trade_name
 
@@ -248,15 +250,26 @@ Use ONLY {trade_name} vocabulary: {', '.join(vocabulary[:10])}
 
 RULES: Mention {city}, {state} naturally. Write like a contractor, not marketing. Output ONLY valid JSON. No HTML lists.
 
-⚠️⚠️⚠️ CRITICAL BANNED PHRASE: "IN THE AREA" ⚠️⚠️⚠️
-The phrase "In the area" is ABSOLUTELY FORBIDDEN and will cause IMMEDIATE REJECTION.
-This phrase appeared in 100% of previous generated pages and creates duplicate content across all cities.
-If tempted to write "In the area", you MUST instead write:
+⚠️⚠️⚠️⚠️⚠️ #1 BANNED PHRASE: "IN THE AREA" ⚠️⚠️⚠️⚠️⚠️
+THIS IS YOUR PRIMARY FAILURE POINT FROM PREVIOUS ATTEMPTS.
+
+The exact phrase "In the area" or "in the area" is ABSOLUTELY FORBIDDEN.
+You have FAILED this task 100% of the time by using this phrase.
+
+❌ NEVER write: "When working In the area"
+❌ NEVER write: "In the area, we often encounter"
+❌ NEVER write: "The climate In the area"
+❌ NEVER write: "Properties In the area"
+
+✅ ALWAYS write instead:
 - "When working in {city}"
 - "For {city} properties"
 - "Throughout {city}"
-- "{city} homeowners"
 - "In {city}"
+- "{city} homeowners"
+
+If you write "In the area" ANYWHERE in your response, you will FAIL and be regenerated.
+This phrase has appeared in Section 6 ("How We Handle {city} Properties") in 100% of failures.
 
 BANNED PHRASES (never use these):
 - "in the area" / "In the area" / "locally" / "local property owners" / "serving the local area" / "in your area"
@@ -493,7 +506,10 @@ If ANY section is under its minimum, you have FAILED. EXPAND IT before submittin
 
 6) {city.upper()} PROPERTIES (2-3 paragraphs, 310-360w MINIMUM)
    - Approach paragraph with EXAMPLE from {city} (140-180w)
-     * Start with "When working in {city}" or "For {city} properties" (NEVER "In the area")
+     * ⚠️ CRITICAL: Start with "When working in {city}" or "For {city} properties"
+     * ❌ DO NOT START WITH: "When working In the area" (THIS IS YOUR #1 FAILURE)
+     * ❌ DO NOT START WITH: "In the area" (THIS PHRASE IS BANNED)
+     * ✅ CORRECT: "When working in {city}" or "For {city} properties"
      * Include realistic detailed project example: "[Neighborhood], homeowner, specific problem, solution, outcome"
      * Must be {city}-specific, not generic
      * Add extra detail about the approach
@@ -508,9 +524,15 @@ If ANY section is under its minimum, you have FAILED. EXPAND IT before submittin
 
 7) REAL PROJECT EXAMPLE (1-2 paragraphs, 200-250w MINIMUM)
    Heading: "Recent {city} Project"
-   
+
    Generate a realistic detailed case study with these elements:
-   - Location: "Last [season] in [specific neighborhood]"
+   - Location: Use ONE of these opening patterns (vary across cities):
+     * "Last summer in [specific neighborhood]"
+     * "Last spring in [specific neighborhood]"
+     * "Recently in [specific neighborhood]"
+     * "This past winter in [specific neighborhood]"
+     * "Last fall near [landmark]"
+     * "Earlier this year in [specific neighborhood]"
    - Homeowner: "we worked with a {target_audience} who noticed [problem]"
    - Problem discovery: "The [component] had [issue]"
    - Assessment details: "During our assessment, we found [additional details]"
@@ -523,7 +545,13 @@ If ANY section is under its minimum, you have FAILED. EXPAND IT before submittin
    MUST tie to local building age, climate, or permit requirements.
    MUST be at least 200 words with rich detail.
 
-BANNED EVERYWHERE: "in the area", "In the area", "serving the area", "locally", "trusted", "quality service", "the first step"
+⚠️ BANNED EVERYWHERE (ESPECIALLY "IN THE AREA"):
+- "in the area" / "In the area" / "IN THE AREA" - THIS IS YOUR #1 FAILURE POINT
+- "serving the area" / "locally" / "the area"
+- "trusted" / "quality service" / "the first step"
+
+REMINDER: Section 6 ("How We Handle {city} Properties") has had "In the area" in 100% of previous attempts.
+You MUST write "When working in {city}" instead.
 {housing_requirement}
 
 STRUCTURE FLEXIBILITY:
@@ -604,16 +632,47 @@ Use local research extensively. Each city must be unique.
             for block in blocks:
                 if block.get('type') == 'paragraph':
                     text = block['text']
-                    # Replace "in the area" with city-specific phrasing
-                    text = text.replace('In the area', f'In {city}')
-                    text = text.replace('in the area', f'in {city}')
-                    text = text.replace(' the area', f' {city}')
-                    # Replace cross-trade contamination
+
+                    # CRITICAL: Replace "in the area" with case-insensitive regex
+                    # This catches "In the area", "in the area", "in The area", etc.
+                    text = re.sub(r'\bIn the area\b', f'In {city}', text, flags=re.IGNORECASE)
+                    text = re.sub(r'\bin the area\b', f'in {city}', text, flags=re.IGNORECASE)
+                    text = re.sub(r' the area\b', f' {city}', text, flags=re.IGNORECASE)
+
+                    # Fix cross-trade contamination
                     if trade_name.lower() == "electrical":
                         text = text.replace('air conditioning', 'cooling systems')
+                        text = text.replace('Air conditioning', 'Cooling systems')
                         text = text.replace('HVAC', 'climate control')
                         text = text.replace('heating and cooling', 'temperature control')
+
+                    # Fix doubled words (like "cooling systems systems")
+                    text = re.sub(r'\bcooling systems\s+systems\b', 'cooling systems', text, flags=re.IGNORECASE)
+                    text = re.sub(r'\bcooling systems\s+units\b', 'cooling equipment', text, flags=re.IGNORECASE)
+
+                    # Fix any other doubled words that might occur
+                    text = re.sub(r'\b(\w+)\s+\1\b', r'\1', text)
+
                     block['text'] = text
+
+            # CRITICAL VALIDATION: Check if "In the area" still exists after fixes
+            for block in blocks:
+                if block.get('type') == 'paragraph':
+                    text_lower = block['text'].lower()
+                    if 'in the area' in text_lower:
+                        # Found the banned phrase even after post-processing
+                        print(f"🚨 CRITICAL: 'in the area' found in {data.city} even after post-processing!")
+                        print(f"   Text snippet: ...{block['text'][:100]}...")
+
+                        # Force retry by raising an exception
+                        if attempt < max_attempts - 1:
+                            raise Exception(f"Banned phrase 'in the area' persisted after post-processing in {data.city}")
+                        else:
+                            # Last attempt - apply nuclear fix
+                            print(f"   Applying nuclear fix: replacing all instances")
+                            block['text'] = block['text'].replace('in the area', f'in {city}')
+                            block['text'] = block['text'].replace('In the area', f'In {city}')
+                            block['text'] = block['text'].replace('IN THE AREA', f'IN {city}')
             
             # Re-check after post-processing
             total_text_fixed = ' '.join([b.get('text', '') for b in blocks if b.get('type') == 'paragraph'])
