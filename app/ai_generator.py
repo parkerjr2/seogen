@@ -1655,13 +1655,6 @@ Return JSON only. No extra text."""
             if paragraph:
                 blocks.append(self._create_paragraph_block(paragraph))
 
-            # Insert city hub link after Section 1 (intro) for service_city pages
-            if idx == 1 and data.page_mode == 'service_city':
-                blocks.append({
-                    "type": "shortcode",
-                    "text": "[CITY_HUB_LINK]"
-                })
-
             # Insert CTA after specified section (structural variance)
             if idx == cta_after_section:
                 blocks.append(self._create_cta_block(
