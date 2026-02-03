@@ -506,10 +506,10 @@ If ANY section is under its minimum, you have FAILED. EXPAND IT before submittin
 
 6) {city.upper()} PROPERTIES (2-3 paragraphs, 310-360w MINIMUM)
    - Approach paragraph with EXAMPLE from {city} (140-180w)
-     * ⚠️ CRITICAL: Start with "When working in {city}" or "For {city} properties"
-     * ❌ DO NOT START WITH: "When working In the area" (THIS IS YOUR #1 FAILURE)
-     * ❌ DO NOT START WITH: "In the area" (THIS PHRASE IS BANNED)
-     * ✅ CORRECT: "When working in {city}" or "For {city} properties"
+     * ⚠️⚠️⚠️ BANNED OPENING: "When working" - this phrase triggers "In the area" 100% of the time
+     * ❌ NEVER START WITH: "When working" / "When assisting" / "When helping"
+     * ✅ USE INSTEAD: "For {city} properties" or "Throughout {city}" or "In {city}"
+     * ✅ EXAMPLE: "For {city} properties, we typically encounter..."
      * Include realistic detailed project example: "[Neighborhood], homeowner, specific problem, solution, outcome"
      * Must be {city}-specific, not generic
      * Add extra detail about the approach
@@ -629,37 +629,47 @@ Use local research extensively. Each city must be unique.
             has_contamination = has_air_conditioning or has_hvac
             
             # Post-process: Fix banned phrases automatically
-            for block in blocks:
-                if block.get('type') == 'paragraph':
-                    text = block['text']
+            # IMPORTANT: Process ALL blocks with any text field, not just 'paragraph' type
+            print(f"📝 Post-processing {len(blocks)} blocks for {data.city}")
+            for i, block in enumerate(blocks):
+                # Check both 'text' and 'content' fields
+                for field in ['text', 'content']:
+                    if field in block and block[field]:
+                        text = block[field]
+                        original = text
 
-                    # CRITICAL: Normalize whitespace first (AI sometimes outputs non-breaking spaces)
-                    # This must happen BEFORE regex matching
-                    text = text.replace('\u00a0', ' ')  # non-breaking space
-                    text = text.replace('\u2007', ' ')  # figure space
-                    text = text.replace('\u202f', ' ')  # narrow no-break space
+                        # CRITICAL: Normalize whitespace first (AI sometimes outputs non-breaking spaces)
+                        text = text.replace('\u00a0', ' ')  # non-breaking space
+                        text = text.replace('\u2007', ' ')  # figure space
+                        text = text.replace('\u202f', ' ')  # narrow no-break space
 
-                    # CRITICAL: Replace "in the area" with flexible whitespace matching
-                    # Using \s+ to match any whitespace (regular, non-breaking, multiple spaces)
-                    text = re.sub(r'\bin\s+the\s+area\b', f'in {city}', text, flags=re.IGNORECASE)
-                    text = re.sub(r'\bIn\s+the\s+area\b', f'In {city}', text, flags=re.IGNORECASE)
-                    text = re.sub(r'\s+the\s+area\b', f' {city}', text, flags=re.IGNORECASE)
+                        # CRITICAL: Replace "in the area" - multiple patterns to catch ALL variants
+                        # Pattern 1: Standard "in the area"
+                        text = re.sub(r'\bin\s+the\s+area\b', f'in {city}', text, flags=re.IGNORECASE)
+                        # Pattern 2: Just "the area" at word boundaries
+                        text = re.sub(r'\bthe\s+area\b', city, text, flags=re.IGNORECASE)
+                        # Pattern 3: Literal string replacements as fallback
+                        text = text.replace('In the area', f'In {city}')
+                        text = text.replace('in the area', f'in {city}')
+                        text = text.replace('IN THE AREA', f'IN {city}')
 
-                    # Fix cross-trade contamination
-                    if trade_name.lower() == "electrical":
-                        text = text.replace('air conditioning', 'cooling systems')
-                        text = text.replace('Air conditioning', 'Cooling systems')
-                        text = text.replace('HVAC', 'climate control')
-                        text = text.replace('heating and cooling', 'temperature control')
+                        # Fix cross-trade contamination
+                        if trade_name.lower() == "electrical":
+                            text = text.replace('air conditioning', 'cooling systems')
+                            text = text.replace('Air conditioning', 'Cooling systems')
+                            text = text.replace('HVAC', 'climate control')
+                            text = text.replace('heating and cooling', 'temperature control')
 
-                    # Fix doubled words (like "cooling systems systems")
-                    text = re.sub(r'\bcooling systems\s+systems\b', 'cooling systems', text, flags=re.IGNORECASE)
-                    text = re.sub(r'\bcooling systems\s+units\b', 'cooling equipment', text, flags=re.IGNORECASE)
+                        # Fix doubled words (like "cooling systems systems")
+                        text = re.sub(r'\bcooling systems\s+systems\b', 'cooling systems', text, flags=re.IGNORECASE)
+                        text = re.sub(r'\bcooling systems\s+units\b', 'cooling equipment', text, flags=re.IGNORECASE)
+                        text = re.sub(r'\b(\w+)\s+\1\b', r'\1', text)
 
-                    # Fix any other doubled words that might occur
-                    text = re.sub(r'\b(\w+)\s+\1\b', r'\1', text)
+                        block[field] = text
 
-                    block['text'] = text
+                        # Log if we made changes
+                        if 'in the area' in original.lower() and 'in the area' not in text.lower():
+                            print(f"   ✓ Fixed 'in the area' in block {i} ({block.get('type', 'unknown')})")
 
             # CRITICAL VALIDATION: Check if "In the area" still exists after fixes
             for block in blocks:
@@ -704,7 +714,8 @@ Use local research extensively. Each city must be unique.
             # Decide if we need to retry
             needs_retry = (
                 (word_count_fixed < 850 and attempt == 0) or  # Only retry word count on first attempt
-                has_contamination_after_fix  # Always retry if contamination persists
+                has_contamination_after_fix or  # Always retry if contamination persists
+                has_banned_after_fix  # Always retry if "in the area" persists
             )
             
             if needs_retry and attempt < max_attempts - 1:
@@ -715,6 +726,8 @@ Use local research extensively. Each city must be unique.
                     failure_details.append(f"Previous attempt was only {word_count_fixed} words")
                 if has_contamination_after_fix:
                     failure_details.append("Previous attempt contained wrong trade terms")
+                if has_banned_after_fix:
+                    failure_details.append("Previous attempt contained 'in the area' - USE CITY NAME INSTEAD")
                 
                 system_prompt = system_prompt + f"\n\n⚠️ RETRY ATTEMPT {attempt + 2}: " + ". ".join(failure_details) + ". FIX THESE ISSUES."
                 continue  # Retry
