@@ -11,11 +11,8 @@ def _validate_industry_content(blocks: list, trade_name: str, vertical: str) -> 
     """
     Validate that AI-generated content doesn't contain wrong industry terms.
     Raises exception if wrong industry content is detected.
-
-    Note: Only checks for HIGHLY SPECIFIC terms that would indicate complete industry
-    mismatch. Generic terms like "heating" are allowed since they can appear in
-    legitimate cross-industry contexts (e.g., electricians work on electric heating).
     """
+    # Define wrong industry terms that should never appear
     # Map vertical names to their industry keys
     vertical_to_industry = {
         "electrician": "electrical",
@@ -24,46 +21,29 @@ def _validate_industry_content(blocks: list, trade_name: str, vertical: str) -> 
         "roofer": "roofing",
         "painter": "painting",
         "flooring": "flooring",
-        "lighting": "lighting",
-        "handyman": "handyman",
-        "landscaper": "landscaping",
-        "concrete": "concrete",
-        "siding": "siding",
-        "locksmith": "locksmith",
-        "cleaning": "cleaning",
-        "garage-door": "garage-door",
-        "windows": "windows",
-        "pest-control": "pest-control"
+        "lighting": "lighting"
     }
-
-    # Define SIGNATURE terms that are HIGHLY SPECIFIC to each industry
-    # These terms would only appear if AI completely misunderstood the industry
-    # Avoid generic terms that could legitimately appear across industries
-    signature_terms = {
-        "plumbing": ["sewer line replacement", "drain snaking", "toilet installation", "septic tank"],
-        "roofing": ["shingle replacement", "roof membrane", "soffit repair", "gutter installation", "roof deck"],
-        "painting": ["interior painting", "exterior painting", "paint prep", "primer coat"],
-        "flooring": ["hardwood refinishing", "carpet installation", "tile grout", "laminate flooring"],
-        "landscaping": ["lawn mowing", "tree trimming", "mulching", "irrigation system"],
-        "concrete": ["concrete pouring", "foundation repair", "stamped concrete", "concrete slab"],
-        "siding": ["vinyl siding", "siding replacement", "hardie board", "fiber cement"],
-        "locksmith": ["lock picking", "key cutting", "deadbolt installation", "lock rekey"],
-        "cleaning": ["deep cleaning", "carpet cleaning", "window washing", "janitorial"],
-        "garage-door": ["garage door opener", "garage door spring", "garage door panel"],
-        "windows": ["window replacement", "double pane", "window frame", "glass replacement"],
-        "pest-control": ["termite treatment", "rodent control", "pest extermination", "bed bug"]
+    
+    wrong_terms = {
+        "lighting": ["lighting", "light fixture", "led retrofit", "illumination"],
+        "electrical": ["electrical", "wiring", "circuit", "panel", "breaker"],
+        "plumbing": ["plumbing", "pipe", "drain", "faucet", "water heater"],
+        "hvac": ["hvac", "air conditioning", "heating", "furnace", "ductwork"],
+        "roofing": ["roofing", "shingle", "membrane", "flashing"],
+        "painting": ["painting", "paint", "coating"],
+        "flooring": ["flooring", "carpet", "tile", "hardwood"]
     }
-
+    
     # Get the industry key for this vertical
     current_industry = vertical_to_industry.get(vertical.lower(), vertical.lower())
-
+    
     # Get terms to check based on vertical (exclude own industry)
     terms_to_check = []
-    for industry, terms in signature_terms.items():
+    for industry, terms in wrong_terms.items():
         # Don't check for terms from the same industry
         if industry != current_industry:
             terms_to_check.extend(terms)
-
+    
     # Check all paragraph blocks for wrong terms
     for block in blocks:
         if block.get("type") == "paragraph":
@@ -248,8 +228,18 @@ Use ONLY {trade_name} vocabulary: {', '.join(vocabulary[:10])}
 
 RULES: Mention {city}, {state} naturally. Write like a contractor, not marketing. Output ONLY valid JSON. No HTML lists.
 
+⚠️⚠️⚠️ CRITICAL BANNED PHRASE: "IN THE AREA" ⚠️⚠️⚠️
+The phrase "In the area" is ABSOLUTELY FORBIDDEN and will cause IMMEDIATE REJECTION.
+This phrase appeared in 100% of previous generated pages and creates duplicate content across all cities.
+If tempted to write "In the area", you MUST instead write:
+- "When working in {city}"
+- "For {city} properties"
+- "Throughout {city}"
+- "{city} homeowners"
+- "In {city}"
+
 BANNED PHRASES (never use these):
-- "locally" / "local property owners" / "serving the local area" / "in your area"
+- "in the area" / "In the area" / "locally" / "local property owners" / "serving the local area" / "in your area"
 - "trusted by" / "top-rated" / "best in" / "#1 choice"
 - "we offer the following services" / "services include"
 - "premier" / "top-notch" / "best-in-class"
@@ -378,7 +368,7 @@ ABSOLUTE RULES (NON-NEGOTIABLE)
 - Do NOT write content that would still make sense if the city name were swapped.
 
 BANNED WORDS / PHRASES (NEVER USE):
-- "locally", "local", "local property owners", "in your area", "serving the area"
+- "locally", "local", "local property owners", "in your area", "serving the area", "in the area"
 - "trusted", "top-rated", "best", "premier", "award-winning", "#1", "top choice"
 - "we offer the following services", "services include", "our services"
 - "SEO", "search engine optimization"
@@ -391,72 +381,121 @@ SPECIFIC DUPLICATE PHRASES TO AVOID (use completely different wording):
 - "Understanding whether a minor issue is isolated..."
 - "The first step in our process is..."
 - "Many properties in {city} eventually need..."
-
-BANNED OPENING PATTERNS (must vary across cities):
-- "In the area, many homes were built/constructed around..."
-- "In the area, most homes date from..."
-- "In the area, the majority of homes..."
-- "{city}'s housing boom centered on..." (if using this, heavily vary the rest of the sentence)
-
-REQUIRED: Each city must open differently. Rotate between:
-- Climate-first: "{city}'s [climate characteristic] creates unique challenges for {trade_name} systems..."
-- Problem-first: "Homeowners in {city} frequently encounter [specific issue] because..."
-- Neighborhood-first: "Properties in [neighborhood] and [neighborhood] face..."
-- Question-first: "Why do {city} homes need {trade_name} attention more than average?"
+- "When working with homes In the area..." (ABSOLUTELY FORBIDDEN!)
 
 ==================================================
-STRUCTURE (900-1,100 words MINIMUM):
+OPENING PATTERN REQUIREMENTS (CRITICAL)
+==================================================
+You MUST NOT use "{city}'s housing boom centered on..." as your opening sentence.
+
+Instead, start with ONE of these 4 patterns:
+1. CLIMATE-FIRST: "{city}'s [specific climate characteristic] creates unique challenges for {trade_name} systems, particularly in [neighborhood] where [specific impact]."
+2. PROBLEM-FIRST: "Homeowners in {city} frequently discover [specific problem] during [trigger event], especially in properties built during [era if known]."
+3. INFRASTRUCTURE-FIRST: "The {trade_name} infrastructure in {city} reflects [unique characteristic], with [specific pattern] creating [specific demand]."
+4. NEIGHBORHOOD-FIRST: "Properties in [neighborhood] and [neighborhood] face [specific challenge] due to [local factor]."
+
+The housing boom information can appear in the 2nd or 3rd sentence, just not as the opening.
+Each city must have a DIFFERENT opening pattern to create variety.
+
+==================================================
+STRUCTURE (900-1,100 words MINIMUM - STRICTLY ENFORCED)
 ==================================================
 
-⚠️ CRITICAL LENGTH REQUIREMENT:
-Your total output MUST be at least 900 words. Count paragraphs before submitting.
-If under 900 words, expand sections 1, 2, or 6 until you reach minimum.
-Pages under 900 words will be REJECTED and regenerated.
+⚠️⚠️⚠️ ABSOLUTE MINIMUM LENGTH: 900 WORDS ⚠️⚠️⚠️
 
-1) CITY CONTEXT (4-5 paragraphs, 280-350w)
-   - Opening: {housing_instruction} + neighborhoods (80-100w)
-   - Climate: Specific weather data → {trade_name} stress (80-100w)
-   - Issues: What fails from age + climate (80-100w)
-   - Coverage: 2-3 landmarks + neighborhoods from research (60-80w)
+Before submitting your JSON, COUNT YOUR WORDS:
+1. Count every word in every paragraph block
+2. If total < 900 words, ADD MORE CONTENT to sections 1, 2, or 6
+3. Do NOT submit content under 900 words - it will be REJECTED
+
+TARGET BREAKDOWN (these are MINIMUMS, NOT targets):
+- Section 1 (City Context): 340+ words MINIMUM (not 280, not 300 - AT LEAST 340)
+- Section 2 (Common Issues): 270+ words MINIMUM (not 220, not 250 - AT LEAST 270)
+- Section 6 (Properties): 240+ words MINIMUM (not 200, not 220 - AT LEAST 240)
+- Section 7 (Case Study): 150+ words MINIMUM (not 120, not 140 - AT LEAST 150)
+- Other sections: 100+ words combined
+
+If ANY section is under its minimum, EXPAND IT before submitting.
+
+1) CITY CONTEXT (4-5 paragraphs, 340-400w MINIMUM)
+   - Opening paragraph: {housing_instruction} + neighborhoods (90-120w)
+     * Must mention 2-3 specific neighborhoods from research
+     * Tie to {trade_name} service needs
+   
+   - Climate paragraph: Specific weather data → {trade_name} stress (90-110w)
+     * Use specific climate data from research
+     * Explain HOW it impacts {trade_name} systems
+   
+   - Issues paragraph: What fails from age + climate (80-100w)
+     * Connect building age to component failures
+     * Tie climate to specific {trade_name} problems
+   
+   - Coverage paragraph: 2-3 landmarks + neighborhoods from research (60-80w)
+     * Name specific landmarks from local data
+     * Explain their relevance to service area
+   
    - Optional 5th paragraph: Unique city characteristic (40-50w)
+     * Permit requirements, local codes, city-specific factors
 
-2) COMMON ISSUES (3 paragraphs, 220-280w)
-   - Primary: Top {trade_name} problems in {city}, root causes (90-100w)
-   - Secondary: Climate/weather-related issues (70-90w)
-   - Seasonal: How seasons affect service calls in {city} (60-90w)
+2) COMMON ISSUES (3 paragraphs, 270-320w MINIMUM)
+   - Primary paragraph: Top {trade_name} problems in {city}, root causes (100-120w)
+     * Specific to this city's building stock
+     * Explain WHY these problems occur here
+   
+   - Secondary paragraph: Climate/weather-related issues (80-100w)
+     * Storm damage, temperature extremes, humidity
+     * How local weather creates specific {trade_name} failures
+   
+   - Seasonal paragraph: How seasons affect service calls in {city} (90-100w)
+     * Summer vs winter demand patterns
+     * Seasonal maintenance needs
 
-3) TRIGGERS (40-60w): What prompts homeowners to call. Be specific to {city}. NO service lists.
+3) TRIGGERS (50-70w): What prompts homeowners to call. Be specific to {city}. NO service lists.
+   - Equipment failures during specific times
+   - Renovation discoveries
+   - Storm/weather events specific to area
 
-4) DECISION (30-40w): Why addressing issues matters. Natural tone, not salesy.
+4) DECISION (40-50w): Why addressing issues matters. Natural tone, not salesy.
+   - Safety implications
+   - Cost of delay
+   - Building code compliance
 
 5) SERVICE LINKS: Output EXACTLY: {{{{CITY_SERVICE_LINKS}}}}
 
-6) {city.upper()} PROPERTIES (2-3 paragraphs, 200-250w)
-   - City-specific approach with EXAMPLE from {city} (100-120w)
-   - Permits + local requirements specific to {city}, {state} (80-100w)
-   - Optional: Neighborhood-specific considerations (40-50w)
-
-7) REAL PROJECT EXAMPLE (1-2 paragraphs, 120-180w)
-   Generate a realistic case study:
-   - Location: Specific {city} neighborhood or landmark area
-   - Problem: Concrete {trade_name} issue tied to local factors
-   - Discovery: What assessment revealed
-   - Solution: Specific {trade_name} work performed
-   - Outcome: Measurable result for homeowner
+6) {city.upper()} PROPERTIES (2-3 paragraphs, 240-280w MINIMUM)
+   - Approach paragraph with EXAMPLE from {city} (120-140w)
+     * Start with "When working in {city}" or "For {city} properties" (NEVER "In the area")
+     * Include realistic project example: "[Neighborhood], homeowner, specific problem, solution"
+     * Must be {city}-specific, not generic
    
-   Format: "Last [season] in [neighborhood], we worked with a {target_audience} who noticed [problem].
-   The [component] had [issue], likely from [local factor like building age/weather].
-   We [solution]. Now they [outcome]."
+   - Permits paragraph: Local requirements specific to {city}, {state} (100-120w)
+     * Specific permit processes
+     * Local code requirements
+     * City-specific regulations
+   
+   - Optional 3rd paragraph: Neighborhood-specific considerations (40-50w)
+
+7) REAL PROJECT EXAMPLE (1-2 paragraphs, 150-200w MINIMUM)
+   Heading: "Recent {city} Project"
+   
+   Generate a realistic case study with these elements:
+   - Location: "Last [season] in [specific neighborhood]"
+   - Homeowner: "we worked with a {target_audience} who noticed [problem]"
+   - Problem discovery: "The [component] had [issue]"
+   - Cause: "likely from [local factor like building age/weather/permit requirement]"
+   - Solution: "We [specific {trade_name} work performed]"
+   - Outcome: "Now they [measurable result]"
    
    MUST reference real landmark/neighborhood from research.
    MUST tie to local building age, climate, or permit requirements.
+   MUST be at least 150 words.
 
-BANNED: "locally", "serving the area", "trusted", "quality service", "the first step"
+BANNED EVERYWHERE: "in the area", "In the area", "serving the area", "locally", "trusted", "quality service", "the first step"
 {housing_requirement}
 
 STRUCTURE FLEXIBILITY:
 - You may combine sections if they flow naturally
-- Vary heading styles ("Common Issues" vs "What Fails in {city}")
+- Vary heading styles ("Common Issues" vs "What Fails in {city}" vs "Electrical Challenges in {city}")
 - Add extra paragraphs to any section if needed for depth
 - Goal: 5 different cities should NOT have identical structures
 
@@ -466,29 +505,39 @@ DO NOT use "sections". DO NOT use "heading"/"paragraph" as keys. Use "type": "pa
 JSON SCHEMA (15-18 blocks total):
 {{
   "blocks": [
-    {{"type": "paragraph", "text": "Opening: Housing + neighborhoods (80-100w)"}},
-    {{"type": "paragraph", "text": "Climate specifics (80-100w)"}},
+    {{"type": "paragraph", "text": "Opening with housing/neighborhoods (90-120w)"}},
+    {{"type": "paragraph", "text": "Climate specifics (90-110w)"}},
     {{"type": "paragraph", "text": "What fails (80-100w)"}},
     {{"type": "paragraph", "text": "Landmarks + coverage (60-80w)"}},
     {{"type": "paragraph", "text": "Optional: Unique city factor (40-50w)"}},
     {{"type": "heading", "level": 2, "text": "Common {trade_name} Issues in {city}"}},
-    {{"type": "paragraph", "text": "Primary problems (90-100w)"}},
-    {{"type": "paragraph", "text": "Secondary climate issues (70-90w)"}},
-    {{"type": "paragraph", "text": "Seasonal patterns (60-90w)"}},
+    {{"type": "paragraph", "text": "Primary problems (100-120w)"}},
+    {{"type": "paragraph", "text": "Secondary climate issues (80-100w)"}},
+    {{"type": "paragraph", "text": "Seasonal patterns (90-100w)"}},
     {{"type": "heading", "level": 2, "text": "Services Available in {city}"}},
-    {{"type": "paragraph", "text": "Triggers (40-60w)"}},
-    {{"type": "paragraph", "text": "Decision (30-40w)"}},
+    {{"type": "paragraph", "text": "Triggers (50-70w)"}},
+    {{"type": "paragraph", "text": "Decision (40-50w)"}},
     {{"type": "paragraph", "text": "{{{{CITY_SERVICE_LINKS}}}}"}},
     {{"type": "heading", "level": 2, "text": "How We Handle {city} Properties"}},
-    {{"type": "paragraph", "text": "Approach with example (100-120w)"}},
-    {{"type": "paragraph", "text": "Permits (80-100w)"}},
+    {{"type": "paragraph", "text": "Approach with example (120-140w)"}},
+    {{"type": "paragraph", "text": "Permits (100-120w)"}},
     {{"type": "heading", "level": 2, "text": "Recent {city} Project"}},
-    {{"type": "paragraph", "text": "Case study (120-180w)"}},
+    {{"type": "paragraph", "text": "Case study (150-200w)"}},
     {{"type": "cta", "text": "{data.cta_text}", "phone": "{data.phone or ''}"}}
   ]
 }}
 
-CRITICAL: Total word count across all paragraphs must be 900-1,100 words.
+FINAL CHECKLIST BEFORE SUBMITTING:
+✅ Total word count ≥ 900 words
+✅ Section 1 ≥ 340 words
+✅ Section 2 ≥ 270 words
+✅ Section 6 ≥ 240 words
+✅ Section 7 ≥ 150 words
+✅ No "In the area" phrase anywhere
+✅ Opening uses one of the 4 required patterns
+✅ Case study references real neighborhood
+✅ All content is {trade_name}-specific
+
 Use local research extensively. Each city must be unique.
 """
 
@@ -496,16 +545,23 @@ Use local research extensively. Each city must be unique.
         result = generator._call_openai_json(system_prompt, user_prompt, max_tokens=10000)
         print(f"✓ City hub for {data.city} generated successfully")
         
-        # Validate word count
+        # Validate word count and banned phrases
         blocks = result.get("blocks", [])
         total_text = ' '.join([b.get('text', '') for b in blocks if b.get('type') == 'paragraph'])
         word_count = len(total_text.split())
+        
+        # Check for "In the area" phrase (critical failure)
+        has_banned_phrase = "in the area" in total_text.lower()
         
         if word_count < 850:
             print(f"⚠️ WARNING: Generated content for {data.city} is only {word_count} words (target: 900+)")
             print(f"   Consider regenerating or manually expanding content")
         else:
             print(f"✓ Word count for {data.city}: {word_count} words")
+        
+        if has_banned_phrase:
+            print(f"🔴 CRITICAL FAILURE: Generated content contains banned phrase 'in the area'")
+            print(f"   This creates duplicate content across all city pages")
         
         return result
 
@@ -537,6 +593,10 @@ def _generate_fallback_city_hub_content(data: PageData, profile: dict) -> dict:
             "text": f"Common issues in {city} homes often stem from the combination of building age and local conditions. Components that worked adequately when first installed may now need attention due to increased demands or accumulated wear."
         },
         {
+            "type": "paragraph",
+            "text": f"Throughout {city}, homeowners contact us when equipment shows signs of failure or when planning renovations that require {trade_name} updates. The combination of aging infrastructure and changing usage patterns creates consistent service demand."
+        },
+        {
             "type": "heading",
             "level": 2,
             "text": f"Common {trade_name} Issues in {city}"
@@ -548,6 +608,10 @@ def _generate_fallback_city_hub_content(data: PageData, profile: dict) -> dict:
         {
             "type": "paragraph",
             "text": f"Weather-related problems in {city} include damage from storms, temperature extremes, and moisture issues specific to the local climate. These tend to surface seasonally or after significant weather events."
+        },
+        {
+            "type": "paragraph",
+            "text": f"Seasonal patterns affect when homeowners schedule {trade_name} work, with summer and winter bringing different types of service requests based on usage demands and weather stress on systems."
         },
         {
             "type": "heading",
@@ -573,7 +637,7 @@ def _generate_fallback_city_hub_content(data: PageData, profile: dict) -> dict:
         },
         {
             "type": "paragraph",
-            "text": f"Our approach in {city} accounts for the area's building characteristics and local requirements. We start by assessing the current system condition and identifying any issues that need immediate attention versus those that can be planned for later."
+            "text": f"When working in {city}, our approach accounts for the area's building characteristics and local requirements. We start by assessing the current system condition and identifying any issues that need immediate attention versus those that can be planned for later."
         },
         {
             "type": "paragraph",
