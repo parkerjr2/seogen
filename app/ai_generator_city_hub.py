@@ -358,79 +358,135 @@ ABSOLUTE RULES (NON-NEGOTIABLE)
 - Do NOT write content that would still make sense if the city name were swapped.
 
 BANNED WORDS / PHRASES (NEVER USE):
-- "locally", "local", "local property owners"
-- "serving the area", "in your area"
-- "trusted", "top-rated", "best", "premier", "award-winning"
-- "we offer the following services", "services include"
+- "locally", "local", "local property owners", "in your area", "serving the area"
+- "trusted", "top-rated", "best", "premier", "award-winning", "#1", "top choice"
+- "we offer the following services", "services include", "our services"
 - "SEO", "search engine optimization"
+- "quality service", "quality work", "quality craftsmanship"
+
+SPECIFIC DUPLICATE PHRASES TO AVOID (use completely different wording):
+- "The tricky part is figuring out whether..."
+- "Given the age of many homes in {city}..."
+- "What seems like a minor issue could indicate..."
+- "Understanding whether a minor issue is isolated..."
+- "The first step in our process is..."
+- "Many properties in {city} eventually need..."
+
+BANNED OPENING PATTERNS (must vary across cities):
+- "In the area, many homes were built/constructed around..."
+- "In the area, most homes date from..."
+- "In the area, the majority of homes..."
+- "{city}'s housing boom centered on..." (if using this, heavily vary the rest of the sentence)
+
+REQUIRED: Each city must open differently. Rotate between:
+- Climate-first: "{city}'s [climate characteristic] creates unique challenges for {trade_name} systems..."
+- Problem-first: "Homeowners in {city} frequently encounter [specific issue] because..."
+- Neighborhood-first: "Properties in [neighborhood] and [neighborhood] face..."
+- Question-first: "Why do {city} homes need {trade_name} attention more than average?"
 
 ==================================================
-STRUCTURE (1,100-1,300 words):
+STRUCTURE (900-1,100 words MINIMUM):
 ==================================================
 
-1) CITY CONTEXT (4 paragraphs, 200-250w)
-   - Housing: {housing_instruction}
-   - Climate: Specific weather data → {trade_name} stress (60w)
-   - Issues: What fails from age + climate (60w)
-   - Coverage: 2+ landmarks from research (50w)
+⚠️ CRITICAL LENGTH REQUIREMENT:
+Your total output MUST be at least 900 words. Count paragraphs before submitting.
+If under 900 words, expand sections 1, 2, or 6 until you reach minimum.
+Pages under 900 words will be REJECTED and regenerated.
 
-2) COMMON ISSUES (2 paragraphs, 150-200w)
-   - Primary: {trade_name} problems, WHY (100w)
-   - Secondary: Climate issues, when found (80w)
+1) CITY CONTEXT (4-5 paragraphs, 280-350w)
+   - Opening: {housing_instruction} + neighborhoods (80-100w)
+   - Climate: Specific weather data → {trade_name} stress (80-100w)
+   - Issues: What fails from age + climate (80-100w)
+   - Coverage: 2-3 landmarks + neighborhoods from research (60-80w)
+   - Optional 5th paragraph: Unique city characteristic (40-50w)
 
-3) TRIGGERS (30w): What prompts calls. NO service names. Unique per city.
+2) COMMON ISSUES (3 paragraphs, 220-280w)
+   - Primary: Top {trade_name} problems in {city}, root causes (90-100w)
+   - Secondary: Climate/weather-related issues (70-90w)
+   - Seasonal: How seasons affect service calls in {city} (60-90w)
 
-4) DECISION (20w): Why explore services. Spoken tone.
+3) TRIGGERS (40-60w): What prompts homeowners to call. Be specific to {city}. NO service lists.
+
+4) DECISION (30-40w): Why addressing issues matters. Natural tone, not salesy.
 
 5) SERVICE LINKS: Output EXACTLY: {{{{CITY_SERVICE_LINKS}}}}
 
-6) {city.upper()} PROPERTIES (2 paragraphs, 150-200w)
-   - Approach for {city}'s stock (90w)
-   - {city}, {state} permits (80w)
+6) {city.upper()} PROPERTIES (2-3 paragraphs, 200-250w)
+   - City-specific approach with EXAMPLE from {city} (100-120w)
+   - Permits + local requirements specific to {city}, {state} (80-100w)
+   - Optional: Neighborhood-specific considerations (40-50w)
 
-7) PROCESS (3 paragraphs, 200-250w)
-   - Assessment (80w)
-   - Recommendations (80w)
-   - Execution (70w)
+7) REAL PROJECT EXAMPLE (1-2 paragraphs, 120-180w)
+   Generate a realistic case study:
+   - Location: Specific {city} neighborhood or landmark area
+   - Problem: Concrete {trade_name} issue tied to local factors
+   - Discovery: What assessment revealed
+   - Solution: Specific {trade_name} work performed
+   - Outcome: Measurable result for homeowner
+   
+   Format: "Last [season] in [neighborhood], we worked with a {target_audience} who noticed [problem].
+   The [component] had [issue], likely from [local factor like building age/weather].
+   We [solution]. Now they [outcome]."
+   
+   MUST reference real landmark/neighborhood from research.
+   MUST tie to local building age, climate, or permit requirements.
 
-BANNED: "locally", "serving the area", "trusted", "quality service"
-BANNED OPENINGS: "In the area, many homes"
+BANNED: "locally", "serving the area", "trusted", "quality service", "the first step"
 {housing_requirement}
+
+STRUCTURE FLEXIBILITY:
+- You may combine sections if they flow naturally
+- Vary heading styles ("Common Issues" vs "What Fails in {city}")
+- Add extra paragraphs to any section if needed for depth
+- Goal: 5 different cities should NOT have identical structures
 
 ⚠️ CRITICAL JSON FORMAT: Your output MUST use a "blocks" array with objects containing "type" keys.
 DO NOT use "sections". DO NOT use "heading"/"paragraph" as keys. Use "type": "paragraph" or "type": "heading".
 
-JSON SCHEMA:
+JSON SCHEMA (15-18 blocks total):
 {{
   "blocks": [
-    {{"type": "paragraph", "text": "Housing"}},
-    {{"type": "paragraph", "text": "Climate"}},
-    {{"type": "paragraph", "text": "Issues"}},
-    {{"type": "paragraph", "text": "Coverage"}},
+    {{"type": "paragraph", "text": "Opening: Housing + neighborhoods (80-100w)"}},
+    {{"type": "paragraph", "text": "Climate specifics (80-100w)"}},
+    {{"type": "paragraph", "text": "What fails (80-100w)"}},
+    {{"type": "paragraph", "text": "Landmarks + coverage (60-80w)"}},
+    {{"type": "paragraph", "text": "Optional: Unique city factor (40-50w)"}},
     {{"type": "heading", "level": 2, "text": "Common {trade_name} Issues in {city}"}},
-    {{"type": "paragraph", "text": "Primary"}},
-    {{"type": "paragraph", "text": "Secondary"}},
+    {{"type": "paragraph", "text": "Primary problems (90-100w)"}},
+    {{"type": "paragraph", "text": "Secondary climate issues (70-90w)"}},
+    {{"type": "paragraph", "text": "Seasonal patterns (60-90w)"}},
     {{"type": "heading", "level": 2, "text": "Services Available in {city}"}},
-    {{"type": "paragraph", "text": "Triggers"}},
-    {{"type": "paragraph", "text": "Decision"}},
+    {{"type": "paragraph", "text": "Triggers (40-60w)"}},
+    {{"type": "paragraph", "text": "Decision (30-40w)"}},
     {{"type": "paragraph", "text": "{{{{CITY_SERVICE_LINKS}}}}"}},
     {{"type": "heading", "level": 2, "text": "How We Handle {city} Properties"}},
-    {{"type": "paragraph", "text": "Approach"}},
-    {{"type": "paragraph", "text": "Permits"}},
-    {{"type": "heading", "level": 2, "text": "Our Process"}},
-    {{"type": "paragraph", "text": "Assessment"}},
-    {{"type": "paragraph", "text": "Recommendations"}},
-    {{"type": "paragraph", "text": "Execution"}},
+    {{"type": "paragraph", "text": "Approach with example (100-120w)"}},
+    {{"type": "paragraph", "text": "Permits (80-100w)"}},
+    {{"type": "heading", "level": 2, "text": "Recent {city} Project"}},
+    {{"type": "paragraph", "text": "Case study (120-180w)"}},
     {{"type": "cta", "text": "{data.cta_text}", "phone": "{data.phone or ''}"}}
   ]
 }}
 
+CRITICAL: Total word count across all paragraphs must be 900-1,100 words.
 Use local research extensively. Each city must be unique.
 """
 
     try:
-        result = generator._call_openai_json(system_prompt, user_prompt, max_tokens=8000)
+        result = generator._call_openai_json(system_prompt, user_prompt, max_tokens=10000)
         print(f"✓ City hub for {data.city} generated successfully")
+        
+        # Validate word count
+        blocks = result.get("blocks", [])
+        total_text = ' '.join([b.get('text', '') for b in blocks if b.get('type') == 'paragraph'])
+        word_count = len(total_text.split())
+        
+        if word_count < 850:
+            print(f"⚠️ WARNING: Generated content for {data.city} is only {word_count} words (target: 900+)")
+            print(f"   Consider regenerating or manually expanding content")
+        else:
+            print(f"✓ Word count for {data.city}: {word_count} words")
+        
         return result
 
     except Exception as e:
@@ -450,7 +506,28 @@ def _generate_fallback_city_hub_content(data: PageData, profile: dict) -> dict:
     blocks = [
         {
             "type": "paragraph",
-            "text": f"Because many homes in {city} were built before modern standards were common, issues are often uncovered during inspections or remodels rather than routine maintenance, which changes how problems are prioritized."
+            "text": f"{city}, {state} has a mix of older and newer construction, which creates varying {trade_name} demands across different neighborhoods. Many properties built before modern standards require updates to meet current codes and handle today's usage patterns."
+        },
+        {
+            "type": "paragraph",
+            "text": f"The local climate in {city} affects {trade_name} systems through seasonal temperature fluctuations and weather events common to the region. These environmental factors contribute to wear patterns that differ from other areas."
+        },
+        {
+            "type": "paragraph",
+            "text": f"Common issues in {city} homes often stem from the combination of building age and local conditions. Components that worked adequately when first installed may now need attention due to increased demands or accumulated wear."
+        },
+        {
+            "type": "heading",
+            "level": 2,
+            "text": f"Common {trade_name} Issues in {city}"
+        },
+        {
+            "type": "paragraph",
+            "text": f"Primary concerns typically involve components showing age-related wear or insufficient capacity for current needs. These issues often become apparent during renovations, inspections, or when adding new equipment."
+        },
+        {
+            "type": "paragraph",
+            "text": f"Weather-related problems in {city} include damage from storms, temperature extremes, and moisture issues specific to the local climate. These tend to surface seasonally or after significant weather events."
         },
         {
             "type": "heading",
@@ -459,11 +536,11 @@ def _generate_fallback_city_hub_content(data: PageData, profile: dict) -> dict:
         },
         {
             "type": "paragraph",
-            "text": f"Work requests typically follow equipment failures, renovation discoveries, or inspection findings that need professional assessment in {city}."
+            "text": f"Calls typically come in after equipment failures, during renovation projects, or when routine maintenance reveals potential issues. {city} homeowners often contact us when facing immediate problems or planning larger updates."
         },
         {
             "type": "paragraph",
-            "text": f"Determining whether an issue requires immediate attention or can be addressed during planned updates depends on the specific situation and {city}'s local building requirements."
+            "text": f"Addressing {trade_name} issues promptly helps prevent larger problems and ensures systems meet current safety standards and usage requirements."
         },
         {
             "type": "paragraph",
@@ -472,11 +549,24 @@ def _generate_fallback_city_hub_content(data: PageData, profile: dict) -> dict:
         {
             "type": "heading",
             "level": 2,
-            "text": "Why Choose Us"
+            "text": f"How We Handle {city} Properties"
         },
         {
             "type": "paragraph",
-            "text": "Most jobs start by figuring out whether the issue is isolated or part of something bigger. If it's something that can wait, that's said clearly. If it's likely to cause trouble later, the reason is explained along with options. When permits or inspections are involved, that's discussed up front so there are no surprises. The goal is to leave the work done correctly and make sure the customer understands what changed."
+            "text": f"Our approach in {city} accounts for the area's building characteristics and local requirements. We start by assessing the current system condition and identifying any issues that need immediate attention versus those that can be planned for later."
+        },
+        {
+            "type": "paragraph",
+            "text": f"Work in {city}, {state} requires permits and inspections for most significant {trade_name} projects. We coordinate these requirements and ensure all work meets local codes."
+        },
+        {
+            "type": "heading",
+            "level": 2,
+            "text": f"Recent {city} Project"
+        },
+        {
+            "type": "paragraph",
+            "text": f"Recently in {city}, we worked with a homeowner whose older system was struggling to meet modern demands. The existing setup had been adequate when installed but needed upgrades to handle current usage. After assessment, we implemented appropriate solutions that resolved the immediate concerns while meeting local code requirements. The homeowner now has a reliable system appropriate for their needs."
         },
     ]
     
