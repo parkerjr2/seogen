@@ -398,97 +398,110 @@ The housing boom information can appear in the 2nd or 3rd sentence, just not as 
 Each city must have a DIFFERENT opening pattern to create variety.
 
 ==================================================
-STRUCTURE (900-1,100 words MINIMUM - STRICTLY ENFORCED)
+STRUCTURE (1,100-1,300 words MINIMUM - STRICTLY ENFORCED)
 ==================================================
 
-⚠️⚠️⚠️ ABSOLUTE MINIMUM LENGTH: 900 WORDS ⚠️⚠️⚠️
+⚠️⚠️⚠️ ABSOLUTE MINIMUM LENGTH: 1,100 WORDS ⚠️⚠️⚠️
+
+Your previous attempts have been too short. You MUST reach 1,100 words MINIMUM.
 
 Before submitting your JSON, COUNT YOUR WORDS:
 1. Count every word in every paragraph block
-2. If total < 900 words, ADD MORE CONTENT to sections 1, 2, or 6
-3. Do NOT submit content under 900 words - it will be REJECTED
+2. If total < 1,100 words, ADD MORE CONTENT to sections 1, 2, or 6
+3. Do NOT submit content under 1,100 words - it will be REJECTED AND REGENERATED
 
-TARGET BREAKDOWN (these are MINIMUMS, NOT targets):
-- Section 1 (City Context): 340+ words MINIMUM (not 280, not 300 - AT LEAST 340)
-- Section 2 (Common Issues): 270+ words MINIMUM (not 220, not 250 - AT LEAST 270)
-- Section 6 (Properties): 240+ words MINIMUM (not 200, not 220 - AT LEAST 240)
-- Section 7 (Case Study): 150+ words MINIMUM (not 120, not 140 - AT LEAST 150)
+TARGET BREAKDOWN (these are HARD MINIMUMS):
+- Section 1 (City Context): 440+ words MINIMUM (not 340, not 400 - AT LEAST 440)
+- Section 2 (Common Issues): 350+ words MINIMUM (not 270, not 300 - AT LEAST 350)
+- Section 6 (Properties): 310+ words MINIMUM (not 240, not 280 - AT LEAST 310)
+- Section 7 (Case Study): 200+ words MINIMUM (not 150, not 180 - AT LEAST 200)
 - Other sections: 100+ words combined
 
-If ANY section is under its minimum, EXPAND IT before submitting.
+If ANY section is under its minimum, you have FAILED. EXPAND IT before submitting.
 
-1) CITY CONTEXT (4-5 paragraphs, 340-400w MINIMUM)
-   - Opening paragraph: {housing_instruction} + neighborhoods (90-120w)
+1) CITY CONTEXT (4-5 paragraphs, 440-500w MINIMUM)
+   - Opening paragraph: {housing_instruction} + neighborhoods (110-140w)
      * Must mention 2-3 specific neighborhoods from research
      * Tie to {trade_name} service needs
    
-   - Climate paragraph: Specific weather data → {trade_name} stress (90-110w)
+   - Climate paragraph: Specific weather data → {trade_name} stress (110-130w)
      * Use specific climate data from research
      * Explain HOW it impacts {trade_name} systems
+     * Add 2-3 specific examples
    
-   - Issues paragraph: What fails from age + climate (80-100w)
+   - Issues paragraph: What fails from age + climate (100-120w)
      * Connect building age to component failures
      * Tie climate to specific {trade_name} problems
+     * Give concrete examples
    
-   - Coverage paragraph: 2-3 landmarks + neighborhoods from research (60-80w)
+   - Coverage paragraph: 2-3 landmarks + neighborhoods from research (80-100w)
      * Name specific landmarks from local data
      * Explain their relevance to service area
    
-   - Optional 5th paragraph: Unique city characteristic (40-50w)
+   - Optional 5th paragraph: Unique city characteristic (40-60w)
      * Permit requirements, local codes, city-specific factors
 
-2) COMMON ISSUES (3 paragraphs, 270-320w MINIMUM)
-   - Primary paragraph: Top {trade_name} problems in {city}, root causes (100-120w)
+2) COMMON ISSUES (3 paragraphs, 350-400w MINIMUM)
+   - Primary paragraph: Top {trade_name} problems in {city}, root causes (120-150w)
      * Specific to this city's building stock
      * Explain WHY these problems occur here
+     * Give 2-3 concrete examples
    
-   - Secondary paragraph: Climate/weather-related issues (80-100w)
+   - Secondary paragraph: Climate/weather-related issues (110-130w)
      * Storm damage, temperature extremes, humidity
      * How local weather creates specific {trade_name} failures
+     * Include seasonal examples
    
-   - Seasonal paragraph: How seasons affect service calls in {city} (90-100w)
+   - Seasonal paragraph: How seasons affect service calls in {city} (120-130w)
      * Summer vs winter demand patterns
      * Seasonal maintenance needs
+     * Specific examples of seasonal issues
 
-3) TRIGGERS (50-70w): What prompts homeowners to call. Be specific to {city}. NO service lists.
+3) TRIGGERS (60-80w): What prompts homeowners to call. Be specific to {city}. NO service lists.
    - Equipment failures during specific times
    - Renovation discoveries
    - Storm/weather events specific to area
+   - Expand with more detail than minimum
 
-4) DECISION (40-50w): Why addressing issues matters. Natural tone, not salesy.
+4) DECISION (50-60w): Why addressing issues matters. Natural tone, not salesy.
    - Safety implications
    - Cost of delay
    - Building code compliance
+   - Add extra detail
 
 5) SERVICE LINKS: Output EXACTLY: {{{{CITY_SERVICE_LINKS}}}}
 
-6) {city.upper()} PROPERTIES (2-3 paragraphs, 240-280w MINIMUM)
-   - Approach paragraph with EXAMPLE from {city} (120-140w)
+6) {city.upper()} PROPERTIES (2-3 paragraphs, 310-360w MINIMUM)
+   - Approach paragraph with EXAMPLE from {city} (140-180w)
      * Start with "When working in {city}" or "For {city} properties" (NEVER "In the area")
-     * Include realistic project example: "[Neighborhood], homeowner, specific problem, solution"
+     * Include realistic detailed project example: "[Neighborhood], homeowner, specific problem, solution, outcome"
      * Must be {city}-specific, not generic
+     * Add extra detail about the approach
    
-   - Permits paragraph: Local requirements specific to {city}, {state} (100-120w)
+   - Permits paragraph: Local requirements specific to {city}, {state} (130-150w)
      * Specific permit processes
      * Local code requirements
      * City-specific regulations
+     * Examples of permit scenarios
    
-   - Optional 3rd paragraph: Neighborhood-specific considerations (40-50w)
+   - Optional 3rd paragraph: Neighborhood-specific considerations (40-60w)
 
-7) REAL PROJECT EXAMPLE (1-2 paragraphs, 150-200w MINIMUM)
+7) REAL PROJECT EXAMPLE (1-2 paragraphs, 200-250w MINIMUM)
    Heading: "Recent {city} Project"
    
-   Generate a realistic case study with these elements:
+   Generate a realistic detailed case study with these elements:
    - Location: "Last [season] in [specific neighborhood]"
    - Homeowner: "we worked with a {target_audience} who noticed [problem]"
    - Problem discovery: "The [component] had [issue]"
+   - Assessment details: "During our assessment, we found [additional details]"
    - Cause: "likely from [local factor like building age/weather/permit requirement]"
-   - Solution: "We [specific {trade_name} work performed]"
-   - Outcome: "Now they [measurable result]"
+   - Solution: "We [specific detailed {trade_name} work performed]"
+   - Process: "The work involved [specific steps]"
+   - Outcome: "Now they [measurable detailed result]"
    
    MUST reference real landmark/neighborhood from research.
    MUST tie to local building age, climate, or permit requirements.
-   MUST be at least 150 words.
+   MUST be at least 200 words with rich detail.
 
 BANNED EVERYWHERE: "in the area", "In the area", "serving the area", "locally", "trusted", "quality service", "the first step"
 {housing_requirement}
@@ -528,47 +541,110 @@ JSON SCHEMA (15-18 blocks total):
 }}
 
 FINAL CHECKLIST BEFORE SUBMITTING:
-✅ Total word count ≥ 900 words
-✅ Section 1 ≥ 340 words
-✅ Section 2 ≥ 270 words
-✅ Section 6 ≥ 240 words
-✅ Section 7 ≥ 150 words
+✅ Total word count ≥ 1,100 words (not 900, not 1,000 - AT LEAST 1,100)
+✅ Section 1 ≥ 440 words
+✅ Section 2 ≥ 350 words
+✅ Section 6 ≥ 310 words
+✅ Section 7 ≥ 200 words
 ✅ No "In the area" phrase anywhere
+✅ No "air conditioning" or "HVAC" (unless you're writing for HVAC trade)
 ✅ Opening uses one of the 4 required patterns
 ✅ Case study references real neighborhood
 ✅ All content is {trade_name}-specific
 
+If you submit content under 1,100 words, it will be REJECTED and you will be asked to regenerate.
+
 Use local research extensively. Each city must be unique.
 """
 
-    try:
-        result = generator._call_openai_json(system_prompt, user_prompt, max_tokens=10000)
-        print(f"✓ City hub for {data.city} generated successfully")
+    # Retry loop with validation
+    max_attempts = 2
+    for attempt in range(max_attempts):
+        try:
+            # Add temperature control for better instruction following
+            result = generator._call_openai_json(
+                system_prompt, 
+                user_prompt, 
+                max_tokens=12000,  # Increased from 10000
+                temperature=0.6    # Lower = more focused on instructions
+            )
+            
+            # Validate and post-process
+            blocks = result.get("blocks", [])
+            total_text = ' '.join([b.get('text', '') for b in blocks if b.get('type') == 'paragraph'])
+            word_count = len(total_text.split())
+            
+            # Check for issues
+            has_banned_phrase = "in the area" in total_text.lower()
+            has_air_conditioning = "air conditioning" in total_text.lower()
+            has_hvac = "hvac" in total_text.lower() and trade_name.lower() != "hvac"
+            has_contamination = has_air_conditioning or has_hvac
+            
+            # Post-process: Fix banned phrases automatically
+            for block in blocks:
+                if block.get('type') == 'paragraph':
+                    text = block['text']
+                    # Replace "in the area" with city-specific phrasing
+                    text = text.replace('In the area', f'In {city}')
+                    text = text.replace('in the area', f'in {city}')
+                    text = text.replace(' the area', f' {city}')
+                    # Replace cross-trade contamination
+                    if trade_name.lower() == "electrical":
+                        text = text.replace('air conditioning', 'cooling systems')
+                        text = text.replace('HVAC', 'climate control')
+                        text = text.replace('heating and cooling', 'temperature control')
+                    block['text'] = text
+            
+            # Re-check after post-processing
+            total_text_fixed = ' '.join([b.get('text', '') for b in blocks if b.get('type') == 'paragraph'])
+            word_count_fixed = len(total_text_fixed.split())
+            has_banned_after_fix = "in the area" in total_text_fixed.lower()
+            has_contamination_after_fix = "air conditioning" in total_text_fixed.lower() or ("hvac" in total_text_fixed.lower() and trade_name.lower() != "hvac")
+            
+            # Log results
+            if word_count_fixed < 850:
+                print(f"⚠️ WARNING: Generated content for {data.city} is only {word_count_fixed} words (target: 900+)")
+            else:
+                print(f"✓ Word count for {data.city}: {word_count_fixed} words")
+            
+            if has_banned_after_fix:
+                print(f"⚠️ WARNING: 'in the area' still present after auto-fix in {data.city}")
+            
+            if has_contamination_after_fix:
+                print(f"⚠️ WARNING: Cross-trade contamination still present in {data.city}")
+            
+            # Decide if we need to retry
+            needs_retry = (
+                (word_count_fixed < 850 and attempt == 0) or  # Only retry word count on first attempt
+                has_contamination_after_fix  # Always retry if contamination persists
+            )
+            
+            if needs_retry and attempt < max_attempts - 1:
+                print(f"🔄 Attempt {attempt + 1} failed validation, retrying with stricter prompt...")
+                # Add failure details to system prompt for next attempt
+                failure_details = []
+                if word_count_fixed < 850:
+                    failure_details.append(f"Previous attempt was only {word_count_fixed} words")
+                if has_contamination_after_fix:
+                    failure_details.append("Previous attempt contained wrong trade terms")
+                
+                system_prompt = system_prompt + f"\n\n⚠️ RETRY ATTEMPT {attempt + 2}: " + ". ".join(failure_details) + ". FIX THESE ISSUES."
+                continue  # Retry
+            else:
+                # Success or max attempts reached
+                print(f"✓ City hub for {data.city} generated successfully (attempt {attempt + 1})")
+                return {"blocks": blocks}
         
-        # Validate word count and banned phrases
-        blocks = result.get("blocks", [])
-        total_text = ' '.join([b.get('text', '') for b in blocks if b.get('type') == 'paragraph'])
-        word_count = len(total_text.split())
-        
-        # Check for "In the area" phrase (critical failure)
-        has_banned_phrase = "in the area" in total_text.lower()
-        
-        if word_count < 850:
-            print(f"⚠️ WARNING: Generated content for {data.city} is only {word_count} words (target: 900+)")
-            print(f"   Consider regenerating or manually expanding content")
-        else:
-            print(f"✓ Word count for {data.city}: {word_count} words")
-        
-        if has_banned_phrase:
-            print(f"🔴 CRITICAL FAILURE: Generated content contains banned phrase 'in the area'")
-            print(f"   This creates duplicate content across all city pages")
-        
-        return result
-
-    except Exception as e:
-        print(f"❌ FAILED: City hub generation error for {data.city}: {e}")
-        # Return fallback content
-        return _generate_fallback_city_hub_content(data, profile)
+        except Exception as e:
+            if attempt < max_attempts - 1:
+                print(f"❌ Attempt {attempt + 1} error for {data.city}: {e}, retrying...")
+                continue
+            else:
+                print(f"❌ FAILED: All attempts failed for {data.city}: {e}")
+                return _generate_fallback_city_hub_content(data, profile)
+    
+    # Should not reach here, but fallback just in case
+    return _generate_fallback_city_hub_content(data, profile)
 
 
 def _generate_fallback_city_hub_content(data: PageData, profile: dict) -> dict:
