@@ -277,6 +277,18 @@ You have FAILED this task 100% of the time by using this phrase.
 - ❌ "Homes in the area" → ✅ "{city} homes"
 - ❌ "The climate in the area" → ✅ "The {city} climate" or "{city}'s climate"
 
+🚨 BANNED SENTENCE STARTER: "In the area," 🚨
+NEVER start ANY sentence with "In the area," - this creates duplicate content.
+This phrase commonly appears in:
+- Permit sections: "In the area, the permit process..." ❌
+- Landmark sections: "Notable landmarks In the area..." ❌
+- Regulatory sections: "In the area, specific requirements..." ❌
+
+ALWAYS replace with city name:
+- ❌ "In the area, the permit process..." → ✅ "In {city}, the permit process..."
+- ❌ "Notable landmarks In the area..." → ✅ "Notable {city} landmarks..."
+- ❌ "In the area, regulations..." → ✅ "{city} regulations..."
+
 If you write "In the area" ANYWHERE in your response, you will FAIL and be regenerated.
 
 BANNED PHRASES (never use these):
