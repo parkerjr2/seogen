@@ -633,11 +633,17 @@ Use local research extensively. Each city must be unique.
                 if block.get('type') == 'paragraph':
                     text = block['text']
 
-                    # CRITICAL: Replace "in the area" with case-insensitive regex
-                    # This catches "In the area", "in the area", "in The area", etc.
-                    text = re.sub(r'\bIn the area\b', f'In {city}', text, flags=re.IGNORECASE)
-                    text = re.sub(r'\bin the area\b', f'in {city}', text, flags=re.IGNORECASE)
-                    text = re.sub(r' the area\b', f' {city}', text, flags=re.IGNORECASE)
+                    # CRITICAL: Normalize whitespace first (AI sometimes outputs non-breaking spaces)
+                    # This must happen BEFORE regex matching
+                    text = text.replace('\u00a0', ' ')  # non-breaking space
+                    text = text.replace('\u2007', ' ')  # figure space
+                    text = text.replace('\u202f', ' ')  # narrow no-break space
+
+                    # CRITICAL: Replace "in the area" with flexible whitespace matching
+                    # Using \s+ to match any whitespace (regular, non-breaking, multiple spaces)
+                    text = re.sub(r'\bin\s+the\s+area\b', f'in {city}', text, flags=re.IGNORECASE)
+                    text = re.sub(r'\bIn\s+the\s+area\b', f'In {city}', text, flags=re.IGNORECASE)
+                    text = re.sub(r'\s+the\s+area\b', f' {city}', text, flags=re.IGNORECASE)
 
                     # Fix cross-trade contamination
                     if trade_name.lower() == "electrical":
@@ -668,11 +674,14 @@ Use local research extensively. Each city must be unique.
                         if attempt < max_attempts - 1:
                             raise Exception(f"Banned phrase 'in the area' persisted after post-processing in {data.city}")
                         else:
-                            # Last attempt - apply nuclear fix
+                            # Last attempt - apply nuclear fix with whitespace normalization
                             print(f"   Applying nuclear fix: replacing all instances")
-                            block['text'] = block['text'].replace('in the area', f'in {city}')
-                            block['text'] = block['text'].replace('In the area', f'In {city}')
-                            block['text'] = block['text'].replace('IN THE AREA', f'IN {city}')
+                            # Normalize whitespace first
+                            block['text'] = block['text'].replace('\u00a0', ' ')
+                            block['text'] = block['text'].replace('\u2007', ' ')
+                            block['text'] = block['text'].replace('\u202f', ' ')
+                            # Then replace with regex for any whitespace variants
+                            block['text'] = re.sub(r'\bin\s+the\s+area\b', f'in {city}', block['text'], flags=re.IGNORECASE)
             
             # Re-check after post-processing
             total_text_fixed = ' '.join([b.get('text', '') for b in blocks if b.get('type') == 'paragraph'])
