@@ -61,18 +61,42 @@ def fix_residential_language(text: str, hub_key: str) -> str:
 
     target = get_vertical_language(hub_key)
 
-    # Replacements ordered to avoid partial matches (plurals first)
+    # Replacements ordered: phrases first (longer matches), then words (shorter)
     replacements = [
+        # Context-specific phrases (process before word-level to avoid partial matches)
+        (r'\bin homes built\b', 'in facilities built'),
+        (r'\bin homes from\b', 'in facilities from'),
+        (r'\bfor homes\b', 'for facilities'),
+        (r'\bthese homes\b', 'these facilities'),
+        (r'\bolder homes\b', 'older commercial properties'),
+        (r'\bmany homes\b', 'many commercial properties'),
+        (r'\brewire homes\b', 'rewire facilities'),
+        (r'\bmodernize homes\b', 'modernize facilities'),
+        (r'\bhome systems\b', 'building systems'),
+        (r'\bhome electrical\b', 'electrical'),
+
         # Plural forms
         (r'\bhomeowners\b', target['audience']),
         (r'\bHomeowners\b', target['audience'].title()),
         (r'\bhomes\b', target['property']),
         (r'\bHomes\b', target['property'].title()),
+        (r'\bhouses\b', 'buildings'),
+        (r'\bHouses\b', 'Buildings'),
+        (r'\bfamilies\b', 'businesses'),
+        (r'\bFamilies\b', 'Businesses'),
+
         # Singular forms
         (r'\bhomeowner\b', target['audience_singular']),
         (r'\bHomeowner\b', target['audience_singular'].title()),
         (r'\bhome\b', target['property_singular']),
         (r'\bHome\b', target['property_singular'].title()),
+        (r'\bhouse\b', 'building'),
+        (r'\bHouse\b', 'Building'),
+
+        # Possessive forms
+        (r"\bfamily's\b", "business's"),
+        (r"\bFamily's\b", "Business's"),
+
         # Specific phrases
         (r'\bwhole-home\b', target['surge_protection']),
         (r'\bWhole-home\b', target['surge_protection'].title()),
@@ -104,6 +128,10 @@ def validate_grammar(text: str, city: str = "") -> str:
         pattern = rf'(\w+)\s+and\s+(\w+(?:\s+\w+)?)\s+{verb}\b'
         plural_verb = verb.rstrip('s')  # creates → create
         text = re.sub(pattern, rf'\1 and \2 {plural_verb}', text, flags=re.IGNORECASE)
+
+    # Rule 1.5: Equipment is always singular (uncountable noun)
+    text = re.sub(r'\bequipment are\b', 'equipment is', text, flags=re.IGNORECASE)
+    text = re.sub(r'\bequipment were\b', 'equipment was', text, flags=re.IGNORECASE)
 
     # Rule 2: Incomplete comparatives
     text = re.sub(r'\bfrom older in\b', 'in older', text, flags=re.IGNORECASE)
@@ -189,6 +217,18 @@ def fix_banned_phrases(text: str, city: str) -> str:
     text = re.sub(r'\bproperties\s+[Ii]n\s+the\s+area\b', f'properties in {city}', text)
     text = re.sub(r'\bcalls\s+[Ii]n\s+the\s+area\b', f'calls in {city}', text)
     text = re.sub(r'\bhomes\s+[Ii]n\s+the\s+area\b', f'homes in {city}', text)
+    text = re.sub(r'\bbusinesses\s+[Ii]n\s+the\s+area\b', f'businesses in {city}', text)
+    text = re.sub(r'\bfacilities\s+[Ii]n\s+the\s+area\b', f'facilities in {city}', text)
+    text = re.sub(r'\bclimate\s+[Ii]n\s+the\s+area\b', f'climate in {city}', text)
+
+    # Pattern 6: After newlines or line breaks
+    text = re.sub(r'\n\s*[Ii]n the area,', f'\nIn {city},', text)
+
+    # Pattern 7: After "such as" or "including"
+    text = re.sub(r'(such as|including)\s+[Ii]n\s+the\s+area', rf'\1 in {city}', text, flags=re.IGNORECASE)
+
+    # Pattern 8: Within parentheses
+    text = re.sub(r'\(\s*[Ii]n\s+the\s+area\s*\)', f'(in {city})', text)
 
     return text
 
