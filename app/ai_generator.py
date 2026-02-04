@@ -2125,6 +2125,33 @@ Return JSON only. No extra text."""
         if median_year and str(median_year) in content:
             facts_to_check.append(f"building age: {median_year}")
 
+        # NEGATIVE VALIDATION: Detect fabricated building ages when median_year is null
+        # If research has no building age data, the LLM should NOT mention any years
+        if not median_year:
+            # Patterns that indicate fabricated building age references
+            fabricated_age_patterns = [
+                # "built around/in/during YYYY" or "constructed in/around YYYY"
+                r'\b(?:built|constructed|erected|developed)\s+(?:around|in|during|circa)?\s*(?:the\s+)?(?:19|20)\d{2}',
+                # "homes/buildings/properties from the 19XXs/20XXs"
+                r'\b(?:homes?|buildings?|properties|structures?|houses?)\s+(?:from|dating\s+(?:from|to|back\s+to)|of)\s+(?:the\s+)?(?:19|20)\d{2}',
+                # "dating from/to/back to YYYY"
+                r'\bdating\s+(?:from|to|back\s+to)\s+(?:the\s+)?(?:19|20)\d{2}',
+                # "the 1970s construction" or "1980s-era homes"
+                r'\b(?:the\s+)?(?:19|20)\d{2}s(?:-era)?\s+(?:construction|homes?|buildings?|development)',
+                # "median year of YYYY" or "average age of YYYY"
+                r'\b(?:median|average)\s+(?:year|age)\s+(?:of|is|was)?\s*(?:around\s+)?(?:19|20)\d{2}',
+            ]
+
+            content_lower = content.lower()
+            for pattern in fabricated_age_patterns:
+                match = re.search(pattern, content_lower)
+                if match:
+                    return False, (
+                        f"FABRICATED BUILDING AGE DETECTED: Found '{match.group()}' but research data has no median_year. "
+                        f"When building age data is not available, do not mention any building years or decades. "
+                        f"Remove all building age references or use only verified research facts."
+                    )
+
         # Check for unique factors (NEW)
         unique_factors = research.get("unique_factors", [])
         for factor_obj in unique_factors[:2]:
