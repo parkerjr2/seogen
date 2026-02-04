@@ -662,34 +662,9 @@ Use local research extensively. Each city must be unique.
                         text = block[field]
                         original = text
 
-                        # CRITICAL: Normalize whitespace first (AI sometimes outputs non-breaking spaces)
-                        text = text.replace('\u00a0', ' ')  # non-breaking space
-                        text = text.replace('\u2007', ' ')  # figure space
-                        text = text.replace('\u202f', ' ')  # narrow no-break space
-
-                        # CRITICAL: Replace "in the area" - multiple patterns to catch ALL variants
-                        # Pattern 1: Standard "in the area"
-                        text = re.sub(r'\bin\s+the\s+area\b', f'in {city}', text, flags=re.IGNORECASE)
-                        # Pattern 2: Just "the area" at word boundaries
-                        text = re.sub(r'\bthe\s+area\b', city, text, flags=re.IGNORECASE)
-                        # Pattern 3: Literal string replacements as fallback
-                        text = text.replace('In the area', f'In {city}')
-                        text = text.replace('in the area', f'in {city}')
-                        text = text.replace('IN THE AREA', f'IN {city}')
-
-                        # Pattern 4: Edge cases with context prefixes
-                        text = text.replace(' In the area', f' In {city}')  # Space prefix
-                        text = text.replace(', In the area', f', In {city}')  # Comma prefix
-                        text = text.replace('. In the area', f'. In {city}')  # Period prefix
-                        text = text.replace(' in the area', f' in {city}')  # Space prefix lowercase
-                        text = text.replace(', in the area', f', in {city}')  # Comma prefix lowercase
-                        text = text.replace('. in the area', f'. in {city}')  # Period prefix lowercase
-
-                        # Pattern 5: Common phrases that trigger "in the area"
-                        text = re.sub(r'\blandmarks\s+[Ii]n\s+the\s+area\b', f'landmarks in {city}', text)
-                        text = re.sub(r'\bproperties\s+[Ii]n\s+the\s+area\b', f'properties in {city}', text)
-                        text = re.sub(r'\bcalls\s+[Ii]n\s+the\s+area\b', f'calls in {city}', text)
-                        text = re.sub(r'\bhomes\s+[Ii]n\s+the\s+area\b', f'homes in {city}', text)
+                        # CRITICAL: Use centralized fix_banned_phrases() for all "in the area" replacements
+                        # This function handles whitespace normalization and all edge cases
+                        text = fix_banned_phrases(text, city)
 
                         # Fix cross-trade contamination
                         if trade_name.lower() == "electrical":
