@@ -2104,7 +2104,7 @@ Return JSON only. No extra text."""
             # No more single-word matching that causes false positives
 
             # Check for measurements (e.g., "110°F", "+3°F", "20 days/year")
-            import re
+            # Note: re module is imported at module level (line 8)
             measurements = re.findall(r'\d+[°\+\-]?[A-Z°]|\d+\s+days|\d+%', factor)
             if any(m in content for m in measurements):
                 facts_to_check.append(f"climate factor: {factor[:50]}")
