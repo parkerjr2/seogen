@@ -87,11 +87,87 @@ def fix_banned_phrases(text: str, city: str) -> str:
     # Normalize whitespace first
     text = normalize_whitespace(text)
 
-    # Replace "in the area" variants
+    # Pattern 1: Standard "in the area" with regex
     text = re.sub(r'\bin\s+the\s+area\b', f'in {city}', text, flags=re.IGNORECASE)
+
+    # Pattern 2: Just "the area" at word boundaries
     text = re.sub(r'\bthe\s+area\b', city, text, flags=re.IGNORECASE)
+
+    # Pattern 3: Literal string replacements for common cases
     text = text.replace('In the area', f'In {city}')
     text = text.replace('in the area', f'in {city}')
     text = text.replace('IN THE AREA', f'IN {city}')
+
+    # Pattern 4: Edge cases with context prefixes
+    text = text.replace(' In the area', f' In {city}')
+    text = text.replace(', In the area', f', In {city}')
+    text = text.replace('. In the area', f'. In {city}')
+    text = text.replace(' in the area', f' in {city}')
+    text = text.replace(', in the area', f', in {city}')
+    text = text.replace('. in the area', f'. in {city}')
+
+    # Pattern 5: Common phrases that trigger "in the area"
+    text = re.sub(r'\blandmarks\s+[Ii]n\s+the\s+area\b', f'landmarks in {city}', text)
+    text = re.sub(r'\bproperties\s+[Ii]n\s+the\s+area\b', f'properties in {city}', text)
+    text = re.sub(r'\bcalls\s+[Ii]n\s+the\s+area\b', f'calls in {city}', text)
+    text = re.sub(r'\bhomes\s+[Ii]n\s+the\s+area\b', f'homes in {city}', text)
+
+    return text
+
+
+def fix_incomplete_sentences(text: str) -> str:
+    """
+    Fix incomplete sentences that end with dangling noun phrases.
+    LLM sometimes generates sentences like:
+    "...due to severe thunderstorms and urban heat island effect."
+    which should end with a verb completing the causal relationship.
+
+    Args:
+        text: The text to fix
+
+    Returns:
+        Text with incomplete sentences fixed
+    """
+    # Pattern 1: Ends with "due to [noun phrase] and [noun phrase]." without verb
+    # e.g., "...due to severe storms and heat island effect."
+    def add_completion_due_to(match):
+        phrase = match.group(1) + match.group(2)
+        # Check if it already ends with a verb phrase
+        ending_verbs = ['create', 'cause', 'lead', 'result', 'affect', 'require', 'strain', 'stress', 'damage']
+        has_verb = any(verb in phrase.lower() for verb in ending_verbs)
+        if not has_verb:
+            return f'{phrase} that create added strain on systems.'
+        return match.group(0)
+
+    # Match: "due to [stuff] and [stuff]." where [stuff] doesn't contain a verb
+    pattern = r'(due to [^.]+?)((?:and|or) [^.]+?)(\.)(?=\s|$)'
+    text = re.sub(pattern, add_completion_due_to, text)
+
+    # Pattern 2: Ends with "where [noun] and [noun]." without verb
+    # e.g., "...where severe storms and heat."
+    def add_completion_where(match):
+        phrase = match.group(1)
+        ending_verbs = ['create', 'cause', 'lead', 'result', 'affect', 'require', 'occur', 'happen']
+        has_verb = any(verb in phrase.lower() for verb in ending_verbs)
+        if not has_verb and ' and ' in phrase:
+            return f'{phrase} create unique challenges.'
+        return match.group(0)
+
+    pattern = r'(where [^.]+?)(\.)(?=\s|$)'
+    text = re.sub(pattern, add_completion_where, text)
+
+    # Pattern 3: Ends with "especially in [location] due to [factor]." without completion
+    # e.g., "...especially in Elm Creek due to storms."
+    def add_completion_especially(match):
+        phrase = match.group(1)
+        if 'due to' in phrase.lower():
+            ending_verbs = ['create', 'cause', 'lead', 'result', 'affect', 'require', 'strain']
+            has_verb = any(verb in phrase.lower() for verb in ending_verbs)
+            if not has_verb:
+                return f'{phrase} which create added service demands.'
+        return match.group(0)
+
+    pattern = r'(especially in [^.]+?)(\.)(?=\s|$)'
+    text = re.sub(pattern, add_completion_especially, text)
 
     return text

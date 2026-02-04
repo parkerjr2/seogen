@@ -25,7 +25,7 @@ import json
 from typing import List, Dict, Any, Set, Tuple
 from app.models import GeneratePageResponse, PageData
 from app.vertical_profiles import get_vertical_profile, get_trade_name
-from app.text_utils import validate_grammar
+from app.text_utils import validate_grammar, fix_incomplete_sentences
 
 
 # Global registry to track generated hub structures (in-memory for session)
@@ -660,9 +660,12 @@ def _convert_to_blocks(ai_content: Dict, h1_text: str, data: PageData, cta_text:
                 "text": section["heading"]
             })
         if section.get("paragraph"):
+            # Apply grammar validation and incomplete sentence fix
+            paragraph_text = validate_grammar(section["paragraph"], city)
+            paragraph_text = fix_incomplete_sentences(paragraph_text)
             blocks.append({
                 "type": "paragraph",
-                "text": validate_grammar(section["paragraph"], city)
+                "text": paragraph_text
             })
 
     # FAQs - apply grammar validation to answers
@@ -675,10 +678,13 @@ def _convert_to_blocks(ai_content: Dict, h1_text: str, data: PageData, cta_text:
         })
         for faq in faqs:
             if faq.get("question") and faq.get("answer"):
+                # Apply grammar validation and incomplete sentence fix
+                answer_text = validate_grammar(faq["answer"], city)
+                answer_text = fix_incomplete_sentences(answer_text)
                 blocks.append({
                     "type": "faq",
                     "question": faq["question"],
-                    "answer": validate_grammar(faq["answer"], city)
+                    "answer": answer_text
                 })
 
     # CTA

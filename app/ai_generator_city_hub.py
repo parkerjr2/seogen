@@ -677,6 +677,20 @@ Use local research extensively. Each city must be unique.
                         text = text.replace('in the area', f'in {city}')
                         text = text.replace('IN THE AREA', f'IN {city}')
 
+                        # Pattern 4: Edge cases with context prefixes
+                        text = text.replace(' In the area', f' In {city}')  # Space prefix
+                        text = text.replace(', In the area', f', In {city}')  # Comma prefix
+                        text = text.replace('. In the area', f'. In {city}')  # Period prefix
+                        text = text.replace(' in the area', f' in {city}')  # Space prefix lowercase
+                        text = text.replace(', in the area', f', in {city}')  # Comma prefix lowercase
+                        text = text.replace('. in the area', f'. in {city}')  # Period prefix lowercase
+
+                        # Pattern 5: Common phrases that trigger "in the area"
+                        text = re.sub(r'\blandmarks\s+[Ii]n\s+the\s+area\b', f'landmarks in {city}', text)
+                        text = re.sub(r'\bproperties\s+[Ii]n\s+the\s+area\b', f'properties in {city}', text)
+                        text = re.sub(r'\bcalls\s+[Ii]n\s+the\s+area\b', f'calls in {city}', text)
+                        text = re.sub(r'\bhomes\s+[Ii]n\s+the\s+area\b', f'homes in {city}', text)
+
                         # Fix cross-trade contamination
                         if trade_name.lower() == "electrical":
                             text = text.replace('air conditioning', 'cooling systems')

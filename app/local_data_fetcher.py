@@ -96,7 +96,7 @@ class LocalDataFetcher:
                     if median_year > 1800 and median_year < self.current_year:
                         avg_age = self.current_year - int(median_year)
                         return [
-                            f"Many homes in the area were built around {int(median_year)}, making them approximately {avg_age} years old"
+                            f"Many homes were built around {int(median_year)}, making them approximately {avg_age} years old"
                         ]
                 except (ValueError, IndexError):
                     pass
