@@ -25,7 +25,7 @@ import json
 from typing import List, Dict, Any, Set, Tuple
 from app.models import GeneratePageResponse, PageData
 from app.vertical_profiles import get_vertical_profile, get_trade_name
-from app.text_utils import validate_grammar, fix_incomplete_sentences
+from app.text_utils import validate_grammar, fix_incomplete_sentences, fix_banned_phrases, fix_residential_language
 
 
 # Global registry to track generated hub structures (in-memory for session)
@@ -643,6 +643,7 @@ def _convert_to_blocks(ai_content: Dict, h1_text: str, data: PageData, cta_text:
     """Convert AI-generated content to block format with grammar validation."""
     blocks = []
     city = data.city or ""
+    hub_key = data.hub_key or "residential"
 
     # H1
     blocks.append({
@@ -651,7 +652,7 @@ def _convert_to_blocks(ai_content: Dict, h1_text: str, data: PageData, cta_text:
         "text": h1_text
     })
 
-    # Sections - apply grammar validation to paragraphs
+    # Sections - apply all text fixes to paragraphs
     for section in ai_content.get("sections", []):
         if section.get("heading"):
             blocks.append({
@@ -660,15 +661,19 @@ def _convert_to_blocks(ai_content: Dict, h1_text: str, data: PageData, cta_text:
                 "text": section["heading"]
             })
         if section.get("paragraph"):
-            # Apply grammar validation and incomplete sentence fix
-            paragraph_text = validate_grammar(section["paragraph"], city)
+            # Apply all text fixes in order
+            paragraph_text = section["paragraph"]
+            if city:
+                paragraph_text = fix_banned_phrases(paragraph_text, city)
+            paragraph_text = fix_residential_language(paragraph_text, hub_key)
+            paragraph_text = validate_grammar(paragraph_text, city)
             paragraph_text = fix_incomplete_sentences(paragraph_text)
             blocks.append({
                 "type": "paragraph",
                 "text": paragraph_text
             })
 
-    # FAQs - apply grammar validation to answers
+    # FAQs - apply all text fixes to answers
     faqs = ai_content.get("faqs", [])
     if faqs:
         blocks.append({
@@ -678,8 +683,12 @@ def _convert_to_blocks(ai_content: Dict, h1_text: str, data: PageData, cta_text:
         })
         for faq in faqs:
             if faq.get("question") and faq.get("answer"):
-                # Apply grammar validation and incomplete sentence fix
-                answer_text = validate_grammar(faq["answer"], city)
+                # Apply all text fixes in order
+                answer_text = faq["answer"]
+                if city:
+                    answer_text = fix_banned_phrases(answer_text, city)
+                answer_text = fix_residential_language(answer_text, hub_key)
+                answer_text = validate_grammar(answer_text, city)
                 answer_text = fix_incomplete_sentences(answer_text)
                 blocks.append({
                     "type": "faq",

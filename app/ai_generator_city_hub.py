@@ -7,7 +7,7 @@ import re
 
 from app.models import GeneratePageResponse, PageData
 from app.vertical_profiles import get_vertical_profile, get_trade_name
-from app.text_utils import validate_grammar, normalize_whitespace, fix_banned_phrases
+from app.text_utils import validate_grammar, normalize_whitespace, fix_banned_phrases, fix_residential_language
 
 
 def _validate_industry_content(blocks: list, trade_name: str, vertical: str) -> None:
@@ -705,6 +705,10 @@ Use local research extensively. Each city must be unique.
 
                         # Grammar validation (subject-verb agreement, incomplete comparatives, etc.)
                         text = validate_grammar(text, city)
+
+                        # Fix residential language in commercial pages
+                        if is_commercial:
+                            text = fix_residential_language(text, 'commercial')
 
                         block[field] = text
 

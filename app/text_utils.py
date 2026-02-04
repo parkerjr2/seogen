@@ -6,6 +6,84 @@ Used across all generators to ensure consistent text quality.
 import re
 
 
+# Vertical-specific language mappings for audience and property terminology
+VERTICAL_LANGUAGE = {
+    'residential': {
+        'audience': 'homeowners',
+        'audience_singular': 'homeowner',
+        'property': 'homes',
+        'property_singular': 'home',
+        'surge_protection': 'whole-home',
+    },
+    'commercial': {
+        'audience': 'businesses',
+        'audience_singular': 'business',
+        'property': 'facilities',
+        'property_singular': 'facility',
+        'surge_protection': 'commercial',
+    },
+}
+
+
+def get_vertical_language(hub_key: str) -> dict:
+    """
+    Get language mappings for a hub type.
+
+    Args:
+        hub_key: Hub type ('residential', 'commercial')
+
+    Returns:
+        Dictionary with audience and property terminology
+    """
+    if not hub_key:
+        return VERTICAL_LANGUAGE['residential']
+    return VERTICAL_LANGUAGE.get(hub_key.lower(), VERTICAL_LANGUAGE['residential'])
+
+
+def fix_residential_language(text: str, hub_key: str) -> str:
+    """
+    Replace residential language with vertical-appropriate language.
+    Only applies replacements when hub_key is NOT residential.
+
+    This is a post-processing safety net to catch cases where the LLM
+    ignores prompt instructions and still outputs residential terminology
+    in commercial content.
+
+    Args:
+        text: The text to fix
+        hub_key: Hub type ('residential', 'commercial')
+
+    Returns:
+        Text with vertical-appropriate language (unchanged for residential)
+    """
+    if not hub_key or hub_key.lower() == 'residential':
+        return text  # No changes for residential
+
+    target = get_vertical_language(hub_key)
+
+    # Replacements ordered to avoid partial matches (plurals first)
+    replacements = [
+        # Plural forms
+        (r'\bhomeowners\b', target['audience']),
+        (r'\bHomeowners\b', target['audience'].title()),
+        (r'\bhomes\b', target['property']),
+        (r'\bHomes\b', target['property'].title()),
+        # Singular forms
+        (r'\bhomeowner\b', target['audience_singular']),
+        (r'\bHomeowner\b', target['audience_singular'].title()),
+        (r'\bhome\b', target['property_singular']),
+        (r'\bHome\b', target['property_singular'].title()),
+        # Specific phrases
+        (r'\bwhole-home\b', target['surge_protection']),
+        (r'\bWhole-home\b', target['surge_protection'].title()),
+    ]
+
+    for pattern, replacement in replacements:
+        text = re.sub(pattern, replacement, text)
+
+    return text
+
+
 def validate_grammar(text: str, city: str = "") -> str:
     """
     Fix common grammar issues in AI-generated content.
