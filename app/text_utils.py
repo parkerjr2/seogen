@@ -167,8 +167,9 @@ def validate_grammar(text: str, city: str = "") -> str:
 
 def normalize_whitespace(text: str) -> str:
     """
-    Normalize various whitespace characters to standard spaces.
-    AI models sometimes output non-breaking spaces or other Unicode whitespace.
+    Normalize various whitespace and invisible characters to standard spaces.
+    AI models sometimes output non-breaking spaces, zero-width characters,
+    or other Unicode artifacts that break regex matching.
 
     Args:
         text: The text to normalize
@@ -176,11 +177,34 @@ def normalize_whitespace(text: str) -> str:
     Returns:
         Text with normalized whitespace
     """
-    text = text.replace('\u00a0', ' ')  # non-breaking space
-    text = text.replace('\u2007', ' ')  # figure space
-    text = text.replace('\u202f', ' ')  # narrow no-break space
-    text = text.replace('\u2009', ' ')  # thin space
-    text = text.replace('\u200a', ' ')  # hair space
+    # Step 1: Remove zero-width characters entirely (they're invisible but break word boundaries)
+    zero_width_chars = [
+        '\u200b',  # zero-width space
+        '\u200c',  # zero-width non-joiner
+        '\u200d',  # zero-width joiner
+        '\ufeff',  # zero-width no-break space (BOM)
+    ]
+    for char in zero_width_chars:
+        text = text.replace(char, '')
+
+    # Step 2: Normalize all Unicode whitespace to standard space
+    unicode_spaces = [
+        '\u00a0',  # non-breaking space
+        '\u2002',  # en space
+        '\u2003',  # em space
+        '\u2004',  # three-per-em space
+        '\u2005',  # four-per-em space
+        '\u2006',  # six-per-em space
+        '\u2007',  # figure space
+        '\u2008',  # punctuation space
+        '\u2009',  # thin space
+        '\u200a',  # hair space
+        '\u202f',  # narrow no-break space
+        '\u205f',  # medium mathematical space
+    ]
+    for space in unicode_spaces:
+        text = text.replace(space, ' ')
+
     return text
 
 
@@ -203,6 +227,9 @@ def fix_banned_phrases(text: str, city: str) -> str:
 
     # Pattern 2: Just "the area" at word boundaries
     text = re.sub(r'\bthe\s+area\b', city, text, flags=re.IGNORECASE)
+
+    # Pattern 2.5: Possessive form "the area's"
+    text = re.sub(r"\bthe\s+area's\b", f"{city}'s", text, flags=re.IGNORECASE)
 
     # Pattern 3: Literal string replacements for common cases
     text = text.replace('In the area', f'In {city}')
