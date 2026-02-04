@@ -373,17 +373,54 @@ def _get_semantic_requirements(hub_key: str, hub_label: str, trade_name: str, ve
     # Select 3 unique technical terms for this hub
     unique_terms = random.sample(vocabulary, min(3, len(vocabulary)))
     
+    # Normalize trade name for comparison
+    trade_lower = trade_name.lower() if trade_name else ""
+
     if hub_key == "residential":
+        # Trade-specific residential terms
+        if trade_lower in ['electrician', 'electrical']:
+            res_terms = ["home safety", "property value", "family protection"]
+            res_risk = "Outdated wiring can pose fire hazards and reduce home resale value"
+        elif trade_lower in ['roofer', 'roofing']:
+            res_terms = ["roof integrity", "property value", "weather protection"]
+            res_risk = "Aging or damaged roofs can lead to water damage, mold growth, and reduced home value"
+        elif trade_lower in ['plumber', 'plumbing']:
+            res_terms = ["water quality", "property value", "family health"]
+            res_risk = "Outdated plumbing can cause leaks, water damage, and health hazards"
+        elif trade_lower in ['hvac']:
+            res_terms = ["home comfort", "energy efficiency", "indoor air quality"]
+            res_risk = "Failing HVAC systems can lead to discomfort, high energy bills, and poor air quality"
+        else:
+            res_terms = ["home safety", "property value", "family protection"]
+            res_risk = "Deferred maintenance can lead to safety issues and reduced property value"
+
         return {
-            "unique_terms": unique_terms + ["home safety", "property value", "family protection"],
+            "unique_terms": unique_terms + res_terms,
             "workflow_difference": "We work around family schedules and protect living spaces during service",
-            "risk_constraint": "Outdated systems can pose fire hazards and reduce home resale value"
+            "risk_constraint": res_risk
         }
     elif hub_key == "commercial":
+        # Trade-specific commercial terms
+        if trade_lower in ['electrician', 'electrical']:
+            com_terms = ["load capacity", "business continuity", "compliance documentation"]
+            com_risk = "Inadequate capacity planning can lead to costly downtime and equipment failure"
+        elif trade_lower in ['roofer', 'roofing']:
+            com_terms = ["roof inspection", "business continuity", "warranty documentation"]
+            com_risk = "Deferred roof maintenance can lead to leaks, interior damage, and costly emergency repairs"
+        elif trade_lower in ['plumber', 'plumbing']:
+            com_terms = ["water pressure", "business continuity", "code compliance"]
+            com_risk = "Plumbing failures can lead to water damage, health hazards, and operational shutdowns"
+        elif trade_lower in ['hvac']:
+            com_terms = ["climate control", "business continuity", "energy efficiency"]
+            com_risk = "HVAC failures can lead to uncomfortable conditions, equipment damage, and lost productivity"
+        else:
+            com_terms = ["business continuity", "compliance documentation", "maintenance planning"]
+            com_risk = "Deferred maintenance can lead to costly emergency repairs and operational disruptions"
+
         return {
-            "unique_terms": unique_terms + ["load capacity", "business continuity", "compliance documentation"],
+            "unique_terms": unique_terms + com_terms,
             "workflow_difference": "We coordinate with facility managers and schedule work during off-hours to minimize disruption",
-            "risk_constraint": "Inadequate capacity planning can lead to costly downtime and equipment failure"
+            "risk_constraint": com_risk
         }
     elif hub_key == "emergency":
         return {

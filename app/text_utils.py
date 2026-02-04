@@ -105,6 +105,11 @@ def fix_residential_language(text: str, hub_key: str) -> str:
     for pattern, replacement in replacements:
         text = re.sub(pattern, replacement, text)
 
+    # Final safety net: case-insensitive replacements for critical terms
+    # This catches any remaining variations (ALL CAPS, mixed case, etc.)
+    text = re.sub(r'\bhomeowners\b', target['audience'], text, flags=re.IGNORECASE)
+    text = re.sub(r'\bhomeowner\b', target['audience_singular'], text, flags=re.IGNORECASE)
+
     return text
 
 
@@ -223,6 +228,9 @@ def fix_banned_phrases(text: str, city: str) -> str:
 
     # Pattern 6: After newlines or line breaks
     text = re.sub(r'\n\s*[Ii]n the area,', f'\nIn {city},', text)
+
+    # Pattern 6.5: After double newlines (section breaks) - more aggressive
+    text = re.sub(r'(\n\n+)\s*[Ii]n the area', rf'\1In {city}', text)
 
     # Pattern 7: After "such as" or "including"
     text = re.sub(r'(such as|including)\s+[Ii]n\s+the\s+area', rf'\1 in {city}', text, flags=re.IGNORECASE)
