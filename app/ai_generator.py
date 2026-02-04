@@ -15,7 +15,7 @@ from app.models import PageData, GeneratePageResponse, PageBlock, HeadingBlock, 
 from app.local_data_fetcher import local_data_fetcher
 from app.vertical_profiles import get_vertical_profile, get_trade_name
 from app import ai_generator_hub
-from app.text_utils import validate_grammar, normalize_whitespace
+from app.text_utils import validate_grammar, normalize_whitespace, fix_banned_phrases
 
 class AIContentGenerator:
     """Robust content generator with programmatic enforcement and repair capabilities."""
@@ -240,6 +240,9 @@ class AIContentGenerator:
         def validate_text(text: str) -> str:
             if not text:
                 return text
+            # Fix banned phrases first (replaces "in the area" with city name)
+            if city:
+                text = fix_banned_phrases(text, city)
             return validate_grammar(text, city)
 
         # Validate meta_description
