@@ -253,7 +253,10 @@ async def _process_item_async(item: dict, executor: ThreadPoolExecutor) -> None:
                 if push_result.get("success"):
                     wordpress_push_success = True
                     wordpress_post_id = push_result.get("post_id")
-                    _log(f"WordPress push succeeded: item_id={item_id} post_id={wordpress_post_id}")
+                    if wordpress_post_id:
+                        _log(f"WordPress push succeeded: item_id={item_id} post_id={wordpress_post_id}")
+                    else:
+                        _log(f"WordPress push queued (async): item_id={item_id}")
                     
                     # Update callback status
                     supabase_client.update_callback_status(api_key_id, success=True)
