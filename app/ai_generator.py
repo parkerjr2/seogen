@@ -15,7 +15,7 @@ from app.models import PageData, GeneratePageResponse, PageBlock, HeadingBlock, 
 from app.local_data_fetcher import local_data_fetcher
 from app.vertical_profiles import get_vertical_profile, get_trade_name
 from app import ai_generator_hub
-from app.text_utils import validate_grammar, normalize_whitespace, fix_banned_phrases, fix_passive_voice, split_long_sentences
+from app.text_utils import validate_grammar, normalize_whitespace, fix_banned_phrases, fix_residential_language, fix_passive_voice, split_long_sentences
 
 class AIContentGenerator:
     """Robust content generator with programmatic enforcement and repair capabilities."""
@@ -232,10 +232,12 @@ class AIContentGenerator:
         """
         Apply grammar validation to all text content.
         Fixes subject-verb agreement, incomplete comparatives, missing relative pronouns, etc.
+        Also fixes residential language leaking into commercial/non-residential content.
         """
         import copy
         validated = copy.deepcopy(content_json)
         city = data.city or ""
+        hub_key = data.hub_key or ""
 
         def validate_text(text: str) -> str:
             if not text:
@@ -243,6 +245,11 @@ class AIContentGenerator:
             # Fix banned phrases first (replaces "in the area" with city name)
             if city:
                 text = fix_banned_phrases(text, city)
+            # Fix residential language leaking into commercial content
+            # This is a critical safety net - LLMs often ignore prompt instructions
+            # and output "homeowner"/"homes" even on commercial pages
+            if hub_key:
+                text = fix_residential_language(text, hub_key)
             text = validate_grammar(text, city)
             # Fix passive voice constructions
             text = fix_passive_voice(text)

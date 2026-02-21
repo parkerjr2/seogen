@@ -63,17 +63,51 @@ def fix_residential_language(text: str, hub_key: str) -> str:
 
     # Replacements ordered: phrases first (longer matches), then words (shorter)
     replacements = [
-        # Context-specific phrases (process before word-level to avoid partial matches)
-        (r'\bin homes built\b', 'in facilities built'),
-        (r'\bin homes from\b', 'in facilities from'),
-        (r'\bfor homes\b', 'for facilities'),
-        (r'\bthese homes\b', 'these facilities'),
+        # Multi-word phrases (process first to avoid partial word-level matches)
+        (r'\bresidential boom\b', 'construction boom'),
+        (r'\bResidential boom\b', 'Construction boom'),
+        (r'\bresidential property\b', 'commercial property'),
+        (r'\bResidential property\b', 'Commercial property'),
+        (r'\bresidential properties\b', 'commercial properties'),
+        (r'\bResidential properties\b', 'Commercial properties'),
+        (r'\bin homes built\b', 'in buildings constructed'),
+        (r'\bin homes from\b', 'in buildings from'),
+        (r'\bfor homes\b', 'for commercial properties'),
+        (r'\bthese homes\b', 'these commercial properties'),
         (r'\bolder homes\b', 'older commercial properties'),
         (r'\bmany homes\b', 'many commercial properties'),
+        (r'\bon older homes\b', 'on older commercial properties'),
+        (r'\bOn older homes\b', 'On older commercial properties'),
+        (r'\byour home\b', 'your property'),
+        (r'\bYour home\b', 'Your property'),
+        (r'\byour homes\b', 'your properties'),
+        (r'\btheir home\b', 'their property'),
+        (r'\btheir homes\b', 'their properties'),
+        (r'\ba home\b', 'a property'),
+        (r'\bA home\b', 'A property'),
+        (r'\bthe home\b', 'the property'),
+        (r'\bThe home\b', 'The property'),
+        (r'\bhome value\b', 'property value'),
+        (r'\bHome value\b', 'Property value'),
+        (r'\bhome inspection\b', 'property inspection'),
+        (r'\bHome inspection\b', 'Property inspection'),
+        (r'\bhome insurance\b', 'property insurance'),
+        (r'\bHome insurance\b', 'Property insurance'),
+        (r'\bhome resale\b', 'property resale'),
+        (r'\bhome safety\b', 'building safety'),
+        (r'\bHome safety\b', 'Building safety'),
         (r'\brewire homes\b', 'rewire facilities'),
         (r'\bmodernize homes\b', 'modernize facilities'),
         (r'\bhome systems\b', 'building systems'),
         (r'\bhome electrical\b', 'electrical'),
+        (r'\bprotect your home\b', 'protect your property'),
+        (r'\bProtect your home\b', 'Protect your property'),
+        (r'\bprotect your family\b', 'protect your business'),
+        (r'\bProtect your family\b', 'Protect your business'),
+
+        # "residential" as standalone adjective (catch-all after specific phrases)
+        (r'\bresidential\b', 'commercial'),
+        (r'\bResidential\b', 'Commercial'),
 
         # Plural forms
         (r'\bhomeowners\b', target['audience']),
@@ -93,7 +127,15 @@ def fix_residential_language(text: str, hub_key: str) -> str:
         (r'\bhouse\b', 'building'),
         (r'\bHouse\b', 'Building'),
 
+        # Family (singular and plural, including possessive)
+        (r'\bfamily safety\b', 'building safety'),
+        (r'\bFamily safety\b', 'Building safety'),
+        (r'\bfamily\b', 'business'),
+        (r'\bFamily\b', 'Business'),
+
         # Possessive forms
+        (r"\bhomeowner's\b", f"{target['audience_singular']}'s"),
+        (r"\bHomeowner's\b", f"{target['audience_singular'].title()}'s"),
         (r"\bfamily's\b", "business's"),
         (r"\bFamily's\b", "Business's"),
 
