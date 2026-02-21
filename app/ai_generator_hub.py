@@ -25,7 +25,7 @@ import json
 from typing import List, Dict, Any, Set, Tuple
 from app.models import GeneratePageResponse, PageData
 from app.vertical_profiles import get_vertical_profile, get_trade_name
-from app.text_utils import validate_grammar, fix_incomplete_sentences, fix_banned_phrases, fix_residential_language
+from app.text_utils import validate_grammar, fix_incomplete_sentences, fix_banned_phrases, fix_residential_language, fix_passive_voice, split_long_sentences
 
 
 # Global registry to track generated hub structures (in-memory for session)
@@ -578,6 +578,12 @@ FORBIDDEN PATTERNS:
 - Do NOT mention specific cities or neighborhoods
 - No marketing fluff: "top-notch", "premier", "best-in-class"
 - No SEO terminology: "SEO", "search engine optimization"
+
+⚠️ READABILITY RULES (YOAST SEO COMPLIANCE):
+SENTENCE LENGTH: At least 75% of sentences MUST be under 20 words. Split compound sentences into shorter ones.
+ACTIVE VOICE: Keep passive voice under 10%. Write "We inspect panels" not "Panels are inspected."
+FAQ ANSWERS: Write 3-4 short sentences per answer. Do not cram cause, symptom, consequence, and resolution into one long sentence.
+SUBHEADINGS: If any section exceeds 250 words, split it with an H3 subheading. Use "heading" prefixed with "H3: " in the sections array.
 """
 
     try:
@@ -692,11 +698,21 @@ def _convert_to_blocks(ai_content: Dict, h1_text: str, data: PageData, cta_text:
     # Sections - apply all text fixes to paragraphs
     for section in ai_content.get("sections", []):
         if section.get("heading"):
-            blocks.append({
-                "type": "heading",
-                "level": 2,
-                "text": section["heading"]
-            })
+            heading_text = section["heading"]
+            # Support H3 prefix convention for readability subheadings
+            if heading_text.startswith("H3: ") or heading_text.startswith("H3:"):
+                h3_text = heading_text.replace("H3: ", "").replace("H3:", "").strip()
+                blocks.append({
+                    "type": "heading",
+                    "level": 3,
+                    "text": h3_text
+                })
+            else:
+                blocks.append({
+                    "type": "heading",
+                    "level": 2,
+                    "text": heading_text
+                })
         if section.get("paragraph"):
             # Apply all text fixes in order
             paragraph_text = section["paragraph"]
@@ -705,6 +721,8 @@ def _convert_to_blocks(ai_content: Dict, h1_text: str, data: PageData, cta_text:
             paragraph_text = fix_residential_language(paragraph_text, hub_key)
             paragraph_text = validate_grammar(paragraph_text, city)
             paragraph_text = fix_incomplete_sentences(paragraph_text)
+            paragraph_text = fix_passive_voice(paragraph_text)
+            paragraph_text = split_long_sentences(paragraph_text)
             blocks.append({
                 "type": "paragraph",
                 "text": paragraph_text
@@ -727,6 +745,8 @@ def _convert_to_blocks(ai_content: Dict, h1_text: str, data: PageData, cta_text:
                 answer_text = fix_residential_language(answer_text, hub_key)
                 answer_text = validate_grammar(answer_text, city)
                 answer_text = fix_incomplete_sentences(answer_text)
+                answer_text = fix_passive_voice(answer_text)
+                answer_text = split_long_sentences(answer_text)
                 blocks.append({
                     "type": "faq",
                     "question": faq["question"],

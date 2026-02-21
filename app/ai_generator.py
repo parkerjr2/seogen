@@ -15,7 +15,7 @@ from app.models import PageData, GeneratePageResponse, PageBlock, HeadingBlock, 
 from app.local_data_fetcher import local_data_fetcher
 from app.vertical_profiles import get_vertical_profile, get_trade_name
 from app import ai_generator_hub
-from app.text_utils import validate_grammar, normalize_whitespace, fix_banned_phrases
+from app.text_utils import validate_grammar, normalize_whitespace, fix_banned_phrases, fix_passive_voice, split_long_sentences
 
 class AIContentGenerator:
     """Robust content generator with programmatic enforcement and repair capabilities."""
@@ -243,7 +243,12 @@ class AIContentGenerator:
             # Fix banned phrases first (replaces "in the area" with city name)
             if city:
                 text = fix_banned_phrases(text, city)
-            return validate_grammar(text, city)
+            text = validate_grammar(text, city)
+            # Fix passive voice constructions
+            text = fix_passive_voice(text)
+            # Split overly long sentences for Yoast readability
+            text = split_long_sentences(text)
+            return text
 
         # Validate meta_description
         if 'meta_description' in validated:
@@ -1319,6 +1324,7 @@ Return ONLY valid JSON with this exact structure:
 {{ "heading": "string", "paragraph": "string" }},
 {{ "heading": "string", "paragraph": "string" }}
 ],
+NOTE ON H3 SUBHEADINGS: If a section exceeds 250 words, split it by adding extra objects with "heading" prefixed by "H3: " (e.g., "H3: Weather Damage in {data.city}"). You may have 6-9 section objects total. The first 6 follow the required topic structure; extras are H3 subsections within those topics.
 "faqs": [
 {', '.join(['{ "question": "string", "answer": "string" }'] * num_faqs)}
 ],
@@ -1451,13 +1457,35 @@ WRITING STYLE - SOUND HUMAN, NOT AI:
 - Sound like someone who does this work every day, not someone reading from a script
 - NO template language like "addressing your needs", "focus on providing", "here to ensure"
 
+⚠️ READABILITY RULES (YOAST SEO COMPLIANCE - CRITICAL):
+SENTENCE LENGTH: At least 75% of your sentences MUST be under 20 words. Break compound sentences at "and", "which", "while", and "but" into separate sentences. Short sentences are powerful. Use them.
+  ❌ "Our team inspects the panel and identifies any issues that could cause problems, which we then document in a detailed report for your review."
+  ✅ "We inspect the panel first. Any issues get documented in a detailed report. You'll know exactly what needs fixing."
+
+ACTIVE VOICE: Keep passive voice under 10% of sentences. Write the actor first, then the action.
+  ❌ "Gutters are damaged by storms" → ✅ "Storms damage gutters"
+  ❌ "The panel is inspected by our team" → ✅ "We inspect the panel"
+  ❌ "Issues are often caused by aging wiring" → ✅ "Aging wiring often causes issues"
+  ❌ "The area is known for" → ✅ "{data.city} sees frequent"
+  ❌ "Services are provided" → ✅ "We provide"
+
+SUBHEADINGS FOR LONG SECTIONS: If any section paragraph runs longer than 250 words, you MUST split it with an H3 subheading to improve scannability. Add an H3 heading object before the continuation paragraph.
+  Example: A long Section 2 about common problems could insert an H3 like "Weather-Related {data.service} Damage in {data.city}" to break up the content.
+  To add an H3, insert an extra object in the sections array: {{"heading": "H3: Your Subheading Here", "paragraph": "continuation content..."}}
+  Mark H3 headings with the "H3: " prefix so the renderer knows to use <h3> instead of <h2>.
+
 {num_faqs} FAQs about {data.service}. Requirements:
 - 350+ characters per answer
-- Structure: CAUSE→SYMPTOM→CONSEQUENCE→RESOLUTION
+- Answer in 3-4 SHORT sentences (not one long compound sentence):
+  Sentence 1: What causes the problem.
+  Sentence 2: What symptoms you'll notice.
+  Sentence 3: What happens if you ignore it.
+  Sentence 4: How to resolve it.
 - Include local differentiators and trade terms
 - Add "when to act vs monitor" guidance
 - Must include city-specific context - if FAQ applies to any city unchanged, rewrite it
 - Sound experienced, not marketing-focused
+- REMEMBER: Keep each sentence under 20 words. No run-on FAQ answers.
 
 ⚠️ MANDATORY FAQ QUESTIONS (USE THESE EXACT PHRASINGS):
 You MUST use these specific question phrasings (already randomly selected to ensure variation across cities):
@@ -1690,8 +1718,9 @@ Return JSON only. No extra text."""
         # H1 heading (programmatic) - only type, level, text
         blocks.append(self._create_heading_block(h1_text, 1))
 
-        # 6 sections with H2 headings and paragraphs
+        # Sections with H2/H3 headings and paragraphs
         # NOTE: Section 1 should have NO heading (uses H1 above), but AI sometimes generates one anyway
+        # H3 subheadings use "H3: " prefix convention for readability (Yoast SEO compliance)
         sections = content_json.get("sections", [])
         for idx, section in enumerate(sections, start=1):
             heading = section.get("heading", "")
@@ -1699,7 +1728,12 @@ Return JSON only. No extra text."""
 
             # Skip heading for Section 1 (it uses the H1 above)
             if heading and idx != 1:
-                blocks.append(self._create_heading_block(heading, 2))
+                # Check for H3 prefix convention: "H3: Some Heading"
+                if heading.startswith("H3: ") or heading.startswith("H3:"):
+                    h3_text = heading.replace("H3: ", "").replace("H3:", "").strip()
+                    blocks.append(self._create_heading_block(h3_text, 3))
+                else:
+                    blocks.append(self._create_heading_block(heading, 2))
 
             if paragraph:
                 blocks.append(self._create_paragraph_block(paragraph))

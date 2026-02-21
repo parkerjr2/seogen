@@ -324,3 +324,270 @@ def fix_incomplete_sentences(text: str) -> str:
     text = re.sub(pattern, add_completion_especially, text)
 
     return text
+
+
+def fix_passive_voice(text: str) -> str:
+    """
+    Fix common passive voice constructions in AI-generated content.
+    Targets the most frequent passive patterns that LLMs produce.
+
+    This is a best-effort post-processing pass. It catches mechanical
+    passive constructions but won't catch every instance. The prompt-level
+    instructions are the primary defense; this is a safety net.
+
+    Args:
+        text: The text to fix
+
+    Returns:
+        Text with common passive voice patterns converted to active voice
+    """
+    # Helper to pick singular/plural verb based on whether new subject ends in 's'
+    def _verb_form(new_subject: str, singular: str, plural: str) -> str:
+        """Pick verb form based on likely plurality of new subject."""
+        subj = new_subject.strip().lower()
+        # Common plural indicators: ends in 's' but not 'ss' (e.g., "storms" but not "stress")
+        if subj.endswith('s') and not subj.endswith('ss') and not subj.endswith('us'):
+            return plural
+        return singular
+
+    # Pattern 1: "X is/are caused by Y" → "Y causes/cause X"
+    # e.g., "Damage is caused by storms" → "Storms cause damage"
+    text = re.sub(
+        r'\b([A-Z][a-z]+(?:\s+\w+)?)\s+(?:is|are)\s+(often\s+)?caused\s+by\s+(\w+(?:\s+\w+)?)',
+        lambda m: f'{m.group(3).capitalize()} {m.group(2) or ""}{_verb_form(m.group(3), "causes", "cause")} {m.group(1).lower()}',
+        text
+    )
+
+    # Pattern 2: "X is/are affected by Y" → "Y affects/affect X"
+    text = re.sub(
+        r'\b([A-Z][a-z]+(?:\s+\w+)?)\s+(?:is|are)\s+(often\s+)?affected\s+by\s+(\w+(?:\s+\w+)?)',
+        lambda m: f'{m.group(3).capitalize()} {m.group(2) or ""}{_verb_form(m.group(3), "affects", "affect")} {m.group(1).lower()}',
+        text
+    )
+
+    # Pattern 3: "X is/are damaged by Y" → "Y damages/damage X"
+    text = re.sub(
+        r'\b([A-Z][a-z]+(?:\s+\w+)?)\s+(?:is|are)\s+(often\s+)?damaged\s+by\s+(\w+(?:\s+\w+)?)',
+        lambda m: f'{m.group(3).capitalize()} {m.group(2) or ""}{_verb_form(m.group(3), "damages", "damage")} {m.group(1).lower()}',
+        text
+    )
+
+    # Pattern 4: "is known for" → "sees frequent" (common in city descriptions)
+    text = re.sub(r'\bis known for\b', 'sees frequent', text, flags=re.IGNORECASE)
+
+    # Pattern 5: "is/are required by" → invert
+    # e.g., "Permits are required by the city" → "The city requires permits"
+    text = re.sub(
+        r'\b([A-Z][a-z]+(?:\s+\w+)?)\s+(?:is|are)\s+required\s+by\s+(the\s+\w+|\w+)',
+        lambda m: f'{m.group(2).capitalize()} requires {m.group(1).lower()}',
+        text
+    )
+
+    # Pattern 6: "can be found" → "exist" or "appear"
+    text = re.sub(r'\bcan be found\b', 'appear', text, flags=re.IGNORECASE)
+
+    # Pattern 7: "is/are typically seen" → "typically appears/appear"
+    text = re.sub(r'\bis typically seen\b', 'typically appears', text, flags=re.IGNORECASE)
+    text = re.sub(r'\bare typically seen\b', 'typically appear', text, flags=re.IGNORECASE)
+
+    # Pattern 8: "is/are recommended" → "we recommend" (service context)
+    text = re.sub(r'\bit is recommended\b', 'we recommend', text, flags=re.IGNORECASE)
+    text = re.sub(r'\bis recommended\b', 'works best', text, flags=re.IGNORECASE)
+
+    return text
+
+
+def count_passive_sentences(text: str) -> dict:
+    """
+    Count passive voice usage in text for validation/reporting.
+
+    Args:
+        text: The text to analyze
+
+    Returns:
+        Dictionary with 'total_sentences', 'passive_count', 'passive_percentage',
+        and 'passive_sentences' (list of flagged sentences)
+    """
+    # Split into sentences
+    sentences = re.split(r'(?<=[.!?])\s+', text.strip())
+    sentences = [s for s in sentences if len(s) > 5]  # filter fragments
+
+    passive_patterns = [
+        r'\b(?:is|are|was|were|been|being)\s+\w+ed\b',  # "is damaged", "are affected"
+        r'\b(?:is|are|was|were|been|being)\s+\w+en\b',  # "is broken", "are taken"
+        r'\b(?:is|are|was|were)\s+(?:often|typically|usually|commonly|frequently)\s+\w+ed\b',
+        r'\bcan be \w+ed\b',  # "can be fixed"
+        r'\bshould be \w+ed\b',  # "should be replaced"
+        r'\bmust be \w+ed\b',  # "must be inspected"
+        r'\bit is recommended\b',
+        r'\bis known for\b',
+    ]
+
+    passive_sentences = []
+    for sentence in sentences:
+        for pattern in passive_patterns:
+            if re.search(pattern, sentence, re.IGNORECASE):
+                passive_sentences.append(sentence)
+                break
+
+    total = len(sentences)
+    passive_count = len(passive_sentences)
+    percentage = (passive_count / total * 100) if total > 0 else 0
+
+    return {
+        'total_sentences': total,
+        'passive_count': passive_count,
+        'passive_percentage': round(percentage, 1),
+        'passive_sentences': passive_sentences,
+    }
+
+
+def count_long_sentences(text: str, max_words: int = 20) -> dict:
+    """
+    Count sentences exceeding the word limit for Yoast readability.
+
+    Args:
+        text: The text to analyze
+        max_words: Maximum words per sentence (Yoast default: 20)
+
+    Returns:
+        Dictionary with 'total_sentences', 'long_count', 'long_percentage',
+        and 'long_sentences' (list of flagged sentences)
+    """
+    sentences = re.split(r'(?<=[.!?])\s+', text.strip())
+    sentences = [s for s in sentences if len(s) > 5]
+
+    long_sentences = []
+    for sentence in sentences:
+        word_count = len(sentence.split())
+        if word_count > max_words:
+            long_sentences.append(sentence)
+
+    total = len(sentences)
+    long_count = len(long_sentences)
+    percentage = (long_count / total * 100) if total > 0 else 0
+
+    return {
+        'total_sentences': total,
+        'long_count': long_count,
+        'long_percentage': round(percentage, 1),
+        'long_sentences': long_sentences,
+    }
+
+
+def split_long_sentences(text: str, max_words: int = 20) -> str:
+    """
+    Split sentences exceeding max_words at natural conjunction points.
+    Targets Yoast SEO readability: ≤25% of sentences over 20 words.
+
+    Splits at these conjunctions (in priority order):
+    1. ", which " → ". This "
+    2. ", and " → ". Also, " or ". "
+    3. ", but " → ". However, "
+    4. ", while " → ". Meanwhile, "
+    5. ", where " → ". There, "
+    6. ", because " → ". This is because "
+    7. ", so " → ". As a result, "
+    8. ", although " → ". Although "
+
+    Only splits if BOTH resulting halves would be ≥5 words (avoids fragments).
+
+    Args:
+        text: The text to process
+        max_words: Maximum words per sentence (default: 20)
+
+    Returns:
+        Text with long sentences split at natural points
+    """
+    # Split points ordered by priority (most natural splits first)
+    split_points = [
+        (', which ', '. This '),
+        (', and ', '. '),
+        (', but ', '. However, '),
+        (', while ', '. Meanwhile, '),
+        (', where ', '. There, '),
+        (', because ', '. This is because '),
+        (', so ', '. As a result, '),
+        (', although ', '. Although '),
+        # Also handle without leading comma (mid-sentence conjunctions)
+        (' which ', '. This '),
+        (' and ', '. '),
+        (' but ', '. However, '),
+        # Relative clauses (lower priority, only for very long sentences)
+        (', who ', '. They '),
+        (', where ', '. There, '),
+        (' that frequently ', '. This frequently '),
+    ]
+
+    # Process sentence by sentence
+    sentences = re.split(r'(?<=[.!?])\s+', text.strip())
+    result_sentences = []
+
+    for sentence in sentences:
+        word_count = len(sentence.split())
+
+        if word_count <= max_words:
+            result_sentences.append(sentence)
+            continue
+
+        # Try each split point
+        split_done = False
+        for pattern, replacement in split_points:
+            pattern_lower = pattern.lower()
+            sentence_lower = sentence.lower()
+
+            if pattern_lower not in sentence_lower:
+                continue
+
+            # Find the split position (case-insensitive)
+            idx = sentence_lower.find(pattern_lower)
+            if idx < 0:
+                continue
+
+            before = sentence[:idx].strip()
+            after = sentence[idx + len(pattern):].strip()
+
+            before_words = len(before.split())
+            after_words = len(after.split())
+
+            # Only split if both halves are substantial (avoid fragments)
+            if before_words < 5 or after_words < 5:
+                continue
+
+            # Ensure 'before' ends with a period
+            if not before.endswith('.'):
+                before = before + '.'
+
+            # Capitalize the start of the new sentence
+            if replacement.strip() == '.':
+                # Simple split: just capitalize 'after'
+                after = after[0].upper() + after[1:] if after else after
+                result_sentences.append(before)
+                # Recursively check the second half too
+                if len(after.split()) > max_words:
+                    after = split_long_sentences(after, max_words)
+                result_sentences.append(after)
+            else:
+                # Replacement includes a transition word
+                transition = replacement.strip().lstrip('. ').rstrip()
+                # Ensure space between transition and continuation text
+                if after:
+                    after_lower = after[0].lower() + after[1:]
+                    after_sentence = f'{transition} {after_lower}'
+                else:
+                    after_sentence = transition
+                if after_sentence and not after_sentence[0].isupper():
+                    after_sentence = after_sentence[0].upper() + after_sentence[1:]
+                result_sentences.append(before)
+                if len(after_sentence.split()) > max_words:
+                    after_sentence = split_long_sentences(after_sentence, max_words)
+                result_sentences.append(after_sentence)
+
+            split_done = True
+            break
+
+        if not split_done:
+            # No good split point found - keep as-is rather than create awkward breaks
+            result_sentences.append(sentence)
+
+    return ' '.join(result_sentences)

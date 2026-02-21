@@ -7,7 +7,7 @@ import re
 
 from app.models import GeneratePageResponse, PageData
 from app.vertical_profiles import get_vertical_profile, get_trade_name
-from app.text_utils import validate_grammar, normalize_whitespace, fix_banned_phrases, fix_residential_language
+from app.text_utils import validate_grammar, normalize_whitespace, fix_banned_phrases, fix_residential_language, fix_passive_voice, split_long_sentences
 
 
 def _validate_industry_content(blocks: list, trade_name: str, vertical: str) -> None:
@@ -422,6 +422,18 @@ ABSOLUTE RULES (NON-NEGOTIABLE)
 - Do NOT repeat sentence structures across city pages.
 - Do NOT write content that would still make sense if the city name were swapped.
 
+⚠️ READABILITY RULES (YOAST SEO COMPLIANCE - MUST FOLLOW):
+SENTENCE LENGTH: At least 75% of sentences MUST be under 20 words. Break long compound sentences into 2-3 shorter ones.
+  ❌ "The aging infrastructure throughout the neighborhood creates significant challenges for property owners who need to maintain their systems during extreme weather events."
+  ✅ "The aging infrastructure creates real challenges. Property owners struggle to maintain systems. Extreme weather makes it worse."
+
+ACTIVE VOICE: Keep passive voice under 10% of sentences. Name the actor first.
+  ❌ "Systems are often damaged by" → ✅ "Storms often damage systems"
+  ❌ "Permits are required by the city" → ✅ "The city requires permits"
+  ❌ "Work is typically completed within" → ✅ "We typically complete work within"
+
+LEFT-ALIGNED TEXT: All paragraph content must be left-aligned. No centered text blocks except CTAs.
+
 BANNED WORDS / PHRASES (NEVER USE):
 - "locally", "local", "local property owners", "in your area", "serving the area", "in the area"
 - "trusted", "top-rated", "best", "premier", "award-winning", "#1", "top choice"
@@ -475,38 +487,50 @@ TARGET BREAKDOWN (these are HARD MINIMUMS):
 If ANY section is under its minimum, you have FAILED. EXPAND IT before submitting.
 
 1) CITY CONTEXT (4-5 paragraphs, 440-500w MINIMUM)
+   ⚠️ THIS SECTION EXCEEDS 300 WORDS - YOU MUST INSERT AN H3 SUBHEADING AFTER THE 2ND PARAGRAPH.
+   Use a heading block like: {{"type": "heading", "level": 3, "text": "How {city}'s Climate Affects {trade_name} Systems"}}
+
    - Opening paragraph: {housing_instruction} + neighborhoods (110-140w)
      * Must mention 2-3 specific neighborhoods from research
      * Tie to {trade_name} service needs
-   
+
+   [INSERT H3 HEADING HERE - e.g., "How {city}'s Climate Affects {trade_name} Systems"]
+
    - Climate paragraph: Specific weather data → {trade_name} stress (110-130w)
      * Use specific climate data from research
      * Explain HOW it impacts {trade_name} systems
      * Add 2-3 specific examples
-   
+
    - Issues paragraph: What fails from age + climate (100-120w)
      * Connect building age to component failures
      * Tie climate to specific {trade_name} problems
      * Give concrete examples
-   
+
+   [INSERT H3 HEADING HERE - e.g., "Service Coverage Across {city}"]
+
    - Coverage paragraph: 2-3 landmarks + neighborhoods from research (80-100w)
      * Name specific landmarks from local data
      * Explain their relevance to service area
-   
+
    - Optional 5th paragraph: Unique city characteristic (40-60w)
      * Permit requirements, local codes, city-specific factors
 
 2) COMMON ISSUES (3 paragraphs, 350-400w MINIMUM)
+   ⚠️ THIS SECTION EXCEEDS 300 WORDS - YOU MUST INSERT AN H3 SUBHEADING AFTER THE 1ST PARAGRAPH.
+   Use a heading block like: {{"type": "heading", "level": 3, "text": "Seasonal {trade_name} Challenges in {city}"}}
+
    - Primary paragraph: Top {trade_name} problems in {city}, root causes (120-150w)
      * Specific to this city's building stock
      * Explain WHY these problems occur here
      * Give 2-3 concrete examples
-   
+
+   [INSERT H3 HEADING HERE - e.g., "Seasonal {trade_name} Challenges in {city}"]
+
    - Secondary paragraph: Climate/weather-related issues (110-130w)
      * Storm damage, temperature extremes, humidity
      * How local weather creates specific {trade_name} failures
      * Include seasonal examples
-   
+
    - Seasonal paragraph: How seasons affect service calls in {city} (120-130w)
      * Summer vs winter demand patterns
      * Seasonal maintenance needs
@@ -587,16 +611,19 @@ STRUCTURE FLEXIBILITY:
 ⚠️ CRITICAL JSON FORMAT: Your output MUST use a "blocks" array with objects containing "type" keys.
 DO NOT use "sections". DO NOT use "heading"/"paragraph" as keys. Use "type": "paragraph" or "type": "heading".
 
-JSON SCHEMA (15-18 blocks total):
+JSON SCHEMA (18-22 blocks total - includes H3 subheadings for readability):
 {{
   "blocks": [
     {{"type": "paragraph", "text": "Opening with housing/neighborhoods (90-120w)"}},
+    {{"type": "heading", "level": 3, "text": "How {city}'s Climate Affects [Trade] Systems"}},
     {{"type": "paragraph", "text": "Climate specifics (90-110w)"}},
     {{"type": "paragraph", "text": "What fails (80-100w)"}},
+    {{"type": "heading", "level": 3, "text": "Service Coverage Across {city}"}},
     {{"type": "paragraph", "text": "Landmarks + coverage (60-80w)"}},
     {{"type": "paragraph", "text": "Optional: Unique city factor (40-50w)"}},
     {{"type": "heading", "level": 2, "text": "Common {trade_name} Issues in {city}"}},
     {{"type": "paragraph", "text": "Primary problems (100-120w)"}},
+    {{"type": "heading", "level": 3, "text": "Seasonal [Trade] Challenges in {city}"}},
     {{"type": "paragraph", "text": "Secondary climate issues (80-100w)"}},
     {{"type": "paragraph", "text": "Seasonal patterns (90-100w)"}},
     {{"type": "heading", "level": 2, "text": "Services Available in {city}"}},
@@ -611,6 +638,7 @@ JSON SCHEMA (15-18 blocks total):
     {{"type": "cta", "text": "{data.cta_text}", "phone": "{data.phone or ''}"}}
   ]
 }}
+NOTE: H3 headings (level 3) are REQUIRED to break up long sections for Yoast readability. Vary the H3 text across cities - the examples above are templates, not exact text to copy.
 
 FINAL CHECKLIST BEFORE SUBMITTING:
 ✅ Total word count ≥ 1,100 words (not 900, not 1,000 - AT LEAST 1,100)
@@ -680,6 +708,12 @@ Use local research extensively. Each city must be unique.
 
                         # Grammar validation (subject-verb agreement, incomplete comparatives, etc.)
                         text = validate_grammar(text, city)
+
+                        # Fix passive voice constructions
+                        text = fix_passive_voice(text)
+
+                        # Split overly long sentences for Yoast readability
+                        text = split_long_sentences(text)
 
                         # Fix residential language in commercial pages
                         if is_commercial:
