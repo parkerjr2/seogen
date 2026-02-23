@@ -56,7 +56,7 @@ async def push_to_wordpress(
     result_json: Dict[str, Any],
     item_metadata: Dict[str, Any],
     max_retries: int = 3,
-    timeout: int = 30
+    timeout: int = 15
 ) -> Dict[str, Any]:
     """
     Push completed page to WordPress REST API with retry logic
