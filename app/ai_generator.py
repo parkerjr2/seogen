@@ -744,6 +744,35 @@ class AIContentGenerator:
                     content = content[:-3]  # Remove trailing ```
                 content = content.strip()
 
+                # Sanitize control characters inside JSON string values.
+                # OpenAI sometimes emits literal control chars (\x00-\x1f)
+                # inside JSON strings, which is invalid per RFC 8259.
+                # Walk through quoted strings and escape any bare control chars.
+                def _sanitize_json_strings(s: str) -> str:
+                    """Escape bare control chars inside JSON string values only."""
+                    out = []
+                    i = 0
+                    in_string = False
+                    while i < len(s):
+                        ch = s[i]
+                        if ch == '"' and (i == 0 or s[i-1] != '\\'):
+                            in_string = not in_string
+                            out.append(ch)
+                        elif in_string and ch == '\n':
+                            out.append('\\n')
+                        elif in_string and ch == '\r':
+                            out.append('\\r')
+                        elif in_string and ch == '\t':
+                            out.append('\\t')
+                        elif in_string and ord(ch) < 0x20:
+                            out.append(f'\\u{ord(ch):04x}')
+                        else:
+                            out.append(ch)
+                        i += 1
+                    return ''.join(out)
+
+                content = _sanitize_json_strings(content)
+
                 # Try to parse JSON
                 try:
                     return json.loads(content)
